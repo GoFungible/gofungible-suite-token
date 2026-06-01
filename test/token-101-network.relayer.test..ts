@@ -13,22 +13,29 @@ describe.skip("Blockchain Network", function () {
   let user2: Signer;
   let validator: Signer;
 
-  describe("Supply", function () {
-		
-    it("Should have correct initial supply on first network", async function () {
-      const totalSupply = await nodeToken.totalSupply();
-      expect(totalSupply).to.equal(ethers.parseEther("1000000"));
-    });
+	before(async() => {
+		console.log('*******************************');
+		console.log('******** Starting Tests *******');
+		console.log('*******************************');
+	});
 
-    it("Should allow to deploy more networks", async function () {
+	beforeEach(async() => {
+
+	});
+
+	afterEach(async() => {
+
+	});
+	
+	after(async() => {
+		console.log('--------- Ending Tests --------');
+	});
 
 
-		});
 
-		it("Should allow to transferring between networks", async function () {
+	it("Initial Logs.", async() => {
 
 
-		});
 
 	});
 

@@ -13,27 +13,29 @@ describe.skip("Blockchain Network", function () {
   let user2: Signer;
   let validator: Signer;
 
-  describe("Relayer", function () {
-		
-    it("Should be able to add a relayer", async function () {
+	before(async() => {
+		console.log('*******************************');
+		console.log('******** Starting Tests *******');
+		console.log('*******************************');
+	});
 
-    });
+	beforeEach(async() => {
+
+	});
+
+	afterEach(async() => {
+
+	});
+	
+	after(async() => {
+		console.log('--------- Ending Tests --------');
+	});
 
 
-    it("Should be Timelock Protected", async function () {
+
+	it("Initial Logs.", async() => {
 
 
-		});
-
-    it("Should be Votation Protected", async function () {
-
-
-		});
-
-    it("Should be Version Protected", async function () {
-
-
-		});
 
 	});
 
