@@ -16,7 +16,10 @@ Created	2023-06-30
 
 Discussion Link	https://ethereum-magicians.org/t/eip-7425-tokenized-reserve/15297
 
-Requires	EIP-XXXX
+Requires	
+
+ERC-20
+ERC-8054
 
 Table of Contents
 

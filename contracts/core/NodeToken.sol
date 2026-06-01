@@ -4,11 +4,12 @@ pragma solidity >=0.8.30;
 import "./IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/IRelayer.sol";
+import "./IERC8054.sol";
 import "./INodeToken.sol";
 import "../extensions/IEntryFacet.sol";
 import "../storage/LibDiamondStorage.sol";
 
-contract NodeToken is IERC20, IERC20x, INodeToken {
+contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, INodeToken {
 
 		// ************************************************************************************************
 		// ******************************************** Contract ******************************************
@@ -346,8 +347,8 @@ contract NodeToken is IERC20, IERC20x, INodeToken {
     }
 
 		// ************************************************************************************************
-		// **************************************** Version Protected *************************************
-		// ************************************************************************************************  
+		// ********************************** Version Protected (IERC8054) ********************************
+		// ************************************************************************************************
 
     // Blockchain-specific storage
     /*struct Block {
@@ -480,6 +481,18 @@ contract NodeToken is IERC20, IERC20x, INodeToken {
   function revertToBlock(uint256 blockNumber) external {
 
 	}*/
+
+	function totalSupplyAt(uint48 checkpoint) external view returns (uint256) {
+		return 0;
+	}
+
+	function balanceOfAt(address account, uint48 checkpoint) external view returns (uint256) {
+		return 0;
+	}
+
+	function checkpointNonce() external view returns (uint48) {
+		return 0;
+	}
 
 	// ************************************************************************************************
 	// *************************************** Migration Protected ************************************
