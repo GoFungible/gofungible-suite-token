@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.30;
 
-import "./IERC20.sol";
+import "./erc-20/IERC20.sol";
+import "./erc-20/IERC8054.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/IRelayer.sol";
-import "./IERC8054.sol";
+import "./extensions/IEntryFacet.sol";
+import "./extensions/LibDiamondStorage.sol";
 import "./INodeToken.sol";
-import "../extensions/IEntryFacet.sol";
-import "../storage/LibDiamondStorage.sol";
 
 contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, INodeToken {
 
