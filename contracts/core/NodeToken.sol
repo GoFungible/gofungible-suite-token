@@ -250,32 +250,8 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, INodeToken {
        receiveSyncNodes(sourceChain, destChain, amount);
     }
 
-
-
-
-    // Storage for the interface implementation
-    IRelayer public myRelayer;
-
-    event RelayerUpdated(address indexed oldImplementation, address indexed newImplementation);
-
-    function setRelayer(address _newImplementation) external {
-        require(_newImplementation != address(0), "Invalid address");
-        require(_isContract(_newImplementation), "Address must be a contract");
-        
-        address oldImplementation = address(myRelayer);
-        myRelayer = IRelayer(_newImplementation);
-        
-        emit RelayerUpdated(oldImplementation, _newImplementation);
-    }
-    
-    // Get the current implementation
-    function getRelayer() external view returns (address) {
-        return address(myRelayer);
-    }
-
-
 		// ************************************************************************************************
-		// *************************************** Timelock Protected *************************************
+		// ******************************* Relayer Timelock Protection ************************************
 		// ************************************************************************************************
 
     uint256 DELAY = 0 days;
@@ -305,7 +281,7 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, INodeToken {
     }
 
 		// ************************************************************************************************
-		// *************************************** Votation Protected *************************************
+		// ******************************* Relayer Votation Protected *************************************
 		// ************************************************************************************************
 
     uint256 VOTES = 0;
@@ -346,8 +322,11 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, INodeToken {
         return (votedResource, availableFromVote);
     }
 
+
+
+
 		// ************************************************************************************************
-		// ********************************** Version Protected (IERC8054) ********************************
+		// ********************************** Supply Version Protected (IERC8054) *************************
 		// ************************************************************************************************
 
     // Blockchain-specific storage
@@ -495,8 +474,29 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, INodeToken {
 	}
 
 	// ************************************************************************************************
-	// *************************************** Migration Protected ************************************
+	// ************************************* Supply Migration Protection ******************************
 	// ************************************************************************************************
+
+
+    // Storage for the interface implementation
+    IRelayer public myRelayer;
+
+    event RelayerUpdated(address indexed oldImplementation, address indexed newImplementation);
+
+    function setRelayer(address _newImplementation) external {
+        require(_newImplementation != address(0), "Invalid address");
+        require(_isContract(_newImplementation), "Address must be a contract");
+        
+        address oldImplementation = address(myRelayer);
+        myRelayer = IRelayer(_newImplementation);
+        
+        emit RelayerUpdated(oldImplementation, _newImplementation);
+    }
+    
+    // Get the current implementation
+    function getRelayer() external view returns (address) {
+        return address(myRelayer);
+    }
 
 
 
