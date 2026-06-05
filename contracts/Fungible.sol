@@ -7,9 +7,9 @@ import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/IRelayer.sol";
 import "./extensions/IEntryFacet.sol";
 import "./extensions/LibDiamondStorage.sol";
-import "./INodeToken.sol";
+import "./IFungible.sol";
 
-contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, INodeToken {
+contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 
 		// ************************************************************************************************
 		// ******************************************** Contract ******************************************

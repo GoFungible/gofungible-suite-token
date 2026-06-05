@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.30;
 
-interface INodeToken {
+interface IFungible {
     /*function verifyBlock(uint256 blockNumber) external view returns (bool);
     function getBlock(uint256 blockNumber) external view returns (
         bytes32 blockHash,
