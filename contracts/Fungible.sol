@@ -16,20 +16,21 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	// ************************************************************************************************   
 	uint256 public immutable CHAIN_ID;
 
-	address public owner;
+	address public _owner;
 	
-	constructor(uint256 chainId_,  string memory name_, string memory symbol_, address owner_) {
-		CHAIN_ID = chainId_;
-		owner = owner_;
+	constructor(string memory name_, string memory symbol_, uint256 globalSupply_) {
+		CHAIN_ID = block.chainid;
+		_owner = msg.sender;
 
+		// metadata
 		_name = name_;
 		_symbol = symbol_;
 		_decimals = 18;
 		
-		// Mint initial supply to owner
-		uint256 initialSupply = 1000000 * 10 ** _decimals;
-		_totalSupply = initialSupply;
-		_balances[owner_] = initialSupply;
+		// Mint global supply to owner. No more external mints allowed.
+		_globalSupply = globalSupply_ * 10 ** _decimals;
+		_totalSupply = _globalSupply;
+		_balances[_owner] = _globalSupply;
 	}
 
 	// ************************************************************************************************
@@ -145,6 +146,8 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	// ************************************************************************************************
 	// *************************************** ERC-20X ************************************************
 	// ************************************************************************************************   
+	uint256 private _globalSupply;
+
 	uint256[] public knownChains;
 
 	mapping(uint256 => uint256) public supplies;
@@ -156,11 +159,7 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	event LocalSupplyUpdated(uint256 indexed chainId, uint256 newSupply);
 
 	function globalSupply() external view returns (uint256) {
-			uint256 total = 0;
-			for (uint i = 0; i < knownChains.length; i++) {
-					total += supplies[knownChains[i]];
-			}
-			return total;
+		return _globalSupply;
 	}
 	
 	function getAllRemoteSupplies() external view returns (uint256[] memory chainIds, uint256[] memory _supplies) {
@@ -311,7 +310,7 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	uint256 public availableFromTime; // 0 = no pending change
 
 	function scheduleByTimelock(string calldata _new) external {
-		require(msg.sender == owner, "Only owner");
+		require(msg.sender == _owner, "Only owner");
 		timelockedResource = _new;
 		availableFromTime = block.timestamp + DELAY;
 	}
@@ -344,7 +343,7 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	uint256 public availableFromVote;
 
 	function scheduleByVotes(string calldata _new) external {
-		require(msg.sender == owner, "Only owner");
+		require(msg.sender == _owner, "Only owner");
 		votedResource = _new;
 		availableFromVote = block.timestamp + DELAY;
 	}
