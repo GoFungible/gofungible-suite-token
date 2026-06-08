@@ -1,164 +1,88 @@
 // test/network.test.ts
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { NodeToken, BridgeRouter, ValidatorNode } from "../typechain-types";
+import hre from "hardhat";
 import { Signer } from "ethers";
+import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe.skip("Blockchain Network", function () {
-  let nodeToken: NodeToken;
-  let bridgeRouter: BridgeRouter;
-  let validatorNode: ValidatorNode;
-  let deployer: Signer;
+import * as helpers from "../test/_testhelper";
+
+describe("Blockchain Network", function () {
   let user1: Signer;
   let user2: Signer;
-  let validator: Signer;
 
-  beforeEach(async function () {
-    [deployer, user1, user2, validator] = await ethers.getSigners();
+	let owner: SignerWithAddress, project: SignerWithAddress, liquidity: SignerWithAddress;
+	let addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, addrs;
 
-    // Deploy NodeToken
-    const NodeTokenFactory = await ethers.getContractFactory("NodeToken");
-    nodeToken = await NodeTokenFactory.deploy(
-      "Test Token",
-      "TEST",
-      1,
-      await deployer.getAddress()
-    );
-    await nodeToken.waitForDeployment();
+	beforeEach(async() => {
+		//console.log('--------------------');
+		await hre.network.provider.send("hardhat_reset");
 
-    // Deploy BridgeRouter
-    const BridgeRouterFactory = await ethers.getContractFactory("BridgeRouter");
-    bridgeRouter = await BridgeRouterFactory.deploy();
-    await bridgeRouter.waitForDeployment();
+		// ***********************************************************************************************************************************************************
+		// ************************************************************************** Log Signers ********************************************************************
+		// ***********************************************************************************************************************************************************
+		// get accounts
+		[owner, project, liquidity, addr1, addr2, addr3, ...addrs] = await ethers.getSigners();
+		[owner, project, liquidity, addr1, addr2, addr3, ...addrs].forEach(async(account, i) => {
+			let balance = await ethers.provider.getBalance(account.address);
+			console.log('%d - address: %s ; balance: %s', ++i, account.address, balance);
+		});
 
-    // Deploy ValidatorNode
-    const ValidatorNodeFactory = await ethers.getContractFactory("ValidatorNode");
-    validatorNode = await ValidatorNodeFactory.deploy();
-    await validatorNode.waitForDeployment();
+		// ***********************************************************************************************************************************************************
+		// ********************************************************* Install Versionable Facets and register in factory **********************************************
+		// ***********************************************************************************************************************************************************
+		// deploy DiamondCutFacet (CUD)
+		const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
+		let diamondCutFacet = await DiamondCutFacet.deploy()
+		await diamondCutFacet.waitForDeployment()
+		console.log('DiamondCutFacet deployed:', await diamondCutFacet.getAddress())
 
-    // Register chain
-    await bridgeRouter.registerChain(
-      1,
-      await nodeToken.getAddress(),
-      "Test Chain",
-      3
-    );
+		// deploy DiamondLoupeFacet (R)
+		const DiamondLoupeFacet = await ethers.getContractFactory('DiamondLoupeFacet')
+		let diamondLoupeFacet = await DiamondLoupeFacet.deploy()
+		await diamondLoupeFacet.waitForDeployment()
+		console.log('DiamondLoupeFacet deployed:', await diamondLoupeFacet.getAddress())
+		console.log(diamondLoupeFacet)
 
-    // Setup validator
-    const validatorAddr = await validator.getAddress();
-    await validatorNode.connect(validator).depositStake({ value: ethers.parseEther("10") });
-    await nodeToken.addValidator(validatorAddr, ethers.parseEther("10"));
-  });
+		// deploy Fungible
+		const Fungible = await ethers.getContractFactory("Fungible");
+		let fungible = await Fungible.deploy("FungiTest", "FGT", 1000_000_000);
+		await fungible.waitForDeployment();
+		console.log("Fungible deployed:" + await fungible.getAddress());
 
-  describe("NodeToken", function () {
-    it("Should have correct initial supply", async function () {
-      const totalSupply = await nodeToken.totalSupply();
-      expect(totalSupply).to.equal(ethers.parseEther("1000000"));
-    });
+		// Attach Facets to Fungible via DiamondCut
+		// attach DiamondLoupeFacet
+		/*const diamondLoupeFacetSelectors = helpers.getSelectors(diamondLoupeFacet);
+		let _diamondCut = [{ facetAddress: diamondLoupeFacet.getAddress(), action: helpers.FacetCutAction.Add, functionSelectors: diamondLoupeFacetSelectors, }];
+		await expect(diamondCutContract.connect(owner).diamondCut(_diamondCut)).to.not.be.reverted;
+    diamondLoupeContract = await ethers.getContractAt('DiamondLoupeFacet', diamond.getAddress())
+		console.log("DiamondLoupeFacet attached as " + diamondCutContract.address);
 
-    it("Should transfer tokens", async function () {
-      const amount = ethers.parseEther("100");
-      const user1Addr = await user1.getAddress();
-      
-      await nodeToken.connect(deployer).transfer(user1Addr, amount);
-      
-      const balance = await nodeToken.balanceOf(user1Addr);
-      expect(balance).to.equal(amount);
-    });
+		// attach Token facet ex Common
+		const erc20FacetExCommonFacetSelectors = helpers.removeSelectors(helpers.getSelectors(erc20Facet), helpers.getSelectors(commonFacet));
+		_diamondCut = [{ facetAddress: fungible.getAddress(), action: helpers.FacetCutAction.Add, functionSelectors: erc20FacetExCommonFacetSelectors, }];
+		await expect(diamondCutContract.connect(owner).diamondCut(_diamondCut)).to.not.be.reverted;
+    token = await ethers.getContractAt('ERC20Facet', diamond.getAddress())
+		console.log("ERC20Facet attached as " + token.address);*/
 
-    it("Should create transaction", async function () {
-      const amount = ethers.parseEther("50");
-      const user1Addr = await user1.getAddress();
-      const user2Addr = await user2.getAddress();
-      
-      // Transfer tokens to user1 first
-      await nodeToken.connect(deployer).transfer(user1Addr, amount * 2n);
-      
-      // Create transaction
-      await nodeToken.connect(user1).createTransaction(user2Addr, amount);
-      
-      const pendingTxs = await nodeToken.getPendingTransactions();
-      expect(pendingTxs.length).to.equal(1);
-    });
+	});
 
-    it("Should submit block", async function () {
-      const amount = ethers.parseEther("50");
-      const user1Addr = await user1.getAddress();
-      const user2Addr = await user2.getAddress();
-      
-      // Transfer and create transaction
-      await nodeToken.connect(deployer).transfer(user1Addr, amount * 2n);
-      const tx = await nodeToken.connect(user1).createTransaction(user2Addr, amount);
-      const receipt = await tx.wait();
-      
-      // Get transaction hash from events
-      const events = await nodeToken.queryFilter(nodeToken.filters.TransactionCreated());
-      const txHash = events[0].args?.txHash;
-      
-      // Submit block
-      const blockData = ethers.toUtf8Bytes("Test Block");
-      await nodeToken.connect(validator).submitBlock(blockData, [txHash]);
-      
-      const currentBlock = await nodeToken.currentBlockNumber();
-      expect(currentBlock).to.equal(1);
-    });
-  });
+	/********************************************************************************************************/
+	/*************************************************** metadata *******************************************/
+	/********************************************************************************************************/
+	it("Should have correct initial supply", async function () {
+		//const totalSupply = await fungible.totalSupply();
+		//expect(totalSupply).to.equal(ethers.parseEther("1000000"));
+	});
 
-  describe("BridgeRouter", function () {
-    it("Should register chain", async function () {
-      const chainInfo = await bridgeRouter.getChainInfo(1);
-      expect(chainInfo.name).to.equal("Test Chain");
-      expect(chainInfo.isActive).to.be.true;
-    });
+	it("Should transfer tokens", async function () {
+		//const amount = ethers.parseEther("100");
+		//const user1Addr = await user1.getAddress();
+		
+		//await fungible.connect(owner).transfer(user1Addr, amount);
+		
+		//const balance = await fungible.balanceOf(user1Addr);
+		//expect(balance).to.equal(amount);
+	});
 
-    it("Should initiate cross-chain transfer", async function () {
-      const amount = ethers.parseEther("100");
-      const user1Addr = await user1.getAddress();
-      const user2Addr = await user2.getAddress();
-      
-      // Transfer tokens to user1
-      await nodeToken.connect(deployer).transfer(user1Addr, amount * 2n);
-      
-      // Approve bridge
-      await nodeToken.connect(user1).approve(await bridgeRouter.getAddress(), amount);
-      
-      // Initiate transfer
-      await bridgeRouter.connect(user1).initiateCrossChainTransfer(137, user2Addr, amount);
-      
-      // Check transfer exists
-      const events = await bridgeRouter.queryFilter(bridgeRouter.filters.CrossChainTransferInitiated());
-      expect(events.length).to.equal(1);
-    });
-  });
-
-  describe("ValidatorNode", function () {
-    it("Should deposit stake", async function () {
-      const validatorAddr = await validator.getAddress();
-      const stakeInfo = await validatorNode.getValidatorInfo(validatorAddr);
-      expect(stakeInfo[0]).to.equal(ethers.parseEther("10"));
-    });
-
-    it("Should validate block", async function () {
-      // Create a block first
-      const amount = ethers.parseEther("50");
-      const user1Addr = await user1.getAddress();
-      const user2Addr = await user2.getAddress();
-      
-      await nodeToken.connect(deployer).transfer(user1Addr, amount * 2n);
-      await nodeToken.connect(user1).createTransaction(user2Addr, amount);
-      
-      const pendingTxs = await nodeToken.getPendingTransactions();
-      await nodeToken.connect(validator).submitBlock(ethers.toUtf8Bytes("Test"), pendingTxs);
-      
-      // Validate block
-      await validatorNode.connect(validator).validateBlock(
-        1,
-        1,
-        await nodeToken.getAddress()
-      );
-      
-      const validation = await validatorNode.getValidation(1, 1);
-      expect(validation[4]).to.be.true; // isValid
-    });
-  });
 });

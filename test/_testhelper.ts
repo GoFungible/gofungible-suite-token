@@ -1,10 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { ethers } from 'hardhat';
-import { BigNumber, Contract } from 'ethers';
+import { BaseContract, BigNumberish } from 'ethers';
 import { keccak256 } from "@ethersproject/keccak256";
 import { toUtf8Bytes } from "@ethersproject/strings";
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 // location
 export let STORAGE1 = keccak256(toUtf8Bytes("diamond.standard.app.storage"));
@@ -67,19 +66,19 @@ export let etherToUsd = function (ether: number) {
 export let usdToEther = function (usd: number) {
 	return usd / numUsdPerEther;
 }
-export let weiToUsd = function (wei: BigNumber) {
-	return etherToUsd(Number(ethers.utils.formatEther(wei)));
+export let weiToUsd = function (wei: BigNumberish) {
+	return etherToUsd(Number(ethers.formatEther(wei)));
 }
 export let usdToWei = function (usd: number) {
-	return ethers.utils.parseUnits((usdToEther(usd).toString()));
+	return ethers.parseUnits((usdToEther(usd).toString()));
 }
 export let stringToBytes5 = function (str: string) {
-	return ethers.utils.hexZeroPad(ethers.utils.toUtf8Bytes(str), 5);
+	return ethers.zeroPadValue(ethers.toUtf8Bytes(str), 5);
 }
 export let bytes5ToString = function (hexString: string) {
-	return ethers.utils.toUtf8String(hexString);
+	return ethers.toUtf8String(hexString);
 }
-export let tokenToUsd = async function (token: number, ico: Contract) {
+/*export let tokenToUsd = async function (token: number, ico: Contract) {
 	console.log("UUSD_PER_TOKEN: ");
 	let tokenInfo = await ico.getPaymentToken('FOO');
 	let UUSD_PER_TOKEN = tokenInfo[2];
@@ -97,10 +96,10 @@ export let usdToToken = async function (usd: number, ico: Contract) {
 export let usdToTokenWithDecimals = async function (usd: number, ico: Contract) {
 	let change = await usdToToken(usd, ico) * 10**18;
 	return parseInt(change.toString());
-}
+}*/
 
 // logs
-export let logICOStatus = async (ico: Contract) => {
+/*export let logICOStatus = async (ico: Contract) => {
 
 	console.log("\getTotaluUSDInvested: " + await ico.getTotaluUSDInvested() + " USD");
 
@@ -116,10 +115,10 @@ export let logICOStatus = async (ico: Contract) => {
 		console.log("\t\t* " + investors[i] + " ether: " + weiToUsd(ether) + " USD" + "; tokens: " + tokens + " CYGAS = " + (uusd/10**6) + " USD");
 	}
 
-}
+}*/
 
 // transfer helpers
-export let testTransferCoin = async (addr: SignerWithAddress, usdAmount: number, ico: Contract) => {
+/*export let testTransferCoin = async (addr: SignerWithAddress, usdAmount: number, ico: Contract) => {
 	console.log("purchase of : " + usdAmount + " USD = " + usdToWei(usdAmount) + " Wei by " + addr.address);
 	return await addr.sendTransaction({
 		to: ico.address,
@@ -135,16 +134,16 @@ export let testTransferToken = async (addr: SignerWithAddress, token: string, us
 	let UUSD_PER_TOKEN = tokenInfo[2];
 	let rawAmount = usdAmount * 1e6 / UUSD_PER_TOKEN;
 	let decimals = tokenInfo[3];
-	let amountToTransfer = ethers.utils.parseUnits(rawAmount.toString(), decimals).toString();
+	let amountToTransfer = ethers.parseUnits(rawAmount.toString(), decimals).toString();
 	await foo.connect(addr).approve(ico.address, amountToTransfer);
 	return await ico.connect(addr).depositTokens(token, amountToTransfer);
-};
+};*/
 
 
 // diamond
 export const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 }
 
-export let getSelectors = function (contract:Contract) {
+/*export let getSelectors = function (contract:BaseContract) {
 	const signatures: string[] = Object.keys(contract.interface.functions);
 	return signatures.reduce((acc: string[], val) => {
 			if (val !== 'init(bytes)') {
@@ -152,18 +151,40 @@ export let getSelectors = function (contract:Contract) {
 			}
 			return acc;
 	}, []);
+}*/
+/**
+ * Interface mapping function signatures to their 4-byte hex selectors
+ */
+export interface FunctionSelectors {
+  [signature: string]: string;
+}
+/**
+ * Calculates all public and external function selectors for a given Hardhat contract instance.
+ * @param contract The deployed contract instance or an attached contract instance.
+ * @returns An object containing function signatures as keys and selectors as values.
+ */
+export function getSelectors(contract: BaseContract): FunctionSelectors {
+  const selectors: FunctionSelectors = {};
+
+  // Ethers v6 exposes all ABI fragments through contract.interface
+  contract.interface.forEachFunction((fragment) => {
+    // fragment.selector retrieves the calculated 4-byte Keccak-256 hash automatically
+    selectors[fragment.format()] = fragment.selector;
+  });
+
+  return selectors;
 }
 export let removeSelectors = function (selectors: string[], removeSelectors: string[]) {
 	selectors = selectors.filter(v => !removeSelectors.includes(v))
 	return selectors
 }
-export let logSelectors = function (contract:Contract) {
+/*export let logSelectors = function (contract:Contract) {
 	const signatures: string[] = Object.keys(contract.interface.functions);
 	return signatures.reduce((acc: string[], val) => {
 		console.log(val + '->' + contract.interface.getSighash(val));
 		return acc;
 	}, []);
-}
+}*/
 
 // extractAbi
 export const extractAbi = async () => {

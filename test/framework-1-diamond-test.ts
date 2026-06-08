@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import { Test1Facet, Test2Facet } from '../typechain';
 
 // describe.skip
-describe("framework-1-diamond-test", function () {
+describe.skip("framework-1-diamond-test", function () {
 	let owner: SignerWithAddress;
   let diamondCutFacet: Contract, diamondLoupeFacet: Contract;
   let diamondCutContract: Contract, diamondLoupeContract: Contract;

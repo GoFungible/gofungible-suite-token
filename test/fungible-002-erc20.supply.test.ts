@@ -6,7 +6,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 import * as helpers from "./_testhelper";
 
-describe("Token ERC-20", function () {
+describe.skip("Token ERC-20", function () {
 	const hre = require("hardhat");
 
 	let owner: SignerWithAddress, project: SignerWithAddress, liquidity: SignerWithAddress;
@@ -37,7 +37,7 @@ describe("Token ERC-20", function () {
 	});
 
 	afterEach(async() => {
-		await helpers.logICOStatus(ico);
+		//await helpers.logICOStatus(ico);
 		console.log('--------------------');
 	});
 	

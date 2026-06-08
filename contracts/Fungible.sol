@@ -5,11 +5,11 @@ import "./erc-20/IERC20.sol";
 import "./erc-20/IERC8054.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/IRelayer.sol";
+import "./extensions/framework/LibDiamondStorage.sol";
 import "./extensions/IEntryFacet.sol";
-import "./extensions/LibDiamondStorage.sol";
 import "./IFungible.sol";
 
-contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
+contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 
 	// ************************************************************************************************
 	// ******************************************** Contract ******************************************
@@ -59,14 +59,8 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	
 	mapping(address => uint256) private _balances;
 	mapping(address => mapping(address => uint256)) private _allowances;
-
-	// Events
-	//event Transfer(address indexed from, address indexed to, uint256 value);
-	//event Approval(address indexed owner, address indexed spender, uint256 value);
 			
-	// ERC-20 Functions
-
-	
+	// ERC-20 Functions	
 	function totalSupply() public view returns (uint256) {
 			return _totalSupply;
 	}
@@ -75,20 +69,6 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 			return _balances[account];
 	}
 	
-	function transfer(address to, uint256 amount) public returns (bool) {
-		_transfer(msg.sender, to, amount);
-		return true;
-	}
-	
-	function allowance(address owner_, address spender) public view returns (uint256) {
-		return _allowances[owner_][spender];
-	}
-	
-	function approve(address spender, uint256 amount) public returns (bool) {
-		_approve(msg.sender, spender, amount);
-		return true;
-	}
-
 	// ************************************************************************************************
 	// ********************************** Supply Version Protected (IERC8054) *************************
 	// ************************************************************************************************
@@ -107,19 +87,10 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	// ************************************************************************************************
 	// **************************************** ERC-20 Transfer ***************************************
 	// ************************************************************************************************
-	function _approve(address owner_, address spender, uint256 amount) internal {
-		require(owner_ != address(0), "ERC20: approve from zero address");
-		require(spender != address(0), "ERC20: approve to zero address");
-		
-		_allowances[owner_][spender] = amount;
-		emit Approval(owner_, spender, amount);
-	}
-	
-	function _spendAllowance(address owner_, address spender, uint256 amount) internal {
-		uint256 currentAllowance = _allowances[owner_][spender];
-		require(currentAllowance >= amount, "ERC20: insufficient allowance");
-		
-		_approve(owner_, spender, currentAllowance - amount);
+	// transfer
+	function transfer(address to, uint256 amount) public returns (bool) {
+		_transfer(msg.sender, to, amount);
+		return true;
 	}
 
 	function transferFrom(address from, address to, uint256 amount) public returns (bool) {
@@ -141,6 +112,31 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 		entryFacet._afterTokenTransfer(from, to, amount);
 
 		emit Transfer(from, to, amount);
+	}
+
+	// allowance
+	function allowance(address owner_, address spender) public view returns (uint256) {
+		return _allowances[owner_][spender];
+	}
+	
+	function approve(address spender, uint256 amount) public returns (bool) {
+		_approve(msg.sender, spender, amount);
+		return true;
+	}
+
+	function _approve(address owner_, address spender, uint256 amount) internal {
+		require(owner_ != address(0), "ERC20: approve from zero address");
+		require(spender != address(0), "ERC20: approve to zero address");
+		
+		_allowances[owner_][spender] = amount;
+		emit Approval(owner_, spender, amount);
+	}
+	
+	function _spendAllowance(address owner_, address spender, uint256 amount) internal {
+		uint256 currentAllowance = _allowances[owner_][spender];
+		require(currentAllowance >= amount, "ERC20: insufficient allowance");
+		
+		_approve(owner_, spender, currentAllowance - amount);
 	}
 
 	// ************************************************************************************************
@@ -377,19 +373,6 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	// ******************************************* Extensions *****************************************
 	// ************************************************************************************************
 
-	function setReceiveFacet(address payable receiveFacet_) external {
-		require(receiveFacet_ !=  address(0), "Diamond: Address cannot be null");
-
-		LibDiamondStorage.DiamondStorage storage ds;
-		bytes32 position = LibDiamondStorage.DIAMOND_STORAGE_POSITION;
-		assembly {
-			ds.slot := position
-		}
-
-		//console.log('setReceiveFacet', receiveFacet_);
-		ds.receiveFacet = receiveFacet_;
-	}
-
 	// Storage for the interface implementation
 	IEntryFacet public entryFacet;
 
@@ -482,6 +465,19 @@ contract NodeToken is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 					return(0, returndatasize())
 				}
 		}
+	}
+
+	function setReceiveFacet(address payable receiveFacet_) external {
+		require(receiveFacet_ !=  address(0), "Diamond: Address cannot be null");
+
+		LibDiamondStorage.DiamondStorage storage ds;
+		bytes32 position = LibDiamondStorage.DIAMOND_STORAGE_POSITION;
+		assembly {
+			ds.slot := position
+		}
+
+		//console.log('setReceiveFacet', receiveFacet_);
+		ds.receiveFacet = receiveFacet_;
 	}
 
 }

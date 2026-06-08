@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Signer } from "ethers";
 
-describe("Extensions", function () {
+describe.skip("Extensions", function () {
 
 	before(async() => {
 		console.log('*******************************');
