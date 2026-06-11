@@ -54,16 +54,21 @@ describe.skip("Token ERC-20", function () {
 	});
 
 	/********************************************************************************************************/
-	/*************************************************** metadata *******************************************/
+	/*************************************************** supply *********************************************/
 	/********************************************************************************************************/
-	it("Should return symbol.", async() => {
-		
+	it("Should have correct initial supply", async function () {
+		//const totalSupply = await fungible.totalSupply();
+		//expect(totalSupply).to.equal(ethers.parseEther("1000000"));
 	});
-	it("Should return name.", async() => {
+
+	it("Should transfer tokens", async function () {
+		//const amount = ethers.parseEther("100");
+		//const user1Addr = await user1.getAddress();
 		
-	});
-	it("Should return decimals.", async() => {
+		//await fungible.connect(owner).transfer(user1Addr, amount);
 		
+		//const balance = await fungible.balanceOf(user1Addr);
+		//expect(balance).to.equal(amount);
 	});
 
 	/********************************************************************************************************/
