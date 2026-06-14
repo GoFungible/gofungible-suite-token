@@ -140,6 +140,104 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	}
 
 	// ************************************************************************************************
+	// ******************************************** Relayer *******************************************
+	// ************************************************************************************************
+	// Storage for the interface implementation
+	IRelayer public myRelayer;
+
+	event RelayerUpdated(address indexed oldImplementation, address indexed newImplementation);
+
+	function setRelayer(address _newImplementation) external {
+			require(msg.sender == _owner, "Ownable: caller is not the owner");
+			require(_newImplementation != address(0), "Invalid address");
+			require(_isContract(_newImplementation), "Address must be a contract");
+			
+			address oldImplementation = address(myRelayer);
+			myRelayer = IRelayer(_newImplementation);
+			
+			emit RelayerUpdated(oldImplementation, _newImplementation);
+	}
+	
+	// Get the current implementation
+	function getRelayer() external view returns (address) {
+			return address(myRelayer);
+	}
+
+	// ************************************************************************************************
+	// ******************************* Relayer Timelock Protection ************************************
+	// ************************************************************************************************
+
+	uint256 DELAY = 0 days;
+
+	string public currentResource1;
+	string public timelockedResource;
+	uint256 public availableFromTime; // 0 = no pending change
+
+	function scheduleByTimelock(string calldata _new) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		timelockedResource = _new;
+		availableFromTime = block.timestamp + DELAY;
+	}
+	
+	function getResourceByTimelock() public returns (string memory) {
+			// Auto-switch to new resource if timelock has passed
+			if (availableFromTime > 0 && block.timestamp >= availableFromTime) {
+					currentResource1 = timelockedResource;
+					delete timelockedResource;
+					delete availableFromTime;
+					delete DELAY;
+			}
+			return currentResource1;
+	}
+	
+	function getPendingTimelock() public view returns (string memory, uint256) {
+			return (timelockedResource, availableFromTime);
+	}
+
+	// ************************************************************************************************
+	// ******************************* Relayer Votation Protected *************************************
+	// ************************************************************************************************
+
+	uint256 VOTES = 0;
+	mapping(string => uint256) public proposalVotes;
+	mapping(address => mapping(string => bool)) public hasVoted;
+
+	string public currentResource2;
+	string public votedResource;
+	uint256 public availableFromVote;
+
+	function scheduleByVotes(string calldata _new) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		votedResource = _new;
+		availableFromVote = block.timestamp + DELAY;
+	}
+
+	function vote() external {
+			require(bytes(votedResource).length > 0, "No active proposal");
+			require(!hasVoted[msg.sender][votedResource], "Already voted");
+			
+			bool userVoted = hasVoted[msg.sender][votedResource];
+			require(!userVoted, "No voting power");
+			
+			hasVoted[msg.sender][votedResource] = true;
+	}
+	
+	function getResourceByVotes() public returns (string memory) {
+			// Auto-switch to new resource if timelock has passed
+			if (availableFromVote > 0 && block.timestamp >= availableFromVote) {
+					currentResource2 = votedResource;
+					delete votedResource;
+					delete availableFromVote;
+					delete VOTES;
+			}
+			return currentResource2;
+	}
+	
+	function getPendingVotes() public view returns (string memory, uint256) {
+			return (votedResource, availableFromVote);
+	}
+
+	// ************************************************************************************************
 	// *************************************** ERC-20X ************************************************
 	// ************************************************************************************************   
 	uint256 private _globalSupply;
@@ -270,103 +368,6 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	// Update remote supply transfer
 	function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
 			receiveSyncNodes(sourceChain, destChain, amount);
-	}
-
-	// ************************************************************************************************
-	// ******************************************** Relayer *******************************************
-	// ************************************************************************************************
-	// Storage for the interface implementation
-	IRelayer public myRelayer;
-
-	event RelayerUpdated(address indexed oldImplementation, address indexed newImplementation);
-
-	function setRelayer(address _newImplementation) external {
-			require(_newImplementation != address(0), "Invalid address");
-			require(_isContract(_newImplementation), "Address must be a contract");
-			
-			address oldImplementation = address(myRelayer);
-			myRelayer = IRelayer(_newImplementation);
-			
-			emit RelayerUpdated(oldImplementation, _newImplementation);
-	}
-	
-	// Get the current implementation
-	function getRelayer() external view returns (address) {
-			return address(myRelayer);
-	}
-
-	// ************************************************************************************************
-	// ******************************* Relayer Timelock Protection ************************************
-	// ************************************************************************************************
-
-	uint256 DELAY = 0 days;
-
-	string public currentResource1;
-	string public timelockedResource;
-	uint256 public availableFromTime; // 0 = no pending change
-
-	function scheduleByTimelock(string calldata _new) external {
-		require(msg.sender == _owner, "Only owner");
-		timelockedResource = _new;
-		availableFromTime = block.timestamp + DELAY;
-	}
-	
-	function getResourceByTimelock() public returns (string memory) {
-			// Auto-switch to new resource if timelock has passed
-			if (availableFromTime > 0 && block.timestamp >= availableFromTime) {
-					currentResource1 = timelockedResource;
-					delete timelockedResource;
-					delete availableFromTime;
-					delete DELAY;
-			}
-			return currentResource1;
-	}
-	
-	function getPendingTimelock() public view returns (string memory, uint256) {
-			return (timelockedResource, availableFromTime);
-	}
-
-	// ************************************************************************************************
-	// ******************************* Relayer Votation Protected *************************************
-	// ************************************************************************************************
-
-	uint256 VOTES = 0;
-	mapping(string => uint256) public proposalVotes;
-	mapping(address => mapping(string => bool)) public hasVoted;
-
-	string public currentResource2;
-	string public votedResource;
-	uint256 public availableFromVote;
-
-	function scheduleByVotes(string calldata _new) external {
-		require(msg.sender == _owner, "Only owner");
-		votedResource = _new;
-		availableFromVote = block.timestamp + DELAY;
-	}
-
-	function vote() external {
-			require(bytes(votedResource).length > 0, "No active proposal");
-			require(!hasVoted[msg.sender][votedResource], "Already voted");
-			
-			bool userVoted = hasVoted[msg.sender][votedResource];
-			require(!userVoted, "No voting power");
-			
-			hasVoted[msg.sender][votedResource] = true;
-	}
-	
-	function getResourceByVotes() public returns (string memory) {
-			// Auto-switch to new resource if timelock has passed
-			if (availableFromVote > 0 && block.timestamp >= availableFromVote) {
-					currentResource2 = votedResource;
-					delete votedResource;
-					delete availableFromVote;
-					delete VOTES;
-			}
-			return currentResource2;
-	}
-	
-	function getPendingVotes() public view returns (string memory, uint256) {
-			return (votedResource, availableFromVote);
 	}
 
 	// ************************************************************************************************
