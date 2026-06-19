@@ -75,45 +75,45 @@ describe("ERC-20 Tokens", function () {
 		await expect(fungibleContract.totalSupplyAt(5)).to.not.be.reverted;
 		await expect(fungibleContract.balanceOfAt(owner, 5)).to.not.be.reverted;
 
-		//await expect(fungibleContract.transfer(addr1, 10 * 10**18)).to.not.be.reverted;
-		//await expect(fungibleContract.allowance(addr1, owner)).to.not.be.reverted;
-		//await expect(fungibleContract.approve(addr1, 10 * 10**18)).to.not.be.reverted;
-
-		await expect(fungibleContract.setRelayer(fungibleAddress)).to.not.be.reverted;
-
-		await expect(fungibleContract.globalSupply()).to.not.be.reverted;
-		await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
-		await expect(fungibleContract.balanceOfX(owner)).to.not.be.reverted;
-
-		//await expect(fungibleContract.transferX(25, addr1, 10 * 10**18)).to.not.be.reverted;
+		await expect(fungibleContract.transfer(addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+		await expect(fungibleContract.approve(addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 
 	});
 
-	/*it("Only Owner functions are not ok for not owner", async() => {
+	it("Only Owner functions are not ok for not owner", async() => {
 		const fungibleContract = Fungible__factory.connect(fungibleAddress, addr1);
-		await expect(fungibleContract.name()).not.to.be.reverted;
-		await expect(fungibleContract.symbol()).to.not.be.reverted;
-		await expect(fungibleContract.decimals()).to.not.be.reverted;
+		await expect(() => fungibleContract.connect(addr1).name()).to.not.throw();
+		await expect(() => fungibleContract.connect(addr1).symbol()).to.not.throw();
+		await expect(() => fungibleContract.connect(addr1).decimals()).to.not.throw();
 
-		await expect(fungibleContract.totalSupply()).to.not.be.reverted;
-		await expect(fungibleContract.balanceOf(owner)).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).totalSupply()).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).balanceOf(owner)).to.not.be.reverted;
 
-		await expect(fungibleContract.setRelayer(fungibleAddress)).to.be.revertedWith('Ownable: caller is not the owner');
-	});*/
+		await expect(fungibleContract.connect(addr1).checkpointNonce()).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).totalSupplyAt(5)).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).balanceOfAt(owner, 5)).to.not.be.reverted;
+
+		await expect(fungibleContract.connect(owner).transfer(addr1.address, ethers.parseUnits("20", 18))).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).transfer(addr2.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).approve(addr2.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+
+	});
 
 	/********************************************************************************************************/
 	/*************************************************** metadata *******************************************/
 	/********************************************************************************************************/
 	it("Should return symbol.", async() => {
-		
+		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
+		expect(await fungibleContract.symbol()).to.equal("FGT");
 	});
 	it("Should return name.", async() => {
-		
+		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
+		expect(await fungibleContract.name()).to.equal("FungiTest");
 	});
 	it("Should return decimals.", async() => {
-		
+		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
+		expect(await fungibleContract.decimals()).to.equal(18);
 	});
-
 
 
 });

@@ -9,6 +9,8 @@ import "./extensions/framework/LibDiamondStorage.sol";
 import "./extensions/IEntryFacet.sol";
 import "./IFungible.sol";
 
+import "hardhat/console.sol";
+
 contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 
 	// ************************************************************************************************
@@ -41,15 +43,15 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	uint8 private _decimals;
 
 	function name() public view returns (string memory) {
-			return _name;
+		return _name;
 	}
 	
 	function symbol() public view returns (string memory) {
-			return _symbol;
+		return _symbol;
 	}
 	
 	function decimals() public view returns (uint8) {
-			return _decimals;
+		return _decimals;
 	}
 
 	// ************************************************************************************************
@@ -104,12 +106,16 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 		require(to != address(0), "ERC20: transfer to zero address");
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
 
-		entryFacet._beforeTokenTransfer(from, to, amount);
+		if (address(entryFacet) != address(0)) {
+			entryFacet._beforeTokenTransfer(from, to, amount);
+		}
 		
 		_balances[from] -= amount;
 		_balances[to] += amount;
 		
-		entryFacet._afterTokenTransfer(from, to, amount);
+		if (address(entryFacet) != address(0)) {
+			entryFacet._afterTokenTransfer(from, to, amount);
+		}
 
 		emit Transfer(from, to, amount);
 	}
