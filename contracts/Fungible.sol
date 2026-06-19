@@ -64,11 +64,11 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 			
 	// ERC-20 Functions	
 	function totalSupply() public view returns (uint256) {
-			return _totalSupply;
+		return _totalSupply;
 	}
 	
 	function balanceOf(address account) public view returns (uint256) {
-			return _balances[account];
+		return _balances[account];
 	}
 	
 	// ************************************************************************************************
