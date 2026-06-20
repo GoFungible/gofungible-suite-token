@@ -71,10 +71,6 @@ describe("ERC-20 Tokens", function () {
 		await expect(fungibleContract.totalSupply()).to.not.be.reverted;
 		await expect(fungibleContract.balanceOf(owner)).to.not.be.reverted;
 
-		await expect(fungibleContract.checkpointNonce()).to.not.be.reverted;
-		await expect(fungibleContract.totalSupplyAt(5)).to.not.be.reverted;
-		await expect(fungibleContract.balanceOfAt(owner, 5)).to.not.be.reverted;
-
 		await expect(fungibleContract.transfer(addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 		await expect(fungibleContract.approve(addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 
@@ -88,10 +84,6 @@ describe("ERC-20 Tokens", function () {
 
 		await expect(fungibleContract.connect(addr1).totalSupply()).to.not.be.reverted;
 		await expect(fungibleContract.connect(addr1).balanceOf(owner)).to.not.be.reverted;
-
-		await expect(fungibleContract.connect(addr1).checkpointNonce()).to.not.be.reverted;
-		await expect(fungibleContract.connect(addr1).totalSupplyAt(5)).to.not.be.reverted;
-		await expect(fungibleContract.connect(addr1).balanceOfAt(owner, 5)).to.not.be.reverted;
 
 		await expect(fungibleContract.connect(owner).transfer(addr1.address, ethers.parseUnits("20", 18))).to.not.be.reverted;
 		await expect(fungibleContract.connect(addr1).transfer(addr2.address, ethers.parseUnits("10", 18))).to.not.be.reverted;

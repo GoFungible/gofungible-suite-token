@@ -2,16 +2,18 @@
 pragma solidity >=0.8.30;
 
 import "./erc-20/IERC20.sol";
-import "./erc-20/IERC8054.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/IRelayer.sol";
 import "./extensions/framework/LibDiamondStorage.sol";
-import "./extensions/IEntryFacet.sol";
+import "./extensions/IExtTransferINBlock.sol";
+import "./extensions/IExtTransferINUpdate.sol";
+import "./extensions/IExtTransferINLog.sol";
+import "./extensions/IExtTransferOUT.sol";
 import "./IFungible.sol";
 
 import "hardhat/console.sol";
 
-contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
+contract Fungible is IERC20, IERC20x, IFungible {
 
 	// ************************************************************************************************
 	// ******************************************** Contract ******************************************
@@ -55,13 +57,13 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	}
 
 	// ************************************************************************************************
-	// ******************************************** ERC-20 ********************************************
+	// **************************************** ERC-20 Supply *****************************************
 	// ************************************************************************************************   
 	uint256 private _totalSupply;
 	
 	mapping(address => uint256) private _balances;
 	mapping(address => mapping(address => uint256)) private _allowances;
-			
+
 	// ERC-20 Functions	
 	function totalSupply() public view returns (uint256) {
 		return _totalSupply;
@@ -72,32 +74,20 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	}
 	
 	// ************************************************************************************************
-	// ********************************** Supply Version Protected (IERC8054) *************************
-	// ************************************************************************************************
-	function totalSupplyAt(uint48 checkpoint) external view returns (uint256) {
-		return 0;
-	}
-
-	function balanceOfAt(address account, uint48 checkpoint) external view returns (uint256) {
-		return 0;
-	}
-
-	function checkpointNonce() external view returns (uint48) {
-		return 0;
-	}
-
-	// ************************************************************************************************
 	// **************************************** ERC-20 Transfer ***************************************
 	// ************************************************************************************************
 	// transfer
-	function transfer(address to, uint256 amount) public returns (bool) {
-		_transfer(msg.sender, to, amount);
-		return true;
-	}
-
 	function transferFrom(address from, address to, uint256 amount) public returns (bool) {
 		_spendAllowance(from, msg.sender, amount);
 		_transfer(from, to, amount);
+		return true;
+	}
+
+	function transfer(address to, uint256 amount) public returns (bool) {
+
+		// do the actual operation
+		_transfer(msg.sender, to, amount);
+
 		return true;
 	}
 	
@@ -106,16 +96,28 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 		require(to != address(0), "ERC20: transfer to zero address");
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
 
-		if (address(entryFacet) != address(0)) {
-			entryFacet._beforeTokenTransfer(from, to, amount);
-		}
+		// run INBLOCK extensions
+		for(uint i=0; i<extTransportINBlock.length; i++){
+      IExtTransferINBlock(extTransportINBlock[i])._beforeTokenTransferBlock(from, to, amount);
+    }
+
+		// run INUPDATE extensions
+		for(uint i=0; i<extTransportINLog.length; i++){
+      IExtTransferINUpdate(extTransportINUpdate[i])._beforeTokenTransferUpdate(from, to, amount);
+    }
+
+		// run INLOG extensions
+		for(uint i=0; i<extTransportINLog.length; i++){
+      IExtTransferINLog(extTransportINLog[i])._beforeTokenTransferLog(from, to, amount);
+    }
 		
 		_balances[from] -= amount;
 		_balances[to] += amount;
 		
-		if (address(entryFacet) != address(0)) {
-			entryFacet._afterTokenTransfer(from, to, amount);
-		}
+		// run OUT extensions
+		for(uint i=0; i<extTransportINLog.length; i++){
+      IExtTransferOUT(extTransportOUT[i])._afterTokenTransfer(from, to, amount);
+    }
 
 		emit Transfer(from, to, amount);
 	}
@@ -146,105 +148,7 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	}
 
 	// ************************************************************************************************
-	// ******************************************** Relayer *******************************************
-	// ************************************************************************************************
-	// Storage for the interface implementation
-	IRelayer public myRelayer;
-
-	event RelayerUpdated(address indexed oldImplementation, address indexed newImplementation);
-
-	function setRelayer(address _newImplementation) external {
-			require(msg.sender == _owner, "Ownable: caller is not the owner");
-			require(_newImplementation != address(0), "Invalid address");
-			require(_isContract(_newImplementation), "Address must be a contract");
-			
-			address oldImplementation = address(myRelayer);
-			myRelayer = IRelayer(_newImplementation);
-			
-			emit RelayerUpdated(oldImplementation, _newImplementation);
-	}
-	
-	// Get the current implementation
-	function getRelayer() external view returns (address) {
-			return address(myRelayer);
-	}
-
-	// ************************************************************************************************
-	// ******************************* Relayer Timelock Protection ************************************
-	// ************************************************************************************************
-
-	uint256 DELAY = 0 days;
-
-	string public currentResource1;
-	string public timelockedResource;
-	uint256 public availableFromTime; // 0 = no pending change
-
-	function scheduleByTimelock(string calldata _new) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		timelockedResource = _new;
-		availableFromTime = block.timestamp + DELAY;
-	}
-	
-	function getResourceByTimelock() public returns (string memory) {
-			// Auto-switch to new resource if timelock has passed
-			if (availableFromTime > 0 && block.timestamp >= availableFromTime) {
-					currentResource1 = timelockedResource;
-					delete timelockedResource;
-					delete availableFromTime;
-					delete DELAY;
-			}
-			return currentResource1;
-	}
-	
-	function getPendingTimelock() public view returns (string memory, uint256) {
-			return (timelockedResource, availableFromTime);
-	}
-
-	// ************************************************************************************************
-	// ******************************* Relayer Votation Protected *************************************
-	// ************************************************************************************************
-
-	uint256 VOTES = 0;
-	mapping(string => uint256) public proposalVotes;
-	mapping(address => mapping(string => bool)) public hasVoted;
-
-	string public currentResource2;
-	string public votedResource;
-	uint256 public availableFromVote;
-
-	function scheduleByVotes(string calldata _new) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		votedResource = _new;
-		availableFromVote = block.timestamp + DELAY;
-	}
-
-	function vote() external {
-			require(bytes(votedResource).length > 0, "No active proposal");
-			require(!hasVoted[msg.sender][votedResource], "Already voted");
-			
-			bool userVoted = hasVoted[msg.sender][votedResource];
-			require(!userVoted, "No voting power");
-			
-			hasVoted[msg.sender][votedResource] = true;
-	}
-	
-	function getResourceByVotes() public returns (string memory) {
-			// Auto-switch to new resource if timelock has passed
-			if (availableFromVote > 0 && block.timestamp >= availableFromVote) {
-					currentResource2 = votedResource;
-					delete votedResource;
-					delete availableFromVote;
-					delete VOTES;
-			}
-			return currentResource2;
-	}
-	
-	function getPendingVotes() public view returns (string memory, uint256) {
-			return (votedResource, availableFromVote);
-	}
-
-	// ************************************************************************************************
-	// *************************************** ERC-20X ************************************************
+	// *************************************** ERC-20X Supply *****************************************
 	// ************************************************************************************************   
 	uint256 private _globalSupply;
 
@@ -276,21 +180,7 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	}
 
 	// ************************************************************************************************
-	// ************************************** SupplyX Version Protected *******************************
-	// ************************************************************************************************
-
-
-
-
-	// ************************************************************************************************
-	// ************************************* Supplies Migration Protection ****************************
-	// ************************************************************************************************
-
-
-
-
-	// ************************************************************************************************
-	// ******************************************* TransferX ******************************************
+	// ************************************* ERC-20X TransferX ****************************************
 	// ************************************************************************************************
 	// Performs supply transfer
 	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
@@ -363,7 +253,7 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 	}
 
 	function _transferCrosschainTransaction(uint256 destChain, address destAddress, uint256 amount) internal {
-		myRelayer.sendCrosschainSupply(destChain, destAddress, amount);
+		IRelayer(_relayer).sendCrosschainSupply(destChain, destAddress, amount);
 	}
 	function receiveCrosschainTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
 		receiveCrosschain(sourceChain, destChain, amount);
@@ -376,38 +266,159 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 			receiveSyncNodes(sourceChain, destChain, amount);
 	}
 
-	// ************************************************************************************************
-	// ******************************************* Extensions *****************************************
-	// ************************************************************************************************
+	// *************************************************************************************************
+	// ***************************************** Resources *********************************************
+	// *************************************************************************************************
+	// Relayer
+	address private _relayer;
 
-	// Storage for the interface implementation
-	IEntryFacet public entryFacet;
+	// Extensions
+	address[] public extTransportINLog;
 
-	event FacetUpdated(address indexed oldImplementation, address indexed newImplementation);
+	address[] public extTransportINUpdate;
 
-	function setEntryFacet(address _newImplementation) external {
-			require(_newImplementation != address(0), "Invalid address");
-			
-			// Optional: Verify the address implements the interface
-			require(_isContract(_newImplementation), "Address must be a contract");
-			
-			address oldImplementation = address(myRelayer);
-			entryFacet = IEntryFacet(_newImplementation);
-			
-			emit FacetUpdated(oldImplementation, _newImplementation);
+	address[] public extTransportINBlock;
+
+	address[] public extTransportOUT;
+
+	// *************************************************************************************************
+	// ***************************************** Resources Plugin **************************************
+	// *************************************************************************************************
+	enum ResourceTypes{ 
+		RELAYER, 
+		INBLOCK, 
+		INUPDATE, 
+		INLOG,
+		OUT 
+	}
+
+	struct PendingResource {
+		uint resourceType;
+		address resourceAddress;
+		uint256 releaseDate;
+		uint256 minVotes;
+	}
+
+	PendingResource[] public pendingResources;
+
+	event ResourceAdded(address indexed newImplementation);
+
+	event ResourceUpdated(address indexed oldImplementation, address indexed newImplementation);
+
+	function addResource(uint16 _resourceType, address _newResourceAddress, uint256 releaseDate, uint256 minVotes) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(_newResourceAddress != address(0), "Invalid address");
+		require(_isContract(_newResourceAddress), "Address must be a contract");
+
+		pendingResources.push(PendingResource(_resourceType, _newResourceAddress, releaseDate, minVotes));
+				
+		emit ResourceAdded(_newResourceAddress);
+	}
+
+	function getPendingResources() external view returns (PendingResource[] memory) {
+		return pendingResources;
+	}
+
+	function releaseResource(uint16 _resourceId) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+
+		PendingResource memory pendingResource = pendingResources[_resourceId];
+		uint resourceType = pendingResource.resourceType;
+		address resourceAddress = pendingResource.resourceAddress;
+
+		if (resourceType == uint(ResourceTypes.RELAYER)) {
+			_relayer = address(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.INBLOCK)) {
+			extTransportINBlock.push(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.INUPDATE)) {
+			extTransportINUpdate.push(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.INLOG)) {
+			extTransportINLog.push(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.OUT)) {
+			extTransportOUT.push(resourceAddress);
+		}	
 	}
 
 	function _isContract(address _addr) private view returns (bool) {
 			uint32 size;
 			assembly {
-					size := extcodesize(_addr)
+				size := extcodesize(_addr)
 			}
 			return size > 0;
 	}
 
-	// Get the current implementation
-	function getEntryFacet() external view returns (address) {
-			return address(myRelayer);
+	// ************************************************************************************************
+	// ******************************* Resource Timelock Protection ***********************************
+	// ************************************************************************************************
+
+	uint256 DELAY = 0 days;
+
+	string public currentResource1;
+	string public timelockedResource;
+	uint256 public availableFromTime; // 0 = no pending change
+
+	function scheduleByTimelock(string calldata _new) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		timelockedResource = _new;
+		availableFromTime = block.timestamp + DELAY;
+	}
+	
+	function getResourceByTimelock() public returns (string memory) {
+		// Auto-switch to new resource if timelock has passed
+		if (availableFromTime > 0 && block.timestamp >= availableFromTime) {
+			currentResource1 = timelockedResource;
+			delete timelockedResource;
+			delete availableFromTime;
+			delete DELAY;
+		}
+		return currentResource1;
+	}
+	
+	function getPendingTimelock() public view returns (string memory, uint256) {
+		return (timelockedResource, availableFromTime);
+	}
+
+	// ************************************************************************************************
+	// ******************************* Resource Votation Protected ************************************
+	// ************************************************************************************************
+
+	uint256 VOTES = 0;
+	mapping(string => uint256) public proposalVotes;
+	mapping(address => mapping(string => bool)) public hasVoted;
+
+	string public currentResource2;
+	string public votedResource;
+	uint256 public availableFromVote;
+
+	function scheduleByVotes(string calldata _new) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		votedResource = _new;
+		availableFromVote = block.timestamp + DELAY;
+	}
+
+	function vote() external {
+			require(bytes(votedResource).length > 0, "No active proposal");
+			require(!hasVoted[msg.sender][votedResource], "Already voted");
+			
+			bool userVoted = hasVoted[msg.sender][votedResource];
+			require(!userVoted, "No voting power");
+			
+			hasVoted[msg.sender][votedResource] = true;
+	}
+	
+	function getResourceByVotes() public returns (string memory) {
+			// Auto-switch to new resource if timelock has passed
+			if (availableFromVote > 0 && block.timestamp >= availableFromVote) {
+					currentResource2 = votedResource;
+					delete votedResource;
+					delete availableFromVote;
+					delete VOTES;
+			}
+			return currentResource2;
+	}
+	
+	function getPendingVotes() public view returns (string memory, uint256) {
+			return (votedResource, availableFromVote);
 	}
 
 	// ************************************************************************************************
@@ -486,5 +497,6 @@ contract Fungible is IERC20, IERC20x, IERC20Checkpointed, IFungible {
 		//console.log('setReceiveFacet', receiveFacet_);
 		ds.receiveFacet = receiveFacet_;
 	}
+
 
 }
