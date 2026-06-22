@@ -267,7 +267,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	}
 
 	// *************************************************************************************************
-	// ***************************************** Resources *********************************************
+	// ************************************* Approved Resources ****************************************
 	// *************************************************************************************************
 	// Relayer
 	address private _relayer;
@@ -282,7 +282,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	address[] public extTransportOUT;
 
 	// *************************************************************************************************
-	// ***************************************** Resources Plugin **************************************
+	// ************************************** Resources Injection **************************************
 	// *************************************************************************************************
 	enum ResourceTypes{ 
 		RELAYER, 
@@ -296,36 +296,54 @@ contract Fungible is IERC20, IERC20x, IFungible {
 		uint resourceType;
 		address resourceAddress;
 		uint256 releaseDate;
+		uint256 releaseNumVotes;
 		uint256 minVotes;
+		uint256 numVotes;
 	}
 
-	PendingResource[] public pendingResources;
+  uint[] public pendingResourceIds;
+
+  mapping (uint => PendingResource) pendingResources;
 
 	event ResourceAdded(address indexed newImplementation);
 
 	event ResourceUpdated(address indexed oldImplementation, address indexed newImplementation);
 
-	function addResource(uint16 _resourceType, address _newResourceAddress, uint256 releaseDate, uint256 minVotes) external {
+	function addResource(uint16 _resourceId, uint16 _resourceType, address _newResourceAddress, uint256 releaseDate, uint256 minVotes, uint256 numVotes) external {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		require(_newResourceAddress != address(0), "Invalid address");
 		require(_isContract(_newResourceAddress), "Address must be a contract");
 
-		pendingResources.push(PendingResource(_resourceType, _newResourceAddress, releaseDate, minVotes));
+		pendingResources[_resourceId] = PendingResource(_resourceType, _newResourceAddress, releaseDate, minVotes, numVotes, 0);
+		pendingResourceIds.push(_resourceId);
 				
 		emit ResourceAdded(_newResourceAddress);
 	}
 
-	function getPendingResources() external view returns (PendingResource[] memory) {
-		return pendingResources;
+	function getPendingResourcesIds() external view returns (uint[] memory) {
+		return pendingResourceIds;
 	}
 
-	function releaseResource(uint16 _resourceId) external {
+	function releaseResource(uint16 _resourceId, uint16 _position) external {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(_resourceId != pendingResourceIds[_position], "Position: position does not match resource");
 
 		PendingResource memory pendingResource = pendingResources[_resourceId];
+
+		// check if the resource can be released by time
+		uint256 releaseDate = pendingResource.releaseDate;
+		if (releaseDate > 0 && block.timestamp >= releaseDate)
+			return;
+
+		// check if the resource can be released by votes
+		uint256 minVotes = pendingResource.minVotes;
+		uint256 releaseNumVotes = pendingResource.releaseNumVotes;
+		if (releaseNumVotes < minVotes)
+			return;
+
+		// release resource
 		uint resourceType = pendingResource.resourceType;
 		address resourceAddress = pendingResource.resourceAddress;
-
 		if (resourceType == uint(ResourceTypes.RELAYER)) {
 			_relayer = address(resourceAddress);
 		} else if (resourceType == uint(ResourceTypes.INBLOCK)) {
@@ -336,89 +354,19 @@ contract Fungible is IERC20, IERC20x, IFungible {
 			extTransportINLog.push(resourceAddress);
 		} else if (resourceType == uint(ResourceTypes.OUT)) {
 			extTransportOUT.push(resourceAddress);
-		}	
+		}
+
+		// remove resource from the pending list
+		delete pendingResources[_resourceId];
+		delete pendingResourceIds[_position];
 	}
 
 	function _isContract(address _addr) private view returns (bool) {
-			uint32 size;
-			assembly {
-				size := extcodesize(_addr)
-			}
-			return size > 0;
-	}
-
-	// ************************************************************************************************
-	// ******************************* Resource Timelock Protection ***********************************
-	// ************************************************************************************************
-
-	uint256 DELAY = 0 days;
-
-	string public currentResource1;
-	string public timelockedResource;
-	uint256 public availableFromTime; // 0 = no pending change
-
-	function scheduleByTimelock(string calldata _new) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		timelockedResource = _new;
-		availableFromTime = block.timestamp + DELAY;
-	}
-	
-	function getResourceByTimelock() public returns (string memory) {
-		// Auto-switch to new resource if timelock has passed
-		if (availableFromTime > 0 && block.timestamp >= availableFromTime) {
-			currentResource1 = timelockedResource;
-			delete timelockedResource;
-			delete availableFromTime;
-			delete DELAY;
+		uint32 size;
+		assembly {
+			size := extcodesize(_addr)
 		}
-		return currentResource1;
-	}
-	
-	function getPendingTimelock() public view returns (string memory, uint256) {
-		return (timelockedResource, availableFromTime);
-	}
-
-	// ************************************************************************************************
-	// ******************************* Resource Votation Protected ************************************
-	// ************************************************************************************************
-
-	uint256 VOTES = 0;
-	mapping(string => uint256) public proposalVotes;
-	mapping(address => mapping(string => bool)) public hasVoted;
-
-	string public currentResource2;
-	string public votedResource;
-	uint256 public availableFromVote;
-
-	function scheduleByVotes(string calldata _new) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		votedResource = _new;
-		availableFromVote = block.timestamp + DELAY;
-	}
-
-	function vote() external {
-			require(bytes(votedResource).length > 0, "No active proposal");
-			require(!hasVoted[msg.sender][votedResource], "Already voted");
-			
-			bool userVoted = hasVoted[msg.sender][votedResource];
-			require(!userVoted, "No voting power");
-			
-			hasVoted[msg.sender][votedResource] = true;
-	}
-	
-	function getResourceByVotes() public returns (string memory) {
-			// Auto-switch to new resource if timelock has passed
-			if (availableFromVote > 0 && block.timestamp >= availableFromVote) {
-					currentResource2 = votedResource;
-					delete votedResource;
-					delete availableFromVote;
-					delete VOTES;
-			}
-			return currentResource2;
-	}
-	
-	function getPendingVotes() public view returns (string memory, uint256) {
-			return (votedResource, availableFromVote);
+		return size > 0;
 	}
 
 	// ************************************************************************************************
