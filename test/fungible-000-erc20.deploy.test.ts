@@ -73,6 +73,20 @@ describe("ERC-20 Tokens", function () {
 
 		await expect(fungibleContract.transfer(addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 		await expect(fungibleContract.approve(addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+		await expect(fungibleContract.allowance(owner.address, addr1.address)).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).transferFrom(owner.address, addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+
+		await expect(fungibleContract.globalSupply()).to.not.be.reverted;
+		await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
+		await expect(fungibleContract.balanceOfX(owner)).to.not.be.reverted;
+
+		//await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+
+		await expect(fungibleContract.addResource(45, 1, fungibleAddress, 0, 10, 10)).to.not.be.reverted;
+		await expect(fungibleContract.getPendingResourcesIds()).to.not.be.reverted;
+		//await expect(fungibleContract.releaseResource(45, 0)).to.not.be.reverted;
+
+		await expect(fungibleContract.setReceiveFacet(addr1.address)).to.not.be.reverted;
 
 	});
 
@@ -86,8 +100,20 @@ describe("ERC-20 Tokens", function () {
 		await expect(fungibleContract.connect(addr1).balanceOf(owner)).to.not.be.reverted;
 
 		await expect(fungibleContract.connect(owner).transfer(addr1.address, ethers.parseUnits("20", 18))).to.not.be.reverted;
-		await expect(fungibleContract.connect(addr1).transfer(addr2.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 		await expect(fungibleContract.connect(addr1).approve(addr2.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+		//await expect(fungibleContract.connect(addr1).transferFrom(addr1.address, addr2.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+
+		await expect(fungibleContract.connect(addr1).globalSupply()).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).getAllRemoteSupplies()).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).balanceOfX(addr1)).to.not.be.reverted;
+
+		await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith('Ownable: caller is not the owner');
+
+		await expect(fungibleContract.connect(addr1).addResource(45, 1, fungibleAddress, 0, 10, 10)).to.be.revertedWith('Ownable: caller is not the owner');
+		await expect(fungibleContract.connect(addr1).getPendingResourcesIds()).to.not.be.reverted;
+		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith('Ownable: caller is not the owner');
+
+		await expect(fungibleContract.connect(addr1).setReceiveFacet(addr1.address)).to.be.revertedWith('Ownable: caller is not the owner');
 
 	});
 

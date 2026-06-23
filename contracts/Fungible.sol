@@ -184,6 +184,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	// ************************************************************************************************
 	// Performs supply transfer
 	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
 		// do supply transation
 		_transferCrosschainTransaction(toChain, toAddress, amount);
@@ -361,7 +362,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 		delete pendingResourceIds[_position];
 	}
 
-	function _isContract(address _addr) private view returns (bool) {
+	function _isContract(address _addr) view internal returns (bool) {
 		uint32 size;
 		assembly {
 			size := extcodesize(_addr)
@@ -434,6 +435,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	}
 
 	function setReceiveFacet(address payable receiveFacet_) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		require(receiveFacet_ !=  address(0), "Diamond: Address cannot be null");
 
 		LibDiamondStorage.DiamondStorage storage ds;
