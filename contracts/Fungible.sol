@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.30;
+pragma solidity 0.8.30;
 
 import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
