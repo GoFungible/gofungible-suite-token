@@ -1,4 +1,3 @@
-// test/network.test.ts
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
@@ -6,7 +5,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import * as helpers from "./_testhelper";
 import { Fungible__factory } from "../typechain-types";
 
-describe("ERC-20 Tokens", function () {
+describe("Deploy Token", function () {
 	let owner: SignerWithAddress;
 	let addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, addrs;
 	let fungibleAddress: string;

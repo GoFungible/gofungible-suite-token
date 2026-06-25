@@ -1,10 +1,11 @@
-// test/network.test.ts
 import { expect } from "chai";
-import { ethers } from "hardhat";
-import hre from "hardhat";
+import hre, { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
-describe.skip("Extensions", function () {
+import * as helpers from "./_testhelper";
+import { Fungible__factory } from "../typechain-types";
+
+describe.skip("Deploy Extension", function () {
 
   let user1: SignerWithAddress;
   let user2: SignerWithAddress;
@@ -86,6 +87,7 @@ describe.skip("Extensions", function () {
 
 	});
 
+
 	/********************************************************************************************************/
 	/********************************************** DiamondLoupe ********************************************/
 	/********************************************************************************************************/
@@ -98,10 +100,6 @@ describe.skip("Extensions", function () {
 
 	
 
-
-	/********************************************************************************************************/
-	/*********************************************** Facets *************************************************/
-	/********************************************************************************************************/
 	
 	
 

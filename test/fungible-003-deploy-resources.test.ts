@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import * as helpers from "./_testhelper";
 import { Fungible__factory } from "../typechain-types";
 
-describe("ERC-20X Supply", function () {
+describe.skip("Deploy Resources", function () {
 	let owner: SignerWithAddress, project: SignerWithAddress, liquidity: SignerWithAddress;
 	let addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, addrs;
 	let fungibleAddress: string;
@@ -54,19 +54,30 @@ describe("ERC-20X Supply", function () {
 		console.log('--------- Ending Tests --------');
 	});
 
+	/********************************************************************************************************/
+	/*********************************************** Resources **********************************************/
+	/********************************************************************************************************/
+	it("Should be able to add resources", async() => {
+
+	});
+
+	it("Should be able to list resources", async() => {
+
+	});
 
 	/********************************************************************************************************/
-	/******************************************** Global Supply *********************************************/
+	/*************************************** Release Resources **********************************************/
 	/********************************************************************************************************/
-	
+	it("Should be able to release resources by Timelock Protection", async() => {
 
-	/********************************************************************************************************/
-	/************************************************ Balance ***********************************************/
-	/********************************************************************************************************/
+	});
 
+	it("Should be able to release resources by Votation Protection", async() => {
 
-	/********************************************************************************************************/
-	/************************************************ TransferX *********************************************/
-	/********************************************************************************************************/
+	});
+
+	it("Should be able to release resources by Timelock and Votation Protection", async() => {
+
+	});
 
 });

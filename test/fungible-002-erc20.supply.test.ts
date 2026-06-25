@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 import { Fungible__factory } from "../typechain-types";
 
-describe("Token ERC-20 - Supply", function () {
+describe("ERC-20 Supply", function () {
 	let owner: SignerWithAddress, project: SignerWithAddress, liquidity: SignerWithAddress;
 	let addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, addrs;
 	let fungibleAddress: string;

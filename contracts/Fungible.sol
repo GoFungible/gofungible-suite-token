@@ -270,10 +270,18 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	// *************************************************************************************************
 	// ************************************* Approved Resources ****************************************
 	// *************************************************************************************************
+	enum ResourceTypes{ 
+		RELAYER, 
+		INBLOCK, 
+		INUPDATE, 
+		INLOG,
+		OUT 
+	}
+
 	// Relayer
 	address private _relayer;
 
-	// Extensions
+	// ERC-20 Extensions
 	address[] public extTransportINLog;
 
 	address[] public extTransportINUpdate;
@@ -285,14 +293,6 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	// *************************************************************************************************
 	// ************************************** Resources Injection **************************************
 	// *************************************************************************************************
-	enum ResourceTypes{ 
-		RELAYER, 
-		INBLOCK, 
-		INUPDATE, 
-		INLOG,
-		OUT 
-	}
-
 	struct PendingResource {
 		uint resourceType;
 		address resourceAddress;
