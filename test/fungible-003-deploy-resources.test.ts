@@ -80,4 +80,28 @@ describe.skip("Deploy Resources", function () {
 
 	});
 
+	/********************************************************************************************************/
+	/***************************************** Run Resources ************************************************/
+	/********************************************************************************************************/
+	it("Should be able to run Relayer", async() => {
+
+	});
+
+	it("Should be able to run extTransportINBlock", async() => {
+
+	});
+
+	it("Should be able to run extTransportINUpdate", async() => {
+
+	});
+
+	it("Should be able to run extTransportINLog", async() => {
+
+	});
+
+	it("Should be able to run extTransportOUT", async() => {
+
+	});
+
+
 });

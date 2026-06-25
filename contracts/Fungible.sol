@@ -9,6 +9,10 @@ import "./extensions/IExtTransferINBlock.sol";
 import "./extensions/IExtTransferINUpdate.sol";
 import "./extensions/IExtTransferINLog.sol";
 import "./extensions/IExtTransferOUT.sol";
+import "./extensions/IExtTransferINBlockX.sol";
+import "./extensions/IExtTransferINUpdateX.sol";
+import "./extensions/IExtTransferINLogX.sol";
+import "./extensions/IExtTransferOUTX.sol";
 import "./IFungible.sol";
 
 import "hardhat/console.sol";
@@ -98,12 +102,13 @@ contract Fungible is IERC20, IERC20x, IFungible {
 
 		// run INBLOCK extensions
 		for(uint i=0; i<extTransportINBlock.length; i++){
-      IExtTransferINBlock(extTransportINBlock[i])._beforeTokenTransferBlock(from, to, amount);
+      if (IExtTransferINBlock(extTransportINBlock[i])._beforeTokenTransferBlock(from, to, amount))
+				return;
     }
 
 		// run INUPDATE extensions
-		for(uint i=0; i<extTransportINLog.length; i++){
-      IExtTransferINUpdate(extTransportINUpdate[i])._beforeTokenTransferUpdate(from, to, amount);
+		for(uint i=0; i<extTransportINUpdate.length; i++){
+      amount = IExtTransferINUpdate(extTransportINUpdate[i])._beforeTokenTransferUpdate(from, to, amount);
     }
 
 		// run INLOG extensions
@@ -115,7 +120,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 		_balances[to] += amount;
 		
 		// run OUT extensions
-		for(uint i=0; i<extTransportINLog.length; i++){
+		for(uint i=0; i<extTransportOUT.length; i++){
       IExtTransferOUT(extTransportOUT[i])._afterTokenTransfer(from, to, amount);
     }
 
@@ -186,8 +191,40 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
+		// run INBLOCK extensions
+		for(uint i=0; i<extTransportINBlockX.length; i++){
+      if (IExtTransferINBlockX(extTransportINBlockX[i])._beforeTokenTransferBlock(toChain, toAddress, amount))
+				return false;
+    }
+
+		// run INUPDATE extensions
+		for(uint i=0; i<extTransportINUpdateX.length; i++){
+      amount = IExtTransferINUpdateX(extTransportINUpdateX[i])._beforeTokenTransferUpdate(toChain, toAddress, amount);
+    }
+
+		// run INLOG extensions
+		for(uint i=0; i<extTransportINLogX.length; i++){
+      IExtTransferINLogX(extTransportINLogX[i])._beforeTokenTransferLog(toChain, toAddress, amount);
+    }
+
+		// do real transation
+		_transferX(toChain, toAddress, amount);
+
+		// run OUT extensions
+		for(uint i=0; i<extTransportOUT.length; i++){
+      IExtTransferOUTX(extTransportOUT[i])._afterTokenTransfer(toChain, toAddress, amount);
+    }
+
+		// emit event
+
+		return true;
+	}
+
+	function _transferX(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+
 		// do supply transation
-		_transferCrosschainTransaction(toChain, toAddress, amount);
+		IRelayer(_relayer).sendCrosschainSupply(toChain, toAddress, amount);
 
 		// update local ERC-20
 		_burn(msg.sender, amount);
@@ -201,15 +238,8 @@ contract Fungible is IERC20, IERC20x, IFungible {
 			_sendSyncNodesTransaction(CHAIN_ID, toChain, amount);
 		}
 
-		// emit event
-
 		return true;
-
 	}
-
-	/*function transferXFrom(address from, uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
-		return true;
-	}*/
 
 	// Receives supply transfer
 	function receiveCrosschain(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
@@ -253,9 +283,6 @@ contract Fungible is IERC20, IERC20x, IFungible {
 			emit Transfer(from, address(0), amount);
 	}
 
-	function _transferCrosschainTransaction(uint256 destChain, address destAddress, uint256 amount) internal {
-		IRelayer(_relayer).sendCrosschainSupply(destChain, destAddress, amount);
-	}
 	function receiveCrosschainTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
 		receiveCrosschain(sourceChain, destChain, amount);
 	}
@@ -289,6 +316,15 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	address[] public extTransportINBlock;
 
 	address[] public extTransportOUT;
+
+	// ERC-20X Extensions
+	address[] public extTransportINLogX;
+
+	address[] public extTransportINUpdateX;
+
+	address[] public extTransportINBlockX;
+
+	address[] public extTransportOUTX;
 
 	// *************************************************************************************************
 	// ************************************** Resources Injection **************************************
