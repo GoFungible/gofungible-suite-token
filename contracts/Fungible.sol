@@ -207,11 +207,18 @@ contract Fungible is IERC20, IERC20x, IFungible {
 
 	// Update remote supply transfer
 	function _sendSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
+
 	}
 	// Update remote supply transfer
 	function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
 		//require(msg.sender == _relayer, "Relayer: must be defined");
-		receiveSyncNodes(sourceChain, destChain, amount);
+
+		// receive supply
+		supplies[sourceChain] -= amount;
+		supplies[destChain] += amount;
+
+		// emit event
+
 	}
 
 	// ************************************************************************************************
@@ -278,18 +285,6 @@ contract Fungible is IERC20, IERC20x, IFungible {
 
 		// update both supplies locally
 		_mint(addresses[destChain], amount);
-		supplies[sourceChain] -= amount;
-		supplies[destChain] += amount;
-
-		// emit event
-
-	}
-
-	// Update remote supply transfer
-	function receiveSyncNodes(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
-		//require(msg.sender == _relayer, "Relayer: must be defined");
-
-		// receive supply
 		supplies[sourceChain] -= amount;
 		supplies[destChain] += amount;
 
