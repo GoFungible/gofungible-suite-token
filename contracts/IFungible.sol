@@ -13,5 +13,7 @@ interface IFungible {
         uint256 _chainId,
         bytes32[] memory transactionHashes
     );*/
-		function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external;
+
+		function updateOwner() external;
+
 }

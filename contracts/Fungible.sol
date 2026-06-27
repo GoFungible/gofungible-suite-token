@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
+import "./IFungible.sol";
+
 import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
+import "gofungible-erc-20-multichain-relayer-extension/contracts/IMultichainToken.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplyRelayer.sol";
-import "./IFungible.sol";
 
 import "./extensions/framework/LibDiamondStorage.sol";
 import "./extensions/IOwnershipProvider.sol";
@@ -19,7 +21,7 @@ import "./extensions/IExtTransferOUTX.sol";
 
 import "hardhat/console.sol";
 
-contract Fungible is IERC20, IERC20x, IFungible {
+contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 
 	// ************************************************************************************************
 	// ******************************************** Contract ******************************************
@@ -217,23 +219,16 @@ contract Fungible is IERC20, IERC20x, IFungible {
 			}
 	}
 
-	function balanceOfX(address _account) external view returns (uint256) {
-		return _balances[_account] ;
-	}
-
 	// Sync Nodes
 	function _syncNodes() internal view {
 
 		// sync both supplies on all other networks
 		for (uint i = 0; i < knownChains.length; i++) {
-			//_sendSyncNodesTransaction(CHAIN_ID, toChain, amount);
+			//ISyncer(iSyncerAddress)._sendSyncNodesTransaction(CHAIN_ID, toChain, amount);
 		}
 
 	}
 
-	function _sendSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
-
-	}
 	function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
 		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
@@ -302,7 +297,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	}
 
 	// Receives supply transfer
-	function receiveCrosschainSupply(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
+	function receiveCrosschainSupply(uint256 sourceChain, uint256 destChain, uint256 amount) external {
 		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
 		// update both supplies locally
