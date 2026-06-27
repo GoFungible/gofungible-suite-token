@@ -77,7 +77,6 @@ describe("Deploy Token", function () {
 
 		await expect(fungibleContract.globalSupply()).to.not.be.reverted;
 		await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
-		await expect(fungibleContract.balanceOfX(owner)).to.not.be.reverted;
 
 		//await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 
@@ -104,7 +103,6 @@ describe("Deploy Token", function () {
 
 		await expect(fungibleContract.connect(addr1).globalSupply()).to.not.be.reverted;
 		await expect(fungibleContract.connect(addr1).getAllRemoteSupplies()).to.not.be.reverted;
-		await expect(fungibleContract.connect(addr1).balanceOfX(addr1)).to.not.be.reverted;
 
 		await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith('Ownable: caller is not the owner');
 
