@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
-import "gofungible-erc-20-multichain-relayer-extension/contracts/IRelayer.sol";
+import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplyRelayer.sol";
 import "./extensions/framework/LibDiamondStorage.sol";
 import "./extensions/IExtTransferINBlock.sol";
 import "./extensions/IExtTransferINUpdate.sol";
@@ -75,6 +75,27 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	
 	function balanceOf(address account) public view returns (uint256) {
 		return _balances[account];
+	}
+
+	function _mint(address to, uint256 amount) internal {
+		require(to != address(0), "ERC20: mint to zero address");
+		//require(msg.sender == _relayer, "Relayer: must be defined");
+
+		_totalSupply += amount;
+		_balances[to] += amount;
+		
+		emit Transfer(address(0), to, amount);
+	}
+	
+	function _burn(address from, uint256 amount) internal {
+		require(from != address(0), "ERC20: burn from zero address");
+		require(_balances[from] >= amount, "ERC20: insufficient balance");
+		//require(msg.sender == _relayer, "Relayer: must be defined");
+
+		_balances[from] -= amount;
+		_totalSupply -= amount;
+		
+		emit Transfer(from, address(0), amount);
 	}
 	
 	// ************************************************************************************************
@@ -184,6 +205,15 @@ contract Fungible is IERC20, IERC20x, IFungible {
 		return _balances[_account] ;
 	}
 
+	// Update remote supply transfer
+	function _sendSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
+	}
+	// Update remote supply transfer
+	function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
+		//require(msg.sender == _relayer, "Relayer: must be defined");
+		receiveSyncNodes(sourceChain, destChain, amount);
+	}
+
 	// ************************************************************************************************
 	// ************************************* ERC-20X TransferX ****************************************
 	// ************************************************************************************************
@@ -222,9 +252,10 @@ contract Fungible is IERC20, IERC20x, IFungible {
 
 	function _transferX(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		//require(_relayer, "Relayer: must be defined");
 
 		// do supply transation
-		IRelayer(_relayer).sendCrosschainSupply(toChain, toAddress, amount);
+		ISupplyRelayer(_relayer).sendCrosschainSupply(toChain, toAddress, amount);
 
 		// update local ERC-20
 		_burn(msg.sender, amount);
@@ -242,8 +273,9 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	}
 
 	// Receives supply transfer
-	function receiveCrosschain(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
-			
+	function receiveCrosschainSupply(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
+		//require(msg.sender == _relayer, "Relayer: must be defined");
+
 		// update both supplies locally
 		_mint(addresses[destChain], amount);
 		supplies[sourceChain] -= amount;
@@ -255,43 +287,14 @@ contract Fungible is IERC20, IERC20x, IFungible {
 
 	// Update remote supply transfer
 	function receiveSyncNodes(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
-			
+		//require(msg.sender == _relayer, "Relayer: must be defined");
+
 		// receive supply
 		supplies[sourceChain] -= amount;
 		supplies[destChain] += amount;
 
 		// emit event
 
-	}
-
-	function _mint(address to, uint256 amount) internal {
-			require(to != address(0), "ERC20: mint to zero address");
-			
-			_totalSupply += amount;
-			_balances[to] += amount;
-			
-			emit Transfer(address(0), to, amount);
-	}
-	
-	function _burn(address from, uint256 amount) internal {
-			require(from != address(0), "ERC20: burn from zero address");
-			require(_balances[from] >= amount, "ERC20: insufficient balance");
-			
-			_balances[from] -= amount;
-			_totalSupply -= amount;
-			
-			emit Transfer(from, address(0), amount);
-	}
-
-	function receiveCrosschainTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
-		receiveCrosschain(sourceChain, destChain, amount);
-	}
-	// Update remote supply transfer
-	function _sendSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
-	}
-	// Update remote supply transfer
-	function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
-			receiveSyncNodes(sourceChain, destChain, amount);
 	}
 
 	// *************************************************************************************************
