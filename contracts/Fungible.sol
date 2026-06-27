@@ -7,6 +7,7 @@ import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/IMultichainToken.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplyRelayer.sol";
+import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplySyncer.sol";
 
 import "./extensions/framework/LibDiamondStorage.sol";
 import "./extensions/IOwnershipProvider.sol";
@@ -79,17 +80,19 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 	}
 
 	// ************************************************************************************************
-	// **************************************** ERC-20 Supply *****************************************
+	// ************************************** ERC-20 Total Supply *************************************
 	// ************************************************************************************************   
 	uint256 private _totalSupply;
-	
-	mapping(address => uint256) private _balances;
-	mapping(address => mapping(address => uint256)) private _allowances;
 
 	// ERC-20 Functions	
 	function totalSupply() public view returns (uint256) {
 		return _totalSupply;
 	}
+
+	// ************************************************************************************************
+	// ************************************* ERC-20 Supply by Account *********************************
+	// ************************************************************************************************
+	mapping(address => uint256) private _balances;
 	
 	function balanceOf(address account) public view returns (uint256) {
 		return _balances[account];
@@ -97,7 +100,7 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 
 	function _mint(address to, uint256 amount) internal {
 		require(to != address(0), "ERC20: mint to zero address");
-		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
+		require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
 		_totalSupply += amount;
 		_balances[to] += amount;
@@ -108,7 +111,7 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 	function _burn(address from, uint256 amount) internal {
 		require(from != address(0), "ERC20: burn from zero address");
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
-		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
+		require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
 		_balances[from] -= amount;
 		_totalSupply -= amount;
@@ -119,6 +122,8 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 	// ************************************************************************************************
 	// **************************************** ERC-20 Transfer ***************************************
 	// ************************************************************************************************
+	mapping(address => mapping(address => uint256)) private _allowances;
+
 	// transfer
 	function transferFrom(address from, address to, uint256 amount) public returns (bool) {
 		_spendAllowance(from, msg.sender, amount);
@@ -192,24 +197,21 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 	}
 
 	// ************************************************************************************************
-	// *************************************** ERC-20X Supply *****************************************
+	// *********************************** ERC-20X Global Supply **************************************
 	// ************************************************************************************************   
 	uint256 private _globalSupply;
-
-	uint256[] public knownChains;
-
-	mapping(uint256 => uint256) public supplies;
-
-	mapping(uint256 => address) public addresses;
-
-	event RemoteSupplyUpdated(uint256 indexed chainId, uint256 newSupply);
-
-	event LocalSupplyUpdated(uint256 indexed chainId, uint256 newSupply);
 
 	function globalSupply() external view returns (uint256) {
 		return _globalSupply;
 	}
-	
+
+	// ************************************************************************************************
+	// ********************************** ERC-20X Supply by Chain *************************************
+	// ************************************************************************************************
+	uint256[] public knownChains;
+
+	mapping(uint256 => uint256) public supplies;
+
 	function getAllRemoteSupplies() external view returns (uint256[] memory chainIds, uint256[] memory _supplies) {
 			chainIds = knownChains;
 			_supplies = new uint256[](knownChains.length);
@@ -220,17 +222,17 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 	}
 
 	// Sync Nodes
-	function _syncNodes() internal view {
+	function _syncNodes(uint256 fromChain, uint256 toChain, uint256 amount) internal {
 
 		// sync both supplies on all other networks
 		for (uint i = 0; i < knownChains.length; i++) {
-			//ISyncer(iSyncerAddress)._sendSyncNodesTransaction(CHAIN_ID, toChain, amount);
+			ISupplySyncer(_supplySyncer).sendSyncNodesTransaction(fromChain, toChain, amount);
 		}
 
 	}
 
 	function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
-		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
+		require(msg.sender == _supplySyncer, "SupplySyncer: must be defined");
 
 		// receive supply
 		supplies[sourceChain] -= amount;
@@ -243,6 +245,10 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 	// ************************************************************************************************
 	// ************************************* ERC-20X TransferX ****************************************
 	// ************************************************************************************************
+	mapping(uint256 => address) public addresses;
+
+	event RemoteSupplyUpdated(uint256 fromChain, uint256 toChain, uint256 amount);
+
 	// Performs supply transfer
 	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
@@ -291,7 +297,9 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 		supplies[toChain] -= amount;
 
 		// sync other networks
-		_syncNodes();
+		_syncNodes(CHAIN_ID, toChain, amount);
+
+		emit RemoteSupplyUpdated(CHAIN_ID, toChain, amount);
 
 		return true;
 	}
