@@ -4,7 +4,10 @@ pragma solidity 0.8.30;
 import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplyRelayer.sol";
+import "./IFungible.sol";
+
 import "./extensions/framework/LibDiamondStorage.sol";
+import "./extensions/IOwnershipProvider.sol";
 import "./extensions/IExtTransferINBlock.sol";
 import "./extensions/IExtTransferINUpdate.sol";
 import "./extensions/IExtTransferINLog.sol";
@@ -13,7 +16,6 @@ import "./extensions/IExtTransferINBlockX.sol";
 import "./extensions/IExtTransferINUpdateX.sol";
 import "./extensions/IExtTransferINLogX.sol";
 import "./extensions/IExtTransferOUTX.sol";
-import "./IFungible.sol";
 
 import "hardhat/console.sol";
 
@@ -23,8 +25,6 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	// ******************************************** Contract ******************************************
 	// ************************************************************************************************   
 	uint256 public immutable CHAIN_ID;
-
-	address public _owner;
 	
 	constructor(string memory name_, string memory symbol_, uint256 globalSupply_) {
 		CHAIN_ID = block.chainid;
@@ -40,6 +40,22 @@ contract Fungible is IERC20, IERC20x, IFungible {
 		_totalSupply = _globalSupply;
 		_balances[_owner] = _globalSupply;
 	}
+
+	// ************************************************************************************************
+	// ******************************************** Owner *********************************************
+	// ************************************************************************************************
+	address private _owner;
+
+	function updateOwner() external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(_ownershipProvider != address(0), "Ownable: ownership provider is required");
+
+		address oldOwner = _owner;
+		_owner = IOwnershipProvider(_ownershipProvider)._updateOwner(_owner);
+
+		emit OwnerUpdated(oldOwner, _owner);
+	}
+	event OwnerUpdated(address oldOwner, address newOwner);
 
 	// ************************************************************************************************
 	// ******************************************* Metadata *******************************************
@@ -79,7 +95,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 
 	function _mint(address to, uint256 amount) internal {
 		require(to != address(0), "ERC20: mint to zero address");
-		//require(msg.sender == _relayer, "Relayer: must be defined");
+		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
 		_totalSupply += amount;
 		_balances[to] += amount;
@@ -90,7 +106,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	function _burn(address from, uint256 amount) internal {
 		require(from != address(0), "ERC20: burn from zero address");
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
-		//require(msg.sender == _relayer, "Relayer: must be defined");
+		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
 		_balances[from] -= amount;
 		_totalSupply -= amount;
@@ -206,7 +222,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	}
 
 	// Sync Nodes
-	function _syncNodes() internal {
+	function _syncNodes() internal view {
 
 		// sync both supplies on all other networks
 		for (uint i = 0; i < knownChains.length; i++) {
@@ -219,7 +235,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 
 	}
 	function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
-		//require(msg.sender == _relayer, "Relayer: must be defined");
+		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
 		// receive supply
 		supplies[sourceChain] -= amount;
@@ -267,10 +283,10 @@ contract Fungible is IERC20, IERC20x, IFungible {
 
 	function _transferX(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		//require(_relayer, "Relayer: must be defined");
+		//require(_supplyRelayer, "Relayer: must be defined");
 
 		// do supply transation
-		ISupplyRelayer(_relayer).sendCrosschainSupply(toChain, toAddress, amount);
+		ISupplyRelayer(_supplyRelayer).sendCrosschainSupply(toChain, toAddress, amount);
 
 		// update local ERC-20
 		_burn(msg.sender, amount);
@@ -287,7 +303,7 @@ contract Fungible is IERC20, IERC20x, IFungible {
 
 	// Receives supply transfer
 	function receiveCrosschainSupply(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
-		//require(msg.sender == _relayer, "Relayer: must be defined");
+		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
 		// update both supplies locally
 		_mint(addresses[destChain], amount);
@@ -302,15 +318,22 @@ contract Fungible is IERC20, IERC20x, IFungible {
 	// ************************************* Approved Resources ****************************************
 	// *************************************************************************************************
 	enum ResourceTypes{ 
-		RELAYER, 
-		INBLOCK, 
-		INUPDATE, 
+		OWNERSHIP_PROVIDER,
+		SUPPLY_RELAYER,
+		SUPPLY_SYNCER,
+		INBLOCK,
+		INUPDATE,
 		INLOG,
 		OUT 
 	}
 
-	// Relayer
-	address private _relayer;
+	// Ownership
+	address private _ownershipProvider;
+
+	// Relayers
+	address private _supplyRelayer;
+
+	address private _supplySyncer;
 
 	// ERC-20 Extensions
 	address[] public extTransportINLog;
@@ -385,8 +408,12 @@ contract Fungible is IERC20, IERC20x, IFungible {
 		// release resource
 		uint resourceType = pendingResource.resourceType;
 		address resourceAddress = pendingResource.resourceAddress;
-		if (resourceType == uint(ResourceTypes.RELAYER)) {
-			_relayer = address(resourceAddress);
+		if (resourceType == uint(ResourceTypes.OWNERSHIP_PROVIDER)) {
+			_ownershipProvider = address(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.SUPPLY_RELAYER)) {
+			_supplyRelayer = address(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.SUPPLY_SYNCER)) {
+			_supplySyncer = address(resourceAddress);
 		} else if (resourceType == uint(ResourceTypes.INBLOCK)) {
 			extTransportINBlock.push(resourceAddress);
 		} else if (resourceType == uint(ResourceTypes.INUPDATE)) {
