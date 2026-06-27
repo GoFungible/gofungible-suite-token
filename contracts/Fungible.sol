@@ -205,11 +205,19 @@ contract Fungible is IERC20, IERC20x, IFungible {
 		return _balances[_account] ;
 	}
 
-	// Update remote supply transfer
+	// Sync Nodes
+	function _syncNodes() internal {
+
+		// sync both supplies on all other networks
+		for (uint i = 0; i < knownChains.length; i++) {
+			//_sendSyncNodesTransaction(CHAIN_ID, toChain, amount);
+		}
+
+	}
+
 	function _sendSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) internal {
 
 	}
-	// Update remote supply transfer
 	function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
 		//require(msg.sender == _relayer, "Relayer: must be defined");
 
@@ -271,10 +279,8 @@ contract Fungible is IERC20, IERC20x, IFungible {
 		supplies[CHAIN_ID] += amount;
 		supplies[toChain] -= amount;
 
-		// sync both supplies on all other networks
-		for (uint i = 0; i < knownChains.length; i++) {
-			_sendSyncNodesTransaction(CHAIN_ID, toChain, amount);
-		}
+		// sync other networks
+		_syncNodes();
 
 		return true;
 	}
