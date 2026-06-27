@@ -9,14 +9,14 @@
     "test": "hardhat test",
     "node": "hardhat node"
   },
-	"dependencies": {
-    "gofungible-erc-20-multichain-supply-extension": "github:GoFungible/gofungible-erc-20-multichain-supply-extension",
-    "gofungible-erc-20-multichain-relayer-extension": "github:GoFungible/gofungible-erc-20-multichain-relayer-extension"
+  "dependencies": {
+    "gofungible-erc-20-multichain-relayer-extension": "github:GoFungible/gofungible-erc-20-multichain-relayer-extension",
+    "gofungible-erc-20-multichain-supply-extension": "github:GoFungible/gofungible-erc-20-multichain-supply-extension"
   },
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
     "@typechain/ethers-v6": "^0.4.0",
     "@typechain/hardhat": "^8.0.0",
     "@types/node": "^18.15.0",
