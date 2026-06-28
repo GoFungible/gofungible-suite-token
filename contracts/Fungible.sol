@@ -9,7 +9,6 @@ import "gofungible-erc-20-multichain-relayer-extension/contracts/IMultichainToke
 import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplyRelayer.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplySyncer.sol";
 
-import "./extensions/framework/LibDiamondStorage.sol";
 import "./extensions/IOwnershipProvider.sol";
 import "./extensions/IExtTransferINBlock.sol";
 import "./extensions/IExtTransferINUpdate.sol";
@@ -19,6 +18,8 @@ import "./extensions/IExtTransferINBlockX.sol";
 import "./extensions/IExtTransferINUpdateX.sol";
 import "./extensions/IExtTransferINLogX.sol";
 import "./extensions/IExtTransferOUTX.sol";
+
+import "./extensions/framework/LibDiamondStorage.sol";
 
 import "hardhat/console.sol";
 
@@ -206,9 +207,29 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 	}
 
 	// ************************************************************************************************
+	// *********************************** ERC-20X Master Chain ***************************************
+	// ************************************************************************************************  
+	// master chain
+	uint256 _masterChain;
+
+	event MasterChainUpdated(uint256 fromMasterChain, uint256 toMasterChain);
+
+	function getMasterChain() external view returns (uint256) {
+		return _masterChain;
+	}
+	function setMasterChain(uint256 masterChain_) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(masterChain_ > 0, "MasterChain: must be chainid");
+
+		emit MasterChainUpdated(_masterChain, masterChain_);
+
+		_masterChain = masterChain_;
+	}
+
+	// ************************************************************************************************
 	// ********************************** ERC-20X Supply by Chain *************************************
 	// ************************************************************************************************
-	uint256[] public knownChains;
+	uint256[] knownChains;
 
 	mapping(uint256 => uint256) public supplies;
 
@@ -221,12 +242,18 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 			}
 	}
 
-	// Sync Nodes
-	function _syncNodes(uint256 fromChain, uint256 toChain, uint256 amount) internal {
+	// Sync Chains
+	function _syncChains(uint256 fromChain, uint256 toChain, uint256 amount) internal {
 
-		// sync both supplies on all other networks
-		for (uint i = 0; i < knownChains.length; i++) {
-			ISupplySyncer(_supplySyncer).sendSyncNodesTransaction(fromChain, toChain, amount);
+		// sync both supplies on master chain
+		if (_masterChain != 0) {
+			uint256[] memory master = new uint256[](1);
+			master[0] = _masterChain;
+			ISupplySyncer(_supplySyncer).sendSyncNodesTransaction(master, fromChain, toChain, amount);
+
+		// sync both supplies on all other networks	
+		} else {
+			ISupplySyncer(_supplySyncer).sendSyncNodesTransaction(knownChains, fromChain, toChain, amount);
 		}
 
 	}
@@ -297,7 +324,7 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 		supplies[toChain] -= amount;
 
 		// sync other networks
-		_syncNodes(CHAIN_ID, toChain, amount);
+		_syncChains(CHAIN_ID, toChain, amount);
 
 		emit RemoteSupplyUpdated(CHAIN_ID, toChain, amount);
 
@@ -306,7 +333,7 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 
 	// Receives supply transfer
 	function receiveCrosschainSupply(uint256 sourceChain, uint256 destChain, uint256 amount) external {
-		//require(msg.sender == _supplyRelayer, "Relayer: must be defined");
+		require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
 		// update both supplies locally
 		_mint(addresses[destChain], amount);
