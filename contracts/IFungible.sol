@@ -14,6 +14,6 @@ interface IFungible {
         bytes32[] memory transactionHashes
     );*/
 
-		function updateOwner() external;
+		//function updateOwner() external;
 
 }

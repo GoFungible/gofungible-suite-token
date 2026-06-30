@@ -5,9 +5,9 @@ interface IOwnershipProvider {
 
     /**
      * @dev Updates owner
-     * @param oldOwner Address of the previous owner
+     * @param _newOwner Address of the previous owner
      * @return newOwner Address of the new owner
      */
-    function _updateOwner(address oldOwner) external returns (address);
+    function transferOwnership(address _oldOwner, address _newOwner) external returns (address);
 		
 }

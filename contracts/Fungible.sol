@@ -3,6 +3,7 @@ pragma solidity 0.8.30;
 
 import "./IFungible.sol";
 
+import "./erc-173/ERC173.sol";
 import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/IMultichainToken.sol";
@@ -23,7 +24,7 @@ import "./extensions/framework/LibDiamondStorage.sol";
 
 import "hardhat/console.sol";
 
-contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
+contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 
 	// ************************************************************************************************
 	// ******************************************** Contract ******************************************
@@ -50,16 +51,23 @@ contract Fungible is IFungible, IERC20, IERC20x, IMultichainToken {
 	// ************************************************************************************************
 	address private _owner;
 
-	function updateOwner() external {
+  function owner() view external returns(address) {
+		return _owner;
+	}
+
+	function transferOwnership(address _newOwner) external {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(_ownershipProvider != address(0), "Ownable: ownership provider is required");
 
 		address oldOwner = _owner;
-		_owner = IOwnershipProvider(_ownershipProvider)._updateOwner(_owner);
 
-		emit OwnerUpdated(oldOwner, _owner);
+		if (_ownershipProvider != address(0)) {
+			_owner = IOwnershipProvider(_ownershipProvider).transferOwnership(oldOwner, _newOwner);
+		} else {
+			_owner = _newOwner;
+		}
+
+		emit OwnershipTransferred(oldOwner, _owner);
 	}
-	event OwnerUpdated(address oldOwner, address newOwner);
 
 	// ************************************************************************************************
 	// ******************************************* Metadata *******************************************
