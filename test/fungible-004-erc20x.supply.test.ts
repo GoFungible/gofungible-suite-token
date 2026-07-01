@@ -104,6 +104,11 @@ describe("ERC-20X Supply", function () {
 	// On ChainA: ChainA:AccountA to ChainB:AccountB (transferX) <-------------
 	// On ChainB: ChainA:AccountA to ChainB:AccountB (proxy)
 	// On ChainC: ChainA:AccountA to ChainB:AccountB (proxy)
+	it("ChainA should be able to transfer from ChainA:owner to ChainB:owner", async() => {
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
+		fungible1.transferX(1337, fungibleAddress2, 100_000);
+	});
+	
 	it("ChainA should be able to transfer from ChainA:AccountA to ChainB:AccountB", async() => {
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
 		fungible1.transferX(1337, fungibleAddress2, 100_000);
