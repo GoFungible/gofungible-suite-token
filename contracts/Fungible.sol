@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
+// core
 import "./IFungible.sol";
-
 import "./erc-173/ERC173.sol";
 import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
@@ -10,6 +10,7 @@ import "gofungible-erc-20-multichain-relayer-extension/contracts/IMultichainToke
 import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplyRelayer.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplySyncer.sol";
 
+// resources
 import "./extensions/IOwnershipProvider.sol";
 import "./extensions/IExtTransferINBlock.sol";
 import "./extensions/IExtTransferINUpdate.sol";
@@ -98,15 +99,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		return _totalSupply;
 	}
 
-	// ************************************************************************************************
-	// ************************************* ERC-20 Supply by Account *********************************
-	// ************************************************************************************************
-	mapping(address => uint256) private _balances;
-	
-	function balanceOf(address account) public view returns (uint256) {
-		return _balances[account];
-	}
-
 	function _mint(address to, uint256 amount) internal {
 		require(to != address(0), "ERC20: mint to zero address");
 		require(msg.sender == _supplyRelayer, "Relayer: must be defined");
@@ -126,6 +118,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		_totalSupply -= amount;
 		
 		emit Transfer(from, address(0), amount);
+	}
+
+	// ************************************************************************************************
+	// ************************************* ERC-20 Supply by Account *********************************
+	// ************************************************************************************************
+	mapping(address => uint256) private _balances;
+	
+	function balanceOf(address account) public view returns (uint256) {
+		return _balances[account];
 	}
 	
 	// ************************************************************************************************
@@ -206,15 +207,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	}
 
 	// ************************************************************************************************
-	// *********************************** ERC-20X Global Supply **************************************
-	// ************************************************************************************************   
-	uint256 private _globalSupply;
-
-	function globalSupply() external view returns (uint256) {
-		return _globalSupply;
-	}
-
-	// ************************************************************************************************
 	// *********************************** ERC-20X Master Chain ***************************************
 	// ************************************************************************************************  
 	// master chain
@@ -232,6 +224,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		emit MasterChainUpdated(_masterChain, masterChain_);
 
 		_masterChain = masterChain_;
+	}
+
+	// ************************************************************************************************
+	// *********************************** ERC-20X Global Supply **************************************
+	// ************************************************************************************************   
+	uint256 private _globalSupply;
+
+	function globalSupply() external view returns (uint256) {
+		return _globalSupply;
 	}
 
 	// ************************************************************************************************
