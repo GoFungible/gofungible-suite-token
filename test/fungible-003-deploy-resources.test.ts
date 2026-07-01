@@ -5,9 +5,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 describe("Deploy Resources", function () {
 	let owner: SignerWithAddress, project: SignerWithAddress, liquidity: SignerWithAddress;
 	let addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, addrs;
-	let fungibleAddress1: string;
-	let fungibleAddress2: string;
-	let mockSupplyRelayerAddress: string;
+	let fungibleAddress: string;
 
 	/********************************************************************************************************/
 	/************************************************** hooks ***********************************************/
@@ -35,26 +33,12 @@ describe("Deploy Resources", function () {
 		// ***********************************************************************************************************************************************************
 		// ********************************************************* Install Versionable Facets and register in factory **********************************************
 		// ***********************************************************************************************************************************************************
-		// deploy Fungible1
-		const Fungible1 = await ethers.getContractFactory("Fungible");
-		let fungible1 = await Fungible1.deploy("FungiTest", "FGT", 1000_000_000);
-		await fungible1.waitForDeployment();
-		fungibleAddress1 = await fungible1.getAddress();
-		console.log(" Fungible1 deployed to:", fungibleAddress1);
-
-		// deploy Fungible2
-		const Fungible2 = await ethers.getContractFactory("Fungible");
-		let fungible2 = await Fungible2.deploy("FungiTest", "FGT", 1000_000_000);
-		await fungible2.waitForDeployment();
-		fungibleAddress2 = await fungible2.getAddress();
-		console.log(" Fungible2 deployed to:", fungibleAddress2);
-
-		// deploy mocked relayer
-		const MockSupplyRelayer = await ethers.getContractFactory("MockedSupplyRelayer");
-		let mockSupplyRelayer = await MockSupplyRelayer.deploy();
-		await mockSupplyRelayer.waitForDeployment();
-		mockSupplyRelayerAddress = await mockSupplyRelayer.getAddress();
-		console.log(" MockSupplyRelayer deployed to:", mockSupplyRelayerAddress);
+		// deploy Fungible
+		const Fungible = await ethers.getContractFactory("Fungible");
+		let fungible = await Fungible.deploy("FungiTest", "FGT", 1000_000_000);
+		await fungible.waitForDeployment();
+		fungibleAddress = await fungible.getAddress();
+		console.log(" Fungible deployed to:", fungibleAddress);
 
 	});
 

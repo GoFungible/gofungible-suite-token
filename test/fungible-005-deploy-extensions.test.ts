@@ -5,7 +5,7 @@ import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 import * as helpers from "./_testhelper";
 import { Fungible__factory } from "../typechain-types";
 
-describe.skip("Deploy Extension", function () {
+describe("Deploy Extension", function () {
 
   let user1: SignerWithAddress;
   let user2: SignerWithAddress;
