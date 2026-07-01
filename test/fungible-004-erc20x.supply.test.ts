@@ -35,6 +35,13 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		// ********************************************************* Install Versionable Facets and register in factory **********************************************
 		// ***********************************************************************************************************************************************************
+		// deploy mocked relayer
+		const MockSupplyRelayer = await ethers.getContractFactory("MockedSupplyRelayer");
+		let mockSupplyRelayer = await MockSupplyRelayer.deploy();
+		await mockSupplyRelayer.waitForDeployment();
+		mockSupplyRelayerAddress = await mockSupplyRelayer.getAddress();
+		console.log(" MockSupplyRelayer deployed to:", mockSupplyRelayerAddress);
+
 		// deploy Fungible1
 		const Fungible1 = await ethers.getContractFactory("Fungible");
 		let fungible1 = await Fungible1.deploy("FungiTest", "FGT", 1000_000_000);
@@ -44,17 +51,16 @@ describe("ERC-20X Supply", function () {
 
 		// deploy Fungible2
 		const Fungible2 = await ethers.getContractFactory("Fungible");
-		let fungible2 = await Fungible2.deploy("FungiTest", "FGT", 1000_000_000);
+		let fungible2 = await Fungible2.deploy("FungiTest", "FGT", 0);
 		await fungible2.waitForDeployment();
 		fungibleAddress2 = await fungible2.getAddress();
 		console.log(" Fungible2 deployed to:", fungibleAddress2);
 
-		// deploy mocked relayer
-		const MockSupplyRelayer = await ethers.getContractFactory("MockedSupplyRelayer");
-		let mockSupplyRelayer = await MockSupplyRelayer.deploy();
-		await mockSupplyRelayer.waitForDeployment();
-		mockSupplyRelayerAddress = await mockSupplyRelayer.getAddress();
-		console.log(" MockSupplyRelayer deployed to:", mockSupplyRelayerAddress);
+		// attach relayer
+		fungible1.addResource(0, 1, mockSupplyRelayerAddress, 132, 0, 0);
+		fungible2.addResource(0, 1, mockSupplyRelayerAddress, 132, 0, 0);
+		fungible1.releaseResource(0, 0);
+		fungible2.releaseResource(0, 0);
 
 	});
 
@@ -67,26 +73,27 @@ describe("ERC-20X Supply", function () {
 		console.log('--------- Ending Tests --------');
 	});
 
-
 	/********************************************************************************************************/
 	/******************************************** Global Supply *********************************************/
 	/********************************************************************************************************/
 	it("ChainA should be able to transfer from ChainA:AccountA to ChainA:AccountB", async() => {
-
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 	});
 
 	/********************************************************************************************************/
 	/******************************************** Master Chain **********************************************/
 	/********************************************************************************************************/
 	it("Should be able to configure master chain", async() => {
-
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		fungible1.setMasterChain(1337);
 	});
 
 	/********************************************************************************************************/
-	/************************************************ Balance ***********************************************/
+	/************************************************ Supplies **********************************************/
 	/********************************************************************************************************/
-	it("Should be able to get cross balance by aggregating balance in networks as off-chain task", async() => {
-
+	it("Should be able to get cross supplies", async() => {
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
+		fungible1.getAllRemoteSupplies();
 	});
 
 	/********************************************************************************************************/
@@ -98,7 +105,8 @@ describe("ERC-20X Supply", function () {
 	// On ChainB: ChainA:AccountA to ChainB:AccountB (proxy)
 	// On ChainC: ChainA:AccountA to ChainB:AccountB (proxy)
 	it("ChainA should be able to transfer from ChainA:AccountA to ChainB:AccountB", async() => {
-
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
+		fungible1.transferX(1337, fungibleAddress2, 100_000);
 	});
 
 });
