@@ -221,6 +221,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		require(masterChain_ > 0, "MasterChain: must be chainid");
 
+		_syncChains(CHAIN_ID, masterChain_, 0);
+
 		emit MasterChainUpdated(_masterChain, masterChain_);
 
 		_masterChain = masterChain_;
@@ -254,15 +256,23 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	// Sync Chains
 	function _syncChains(uint256 fromChain, uint256 toChain, uint256 amount) internal {
 
+		// do nothing as this is the master chain
+		if (_masterChain == CHAIN_ID) {
+			return;
+		}
+
 		// sync both supplies on master chain
 		if (_masterChain != 0) {
 			uint256[] memory master = new uint256[](1);
 			master[0] = _masterChain;
 			ISupplySyncer(_supplySyncer).sendSyncNodesTransaction(master, fromChain, toChain, amount);
+			return;
+		}
 
-		// sync both supplies on all other networks	
-		} else {
+		// sync both supplies on all other chains	
+		if (_masterChain == 0) {
 			ISupplySyncer(_supplySyncer).sendSyncNodesTransaction(knownChains, fromChain, toChain, amount);
+			return;
 		}
 
 	}
