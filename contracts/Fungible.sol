@@ -6,12 +6,18 @@ import "./IFungible.sol";
 import "./erc-173/ERC173.sol";
 import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
-import "gofungible-erc-20-multichain-relayer-extension/contracts/IMultichainToken.sol";
-import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplyRelayer.sol";
-import "gofungible-erc-20-multichain-relayer-extension/contracts/ISupplySyncer.sol";
+import "gofungible-erc-20-multichain-relayer-extension/contracts/token/IMultichainToken.sol";
+import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplyRelayer.sol";
+import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplySyncer.sol";
 
-// resources
+// multichain processors
+
+// resource processors
 import "./extensions/IOwnershipProvider.sol";
+import "./extensions/IExtRelayerMessage.sol";
+import "./extensions/IExtRelayerSupply.sol";
+import "./extensions/IExtRelayerSyncSupply.sol";
+import "./extensions/IExtRelayerSwap.sol";
 import "./extensions/IExtTransferINBlock.sol";
 import "./extensions/IExtTransferINUpdate.sol";
 import "./extensions/IExtTransferINLog.sol";
@@ -221,7 +227,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		require(masterChain_ > 0, "MasterChain: must be chainid");
 
-		_syncChains(CHAIN_ID, masterChain_, 0);
+		_syncSupplies(CHAIN_ID, masterChain_, 0);
 
 		emit MasterChainUpdated(_masterChain, masterChain_);
 
@@ -254,7 +260,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	}
 
 	// Sync Chains
-	function _syncChains(uint256 fromChain, uint256 toChain, uint256 amount) internal {
+	function _syncSupplies(uint256 fromChain, uint256 toChain, uint256 amount) internal {
 
 		// do nothing as this is the master chain
 		if (_masterChain == CHAIN_ID) {
@@ -265,26 +271,32 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		if (_masterChain != 0) {
 			uint256[] memory master = new uint256[](1);
 			master[0] = _masterChain;
-			ISupplySyncer(_supplySyncer).sendSyncNodesTransaction(master, fromChain, toChain, amount);
+			ISupplySyncer(_supplySyncer).syncSupplies(master, fromChain, toChain, amount);
 			return;
 		}
 
 		// sync both supplies on all other chains	
 		if (_masterChain == 0) {
-			ISupplySyncer(_supplySyncer).sendSyncNodesTransaction(knownChains, fromChain, toChain, amount);
+			ISupplySyncer(_supplySyncer).syncSupplies(knownChains, fromChain, toChain, amount);
 			return;
 		}
 
 	}
 
-	function receiveSyncNodesTransaction(uint256 sourceChain, uint256 destChain, uint256 amount) external {
+	function onSyncSupplies(uint256[] memory onChains, uint256 fromChain, uint256 toChain, uint256 amount) external {
 		require(msg.sender == _supplySyncer, "SupplySyncer: must be defined");
 
 		// receive supply
-		supplies[sourceChain] -= amount;
-		supplies[destChain] += amount;
+		supplies[fromChain] -= amount;
+		supplies[toChain] += amount;
 
 		// emit event
+		emit CrosschainSyncSupplyReceived(CHAIN_ID, fromChain, amount);
+
+		// run relayer extensions
+		for(uint i=0; i<extRelayerSendMessage.length; i++){
+      IExtRelayerSyncSupply(extRelayerSendSupply[i])._afterSyncSupplyReceived(address(this), address(this), amount);
+    }
 
 	}
 
@@ -292,8 +304,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	// ************************************* ERC-20X TransferX ****************************************
 	// ************************************************************************************************
 	mapping(uint256 => address) public addresses;
-
-	event RemoteSupplyUpdated(uint256 fromChain, uint256 toChain, uint256 amount);
 
 	// Performs supply transfer
 	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
@@ -343,46 +353,49 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		supplies[toChain] -= amount;
 
 		// sync other networks
-		_syncChains(CHAIN_ID, toChain, amount);
-
-		emit RemoteSupplyUpdated(CHAIN_ID, toChain, amount);
+		_syncSupplies(CHAIN_ID, toChain, amount);
 
 		return true;
 	}
 
 	// Receives supply transfer
-	function receiveCrosschainSupply(uint256 sourceChain, uint256 destChain, uint256 amount) external {
+	function onCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) external {
 		require(msg.sender == _supplyRelayer, "Relayer: must be defined");
 
 		// update both supplies locally
 		_mint(addresses[destChain], amount);
-		supplies[sourceChain] -= amount;
+		//supplies[sourceChain] -= amount;
 		supplies[destChain] += amount;
 
 		// emit event
+		emit CrosschainSupplyReceived(CHAIN_ID, destChain, amount);
+
+		// run relayer extensions
+		for(uint i=0; i<extRelayerSendMessage.length; i++){
+      IExtRelayerSupply(extRelayerSendSupply[i])._afterSupplyReceived(destAddress, destAddress, amount);
+    }
 
 	}
 
 	// *************************************************************************************************
 	// ************************************* Approved Resources ****************************************
 	// *************************************************************************************************
-	enum ResourceTypes{ 
-		OWNERSHIP_PROVIDER,
-		SUPPLY_RELAYER,
-		SUPPLY_SYNCER,
-		INBLOCK,
-		INUPDATE,
-		INLOG,
-		OUT 
-	}
-
 	// Ownership
 	address private _ownershipProvider;
 
-	// Relayers
+	// Relayer
 	address private _supplyRelayer;
 
 	address private _supplySyncer;
+
+	// Relayer Extensions
+	address[] public extRelayerSendMessage;
+
+	address[] public extRelayerSendSupply;
+
+	address[] public extRelayerSyncSupply;
+
+	address[] public extRelayerSwap;
 
 	// ERC-20 Extensions
 	address[] public extTransportINLog;
@@ -403,8 +416,43 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	address[] public extTransportOUTX;
 
 	// *************************************************************************************************
+	// ************************************** Relayers Extensions **************************************
+	// *************************************************************************************************
+	function onCrosschainMessage(uint256 destChain, address destAddress, uint256 amount) external {
+
+		emit CrosschainMessageReceived(CHAIN_ID, destChain, amount);
+
+		// run relayer extensions
+		for(uint i=0; i<extRelayerSendMessage.length; i++){
+      IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destAddress, destAddress, amount);
+    }
+
+	}
+
+	function onSwap(uint256 destChain, address destAddress, uint256 amount) external {
+
+		emit CrosschainSwapReceived(CHAIN_ID, destChain, amount);
+
+		// run relayer extensions
+		for(uint i=0; i<extRelayerSwap.length; i++){
+      IExtRelayerSwap(extRelayerSwap[i])._afterSwapReceived(destAddress, destAddress, amount);
+    }
+
+	}
+
+	// *************************************************************************************************
 	// ************************************** Resources Injection **************************************
 	// *************************************************************************************************
+	enum ResourceTypes{ 
+		OWNERSHIP_PROVIDER,
+		SUPPLY_RELAYER,
+		SUPPLY_SYNCER,
+		INBLOCK,
+		INUPDATE,
+		INLOG,
+		OUT 
+	}
+
 	struct PendingResource {
 		uint resourceType;
 		address resourceAddress;
