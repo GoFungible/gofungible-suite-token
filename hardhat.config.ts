@@ -44,6 +44,7 @@ const config: HardhatUserConfig = {
 		// token: 'BNB'
 		gasPriceApi: 'https://api.polygonscan.com/api?module=proxy&action=eth_gasPrice',		// polygon
 		token: 'MATIC',
+		reportPureAndViewMethods: true,
     excludeContracts: ["Migrations"], // Exclude specific contracts
 	},
 };
