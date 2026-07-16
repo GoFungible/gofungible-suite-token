@@ -7,8 +7,10 @@ import "./erc-173/ERC173.sol";
 import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/token/IMultichainToken.sol";
+import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/IMessageRelayer.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplyRelayer.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplySyncer.sol";
+import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplySwapper.sol";
 
 // multichain processors
 
@@ -218,20 +220,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	// master chain
 	uint256 _masterChain;
 
-	event MasterChainUpdated(uint256 fromMasterChain, uint256 toMasterChain);
-
 	function getMasterChain() external view returns (uint256) {
 		return _masterChain;
 	}
-	function setMasterChain(uint256 masterChain_) external {
+	function setMasterChain(uint256 _newMasterChain_) external {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(masterChain_ > 0, "MasterChain: must be chainid");
+		require(_newMasterChain_ > 0, "MasterChain: must be chainid");
 
-		_syncSupplies(CHAIN_ID, masterChain_, 0);
+		_syncSupplies(CHAIN_ID, _newMasterChain_, 0);
 
-		emit MasterChainUpdated(_masterChain, masterChain_);
+		emit MasterChainUpdated(_masterChain, _newMasterChain_);
 
-		_masterChain = masterChain_;
+		_masterChain = _newMasterChain_;
 	}
 
 	// ************************************************************************************************
@@ -291,7 +291,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		supplies[toChain] += amount;
 
 		// emit event
-		emit CrosschainSyncSupplyReceived(CHAIN_ID, fromChain, amount);
+		emit CrosschainSyncSupplyReceived(onChains, CHAIN_ID, fromChain, amount);
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
@@ -368,7 +368,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		supplies[destChain] += amount;
 
 		// emit event
-		emit CrosschainSupplyReceived(CHAIN_ID, destChain, amount);
+		emit CrosschainSupplyReceived(CHAIN_ID, destAddress, amount);
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
@@ -418,20 +418,20 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	// *************************************************************************************************
 	// ************************************** Relayers Extensions **************************************
 	// *************************************************************************************************
-	function onCrosschainMessage(uint256 destChain, address destAddress, uint256 amount) external {
+	function onCrosschainMessage(uint256 destChain, address destAddress, string calldata message) external {
 
-		emit CrosschainMessageReceived(CHAIN_ID, destChain, amount);
+		emit CrosschainMessageReceived(destChain, destAddress, message);
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
-      IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destAddress, destAddress, amount);
+      IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destAddress, destAddress, message);
     }
 
 	}
 
 	function onSwap(uint256 destChain, address destAddress, uint256 amount) external {
 
-		emit CrosschainSwapReceived(CHAIN_ID, destChain, amount);
+		emit CrosschainSwapReceived(destChain, destAddress, amount);
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSwap.length; i++){
