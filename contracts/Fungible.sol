@@ -292,7 +292,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
-      IExtRelayerSyncSupply(extRelayerSendSupply[i])._afterSyncSupplyReceived(address(this), address(this), amount);
+      IExtRelayerSyncSupply(extRelayerSendSupply[i])._afterSyncSupplyReceived(toChain, address(this), amount);
     }
 
 	}
@@ -366,7 +366,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
-      IExtRelayerSupply(extRelayerSendSupply[i])._afterSupplyReceived(destAddress, destAddress, amount);
+      IExtRelayerSupply(extRelayerSendSupply[i])._afterSupplyReceived(destChain, destAddress, amount);
     }
 
 	}
@@ -416,7 +416,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
-      IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destAddress, destAddress, message);
+      IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destChain, destAddress, message);
     }
 
 	}
@@ -425,7 +425,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSwap.length; i++){
-      IExtRelayerSwap(extRelayerSwap[i])._afterSwapReceived(destAddress, destAddress, amount);
+      IExtRelayerSwap(extRelayerSwap[i])._afterSwapReceived(destChain, destAddress, amount);
     }
 
 	}
