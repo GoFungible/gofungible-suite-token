@@ -290,9 +290,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		supplies[fromChain] -= amount;
 		supplies[toChain] += amount;
 
-		// emit event
-		emit CrosschainSyncSupplyReceived(onChains, CHAIN_ID, fromChain, amount);
-
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
       IExtRelayerSyncSupply(extRelayerSendSupply[i])._afterSyncSupplyReceived(address(this), address(this), amount);
@@ -367,9 +364,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		//supplies[sourceChain] -= amount;
 		supplies[destChain] += amount;
 
-		// emit event
-		emit CrosschainSupplyReceived(CHAIN_ID, destAddress, amount);
-
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
       IExtRelayerSupply(extRelayerSendSupply[i])._afterSupplyReceived(destAddress, destAddress, amount);
@@ -420,8 +414,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	// *************************************************************************************************
 	function onCrosschainMessage(uint256 destChain, address destAddress, string calldata message) external {
 
-		emit CrosschainMessageReceived(destChain, destAddress, message);
-
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
       IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destAddress, destAddress, message);
@@ -430,8 +422,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	}
 
 	function onSwap(uint256 destChain, address destAddress, uint256 amount) external {
-
-		emit CrosschainSwapReceived(destChain, destAddress, amount);
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSwap.length; i++){
