@@ -10,7 +10,6 @@ import "gofungible-erc-20-multichain-relayer-extension/contracts/token/IMulticha
 import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/IMessageRelayer.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplyRelayer.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplySyncer.sol";
-import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplySwapper.sol";
 
 // multichain processors
 
@@ -19,7 +18,6 @@ import "./extensions/IOwnershipProvider.sol";
 import "./extensions/IExtRelayerMessage.sol";
 import "./extensions/IExtRelayerSupply.sol";
 import "./extensions/IExtRelayerSyncSupply.sol";
-import "./extensions/IExtRelayerSwap.sol";
 import "./extensions/IExtTransferINBlock.sol";
 import "./extensions/IExtTransferINUpdate.sol";
 import "./extensions/IExtTransferINLog.sol";
@@ -229,6 +227,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		addresses[chainId] = chainAddress;
 	}
 
+	// https://github.com/ZeframLou/token-migrator
+	// https://forum.openzeppelin.com/t/how-to-migrate-a-non-upgradeable-erc20-token-to-a-new-version/3406/8
+	// https://johnjvester.medium.com/bridging-the-gap-better-token-standards-for-cross-chain-assets-6a5793a215c3
+	function migratetoken(address newToken) external {
+
+	}
+
 	// ************************************************************************************************
 	// *********************************** ERC-20X Master Chain ***************************************
 	// ************************************************************************************************  
@@ -408,8 +413,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 
 	address[] public extRelayerSyncSupply;
 
-	address[] public extRelayerSwap;
-
 	// ERC-20 Extensions
 	address[] public extTransportINLog;
 
@@ -436,15 +439,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
       IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destChain, destAddress, message);
-    }
-
-	}
-
-	function onSwap(uint256 destChain, address destAddress, uint256 amount) external {
-
-		// run relayer extensions
-		for(uint i=0; i<extRelayerSwap.length; i++){
-      IExtRelayerSwap(extRelayerSwap[i])._afterSwapReceived(destChain, destAddress, amount);
     }
 
 	}
