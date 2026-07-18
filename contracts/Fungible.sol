@@ -259,6 +259,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 			}
 	}
 
+	function getSuppliesChecksum() public view returns (bytes32) {
+			bytes32 checksum;
+			for (uint256 i = 0; i < knownChains.length; i++) {
+				checksum = keccak256(abi.encodePacked(checksum, knownChains[i], supplies[knownChains[i]]));
+			}
+			return checksum;
+	}
+
 	// Sync Chains
 	function _syncSupplies(uint256 fromChain, uint256 toChain, uint256 amount) internal {
 
@@ -267,28 +275,28 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 			return;
 		}
 
-		// sync both supplies on master chain
-		if (_masterChain != 0) {
+		// sync supplies on master chain
+		if (_masterChain > 0) {
 			uint256[] memory master = new uint256[](1);
 			master[0] = _masterChain;
-			ISupplySyncer(_supplySyncer).syncSupplies(master, fromChain, toChain, amount);
+			ISupplySyncer(_supplySyncer).syncSupplies(master, fromChain, toChain, amount, getSuppliesChecksum());
 			return;
 		}
 
-		// sync both supplies on all other chains	
-		if (_masterChain == 0) {
-			ISupplySyncer(_supplySyncer).syncSupplies(knownChains, fromChain, toChain, amount);
-			return;
-		}
+		// sync supplies on all chains	
+		ISupplySyncer(_supplySyncer).syncSupplies(knownChains, fromChain, toChain, amount, getSuppliesChecksum());
 
 	}
 
-	function onSyncSupplies(uint256[] memory onChains, uint256 fromChain, uint256 toChain, uint256 amount) external {
+	function onSyncSupplies(uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) external {
 		require(msg.sender == _supplySyncer, "SupplySyncer: must be defined");
 
-		// receive supply
+		// update supply
 		supplies[fromChain] -= amount;
 		supplies[toChain] += amount;
+
+		// verify checsum
+		require(checksum == getSuppliesChecksum(), "SupplySyncer: checksums are not matching. Reverted");
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
