@@ -215,6 +215,21 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	}
 
 	// ************************************************************************************************
+	// ************************************* ERC-20X Network ******************************************
+	// ************************************************************************************************  
+	uint256[] knownChains;
+
+	mapping(uint256 => address) public addresses;
+
+	function addChain(uint256 chainId, address chainAddress) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(addresses[chainId] == address(0), "Network: thi chainId already has a contract");
+
+		knownChains.push(chainId);
+		addresses[chainId] = chainAddress;
+	}
+
+	// ************************************************************************************************
 	// *********************************** ERC-20X Master Chain ***************************************
 	// ************************************************************************************************  
 	// master chain
@@ -246,8 +261,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	// ************************************************************************************************
 	// ********************************** ERC-20X Supply by Chain *************************************
 	// ************************************************************************************************
-	uint256[] knownChains;
-
 	mapping(uint256 => uint256) public supplies;
 
 	function getAllRemoteSupplies() external view returns (uint256[] memory chainIds, uint256[] memory _supplies) {
@@ -255,7 +268,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 			_supplies = new uint256[](knownChains.length);
 			
 			for (uint i = 0; i < knownChains.length; i++) {
-					_supplies[i] = supplies[knownChains[i]];
+				_supplies[i] = supplies[knownChains[i]];
 			}
 	}
 
@@ -308,8 +321,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 	// ************************************************************************************************
 	// ************************************* ERC-20X TransferX ****************************************
 	// ************************************************************************************************
-	mapping(uint256 => address) public addresses;
-
 	// Performs supply transfer
 	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
