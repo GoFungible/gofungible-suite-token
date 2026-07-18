@@ -7,7 +7,6 @@ import "./erc-173/ERC173.sol";
 import "./erc-20/IERC20.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/token/IMultichainToken.sol";
-import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/IMessageRelayer.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplyRelayer.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplySyncer.sol";
 
