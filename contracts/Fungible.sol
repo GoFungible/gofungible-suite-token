@@ -10,13 +10,15 @@ import "gofungible-erc-20-multichain-relayer-extension/contracts/token/IMulticha
 import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplyRelayer.sol";
 import "gofungible-erc-20-multichain-relayer-extension/contracts/relayers/ISupplySyncer.sol";
 
-// multichain processors
-
-// resource processors
+// ownership processors
 import "./extensions/IOwnershipProvider.sol";
+
+// multichain processors
 import "./extensions/IExtRelayerMessage.sol";
 import "./extensions/IExtRelayerSupply.sol";
 import "./extensions/IExtRelayerSyncSupply.sol";
+
+// extension processors
 import "./extensions/IExtTransferINBlock.sol";
 import "./extensions/IExtTransferINUpdate.sol";
 import "./extensions/IExtTransferINLog.sol";
@@ -294,18 +296,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 
 		// sync supplies on master chain
 		if (_masterChain > 0) {
-			uint256[] memory master = new uint256[](1);
-			master[0] = _masterChain;
-			ISupplySyncer(_supplySyncer).syncSupplies(master, fromChain, toChain, amount, getSuppliesChecksum());
+			ISupplySyncer(_supplySyncer).syncSupplies(_masterChain, address(0), fromChain, toChain, amount, getSuppliesChecksum());
 			return;
 		}
 
-		// sync supplies on all chains	
-		ISupplySyncer(_supplySyncer).syncSupplies(knownChains, fromChain, toChain, amount, getSuppliesChecksum());
+		// sync supplies on all chains
+		for(uint i=0; i<knownChains.length; i++){
+			ISupplySyncer(_supplySyncer).syncSupplies(knownChains[i], addresses[knownChains[i]], fromChain, toChain, amount, getSuppliesChecksum());
+		}
 
 	}
 
-	function onSyncSupplies(uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) external {
+	function onSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) external {
 		require(msg.sender == _supplySyncer, "SupplySyncer: must be defined");
 
 		// update supply
@@ -452,7 +454,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 		INBLOCK,
 		INUPDATE,
 		INLOG,
-		OUT 
+		OUT,
+		INBLOCKX,
+		INUPDATEX,
+		INLOGX,
+		OUTX 
 	}
 
 	struct PendingResource {
@@ -521,6 +527,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IMultichainToken {
 			extTransportINLog.push(resourceAddress);
 		} else if (resourceType == uint(ResourceTypes.OUT)) {
 			extTransportOUT.push(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.INBLOCKX)) {
+			extTransportINBlockX.push(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.INUPDATEX)) {
+			extTransportINUpdateX.push(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.INLOGX)) {
+			extTransportINLogX.push(resourceAddress);
+		} else if (resourceType == uint(ResourceTypes.OUTX)) {
+			extTransportOUTX.push(resourceAddress);
 		}
 
 		// remove resource from the pending list
