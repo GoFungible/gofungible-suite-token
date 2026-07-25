@@ -10,7 +10,6 @@
     "node": "hardhat node"
   },
   "dependencies": {
-    "gofungible-erc-20-multichain-relayer-extension": "github:GoFungible/gofungible-erc-20-multichain-relayer-extension",
     "gofungible-erc-20-multichain-supply-extension": "github:GoFungible/gofungible-erc-20-multichain-supply-extension"
   },
   "devDependencies": {
