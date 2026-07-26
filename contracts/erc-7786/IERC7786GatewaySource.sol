@@ -2,6 +2,7 @@
 pragma solidity 0.8.30;
 
 interface IERC7786GatewaySource {
+
 	event MessageSent(
 		bytes32 indexed sendId,
 		bytes sender,    // Binary Interoperable Address
@@ -22,9 +23,10 @@ interface IERC7786GatewaySource {
 			bytes[] calldata attributes
 	) external payable returns (bytes32 outboxId);
 
-	function sendMessage(
+	/*function sendMessage(
 			bytes calldata recipient, // Binary Interoperable Address
 			bytes calldata payload,
 			bytes[] calldata attributes
-	) external payable returns (bytes32 sendId);
+	) external payable returns (bytes32 sendId);*/
+	
 }

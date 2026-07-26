@@ -5,6 +5,7 @@ pragma solidity 0.8.30;
 import "./IFungible.sol";
 import "./erc-173/ERC173.sol";
 import "./erc-20/IERC20.sol";
+import "./erc-7786/IERC7786GatewaySource.sol";
 import "./erc-7786/IERC7786Recipient.sol";
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 
@@ -397,13 +398,24 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	function sendCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal {
 
+		// IERC7786GatewaySource(_gateway).sendMessage();
+
 	}
 
 	function syncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
+
+		// IERC7786GatewaySource(_gateway).sendMessage();
 		
 	}
 
 	function receiveMessage(bytes32 receiveId, bytes calldata sender, bytes calldata payload) external payable returns (bytes4) {
+
+		if (true) {
+			//onCrosschainMessage();
+
+		} else if (false) {
+			//onCrosschainSupply();
+		}
 
 	}
 
