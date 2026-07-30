@@ -1,7 +1,5 @@
-import fs from 'fs';
-import path from 'path';
 import { ethers } from 'hardhat';
-import { BaseContract, BigNumberish } from 'ethers';
+import { BigNumberish } from 'ethers';
 import { keccak256 } from "@ethersproject/keccak256";
 import { toUtf8Bytes } from "@ethersproject/strings";
 
@@ -39,24 +37,6 @@ export const ERRORS: {[key: string]: string} = {
 	ERRR_VEST_100: 'ERRR_VEST_100', // Vesting percentag must be smaller than 100
 }
 
-// time
-export const TIME: {[key: string]: number} = {
-	MILLIS_IN_MINUTE: 1000 * 60,
-	MILLIS_IN_HOUR  : 1000 * 60 * 60,
-	MILLIS_IN_DAY   : 1000 * 60 * 60 * 24,
-	MILLIS_IN_WEEK  : 1000 * 60 * 60 * 24 * 7,
-	MILLIS_IN_MONTH : 1000 * 60 * 60 * 24 * 30,
-	MILLIS_IN_YEAR  : 1000 * 60 * 60 * 24 * 365,
-}
-
-export const STAGE: {[key: string]: number} = {
-	NOT_CREATED: 0,
-	NOT_STARTED: 1,
-	ONGOING: 2,
-	ONHOLD: 3,
-	FINISHED: 4,
-}
-
 // currency conversions
 export let numUsdPerEther: number = 1100;
 
@@ -77,137 +57,4 @@ export let stringToBytes5 = function (str: string) {
 }
 export let bytes5ToString = function (hexString: string) {
 	return ethers.toUtf8String(hexString);
-}
-/*export let tokenToUsd = async function (token: number, ico: Contract) {
-	console.log("UUSD_PER_TOKEN: ");
-	let tokenInfo = await ico.getPaymentToken('FOO');
-	let UUSD_PER_TOKEN = tokenInfo[2];
-	console.log("UUSD_PER_TOKEN: " + UUSD_PER_TOKEN);
-	return token * UUSD_PER_TOKEN;
-}
-export let usdToToken = async function (usd: number, ico: Contract) {
-	console.log("UUSD_PER_TOKEN: ");
-	let tokenInfo = await ico.getPaymentToken('FOO');
-	let UUSD_PER_TOKEN = tokenInfo[2];
-	console.log("UUSD_PER_TOKEN: " + UUSD_PER_TOKEN);
-	console.log("usdToToken: " + usd * 10**6 / UUSD_PER_TOKEN);
-	return usd * 10**6 / UUSD_PER_TOKEN;
-}
-export let usdToTokenWithDecimals = async function (usd: number, ico: Contract) {
-	let change = await usdToToken(usd, ico) * 10**18;
-	return parseInt(change.toString());
-}*/
-
-// logs
-/*export let logICOStatus = async (ico: Contract) => {
-
-	console.log("\getTotaluUSDInvested: " + await ico.getTotaluUSDInvested() + " USD");
-
-	let price = await ico.getPriceuUSD();
-
-	let investorsCount = await ico.getInvestorsCount();
-	let investors = await ico.getInvestors();
-	console.log("\tInvestors: ");
-	for (let i = 0; i < investorsCount; i++) {
-		let ether = await ethers.provider.getBalance(investors[i]);
-		let uusd = await ico.getuUSDToClaim(investors[i]);
-		let tokens = Math.floor(uusd / price);
-		console.log("\t\t* " + investors[i] + " ether: " + weiToUsd(ether) + " USD" + "; tokens: " + tokens + " CYGAS = " + (uusd/10**6) + " USD");
-	}
-
-}*/
-
-// transfer helpers
-/*export let testTransferCoin = async (addr: SignerWithAddress, usdAmount: number, ico: Contract) => {
-	console.log("purchase of : " + usdAmount + " USD = " + usdToWei(usdAmount) + " Wei by " + addr.address);
-	return await addr.sendTransaction({
-		to: ico.address,
-		value: usdToWei(usdAmount),
-		gasPrice: '0x5b9aca00',
-		gasLimit: '0x56f90',
-	});
-};
-export let testTransferToken = async (addr: SignerWithAddress, token: string, usdAmount: number, ico: Contract, foo: Contract) => {
-	console.log("purchase of : " + usdAmount + " USD of " + token + " by " + addr.address);
-
-	let tokenInfo = await ico.getPaymentToken(token);
-	let UUSD_PER_TOKEN = tokenInfo[2];
-	let rawAmount = usdAmount * 1e6 / UUSD_PER_TOKEN;
-	let decimals = tokenInfo[3];
-	let amountToTransfer = ethers.parseUnits(rawAmount.toString(), decimals).toString();
-	await foo.connect(addr).approve(ico.address, amountToTransfer);
-	return await ico.connect(addr).depositTokens(token, amountToTransfer);
-};*/
-
-
-// diamond
-export const FacetCutAction = { Add: 0, Replace: 1, Remove: 2 }
-
-/*export let getSelectors = function (contract:BaseContract) {
-	const signatures: string[] = Object.keys(contract.interface.functions);
-	return signatures.reduce((acc: string[], val) => {
-			if (val !== 'init(bytes)') {
-					acc.push(contract.interface.getSighash(val));
-			}
-			return acc;
-	}, []);
-}*/
-/**
- * Interface mapping function signatures to their 4-byte hex selectors
- */
-export interface FunctionSelectors {
-  [signature: string]: string;
-}
-/**
- * Calculates all public and external function selectors for a given Hardhat contract instance.
- * @param contract The deployed contract instance or an attached contract instance.
- * @returns An object containing function signatures as keys and selectors as values.
- */
-export function getSelectors(contract: BaseContract): FunctionSelectors {
-  const selectors: FunctionSelectors = {};
-
-  // Ethers v6 exposes all ABI fragments through contract.interface
-  contract.interface.forEachFunction((fragment) => {
-    // fragment.selector retrieves the calculated 4-byte Keccak-256 hash automatically
-    selectors[fragment.format()] = fragment.selector;
-  });
-
-  return selectors;
-}
-export let removeSelectors = function (selectors: string[], removeSelectors: string[]) {
-	selectors = selectors.filter(v => !removeSelectors.includes(v))
-	return selectors
-}
-/*export let logSelectors = function (contract:Contract) {
-	const signatures: string[] = Object.keys(contract.interface.functions);
-	return signatures.reduce((acc: string[], val) => {
-		console.log(val + '->' + contract.interface.getSighash(val));
-		return acc;
-	}, []);
-}*/
-
-// extractAbi
-export const extractAbi = async () => {
-	
-	if (fs.existsSync('abi'))
-		fs.rmdirSync('abi', { recursive: true });
-	fs.mkdirSync('abi');
-
-  const mainFolder = "artifacts/contracts/";
-	for (const fullJsonFilePath of readAllFiles(mainFolder)) {
-		const abiFileName = fullJsonFilePath.substr(fullJsonFilePath.lastIndexOf("/") + 1);
-		let data: any = fs.readFileSync(fullJsonFilePath);
-		fs.writeFileSync(`abi/${abiFileName}`, JSON.stringify(JSON.parse(data).abi));
-	}
-};
-
-export function* readAllFiles(dir: string): Generator<string> {
-  const files = fs.readdirSync(dir, { withFileTypes: true });
-  for (const file of files) {
-    if (file.isDirectory()) {
-      yield* readAllFiles(path.join(dir, file.name));
-    } else if (!file.name.includes(".dbg.json")) {
-      yield path.join(dir, file.name);
-    }
-  }
 }
