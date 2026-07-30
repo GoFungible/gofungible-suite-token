@@ -66,7 +66,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		address oldOwner = _owner;
 
 		if (_ownershipProvider != address(0)) {
-			_owner = IOwnershipProvider(_ownershipProvider).transferOwnership(oldOwner, _newOwner);
+			bytes memory encodedData = abi.encodeWithSignature( "transferOwnership(address _owner)", _owner);
+			bytes memory resultBytes = _staticCall(_ownershipProvider, encodedData);
+			_owner = abi.decode(resultBytes, (address));
 		} else {
 			_owner = _newOwner;
 		}
@@ -160,18 +162,24 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// run INBLOCK extensions
 		for(uint i=0; i<extTransportINBlock.length; i++){
-      if (IExtTransferINBlock(extTransportINBlock[i])._beforeTokenTransferBlock(from, to, amount))
+			bytes memory encodedData = abi.encodeWithSignature( "_beforeTransferBlock(address from, address to, uint256 amount)", from, to, amount );
+			bytes memory resultBytes = _staticCall(extTransportINBlock[i], encodedData);
+			bool isBlocked = abi.decode(resultBytes, (bool));
+			if (isBlocked)
 				return;
     }
 
 		// run INUPDATE extensions
 		for(uint i=0; i<extTransportINUpdate.length; i++){
-      amount = IExtTransferINUpdate(extTransportINUpdate[i])._beforeTokenTransferUpdate(from, to, amount);
+			bytes memory encodedData = abi.encodeWithSignature( "_beforeTransferUpdate(address from, address to, uint256 amount)", from, to, amount );
+			bytes memory resultBytes = _delegateCall(extTransportINUpdate[i], encodedData);
+			amount = abi.decode(resultBytes, (uint256));
     }
 
 		// run INLOG extensions
 		for(uint i=0; i<extTransportINLog.length; i++){
-      IExtTransferINLog(extTransportINLog[i])._beforeTokenTransferLog(from, to, amount);
+			bytes memory encodedData = abi.encodeWithSignature( "_beforerTransferLog(address from, address to, uint256 amount)", from, to, amount );
+			_staticCall(extTransportINLog[i], encodedData);
     }
 		
 		_balances[from] -= amount;
@@ -179,7 +187,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		
 		// run OUT extensions
 		for(uint i=0; i<extTransportOUT.length; i++){
-      IExtTransferOUTLog(extTransportOUT[i])._afterTokenTransfer(from, to, amount);
+			bytes memory encodedData = abi.encodeWithSignature( "_afterTransferLog(address from, address to, uint256 amount)", from, to, amount );
+			_staticCall(extTransportOUT[i], encodedData);
     }
 
 		emit Transfer(from, to, amount);
@@ -315,8 +324,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(checksum == getSuppliesChecksum(), "SupplySyncer: checksums are not matching. Reverted");
 
 		// run relayer extensions
-		for(uint i=0; i<extRelayerSendMessage.length; i++){
-      IExtRelayerSyncSupply(extRelayerSendSupply[i])._afterSyncSupplyReceived(toChain, address(this), amount);
+		for(uint i=0; i<extRelayerSyncSupply.length; i++){
+			bytes memory encodedData = abi.encodeWithSignature( "_afterSyncSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", toChain, onChain, amount );
+			_staticCall(extRelayerSyncSupply[i], encodedData);
     }
 
 	}
@@ -330,26 +340,33 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// run INBLOCK extensions
 		for(uint i=0; i<extTransportINBlockX.length; i++){
-      if (IExtTransferINBlockX(extTransportINBlockX[i])._beforeTokenTransferBlock(toChain, toAddress, amount))
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportINBlockX(uint256 from, address to, uint256 amount)", toChain, toAddress, amount );
+			bytes memory resultBytes = _staticCall(extTransportINBlockX[i], encodedData);
+			bool isBlocked = abi.decode(resultBytes, (bool));
+			if (isBlocked)
 				return false;
     }
 
 		// run INUPDATE extensions
 		for(uint i=0; i<extTransportINUpdateX.length; i++){
-      amount = IExtTransferINUpdateX(extTransportINUpdateX[i])._beforeTokenTransferUpdate(toChain, toAddress, amount);
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportINUpdateX(uint256 from, address to, uint256 amount)", toChain, toAddress, amount );
+			bytes memory resultBytes = _delegateCall(extTransportINUpdateX[i], encodedData);
+			amount = abi.decode(resultBytes, (uint256));
     }
 
 		// run INLOG extensions
 		for(uint i=0; i<extTransportINLogX.length; i++){
-      IExtTransferINLogX(extTransportINLogX[i])._beforeTokenTransferLog(toChain, toAddress, amount);
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportINLogX(uint256 from, address to, uint256 amount)", toChain, toAddress, amount );
+			_staticCall(extTransportINLogX[i], encodedData);
     }
 
 		// do real transation
 		_transferX(toChain, toAddress, amount);
 
 		// run OUT extensions
-		for(uint i=0; i<extTransportOUT.length; i++){
-      IExtTransferOUTLogX(extTransportOUT[i])._afterTokenTransfer(toChain, toAddress, amount);
+		for(uint i=0; i<extTransportOUTX.length; i++){
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportOUTX(uint256 from, address to, uint256 amount)", toChain, toAddress, amount );
+			_staticCall(extTransportOUTX[i], encodedData);
     }
 
 		return true;
@@ -385,8 +402,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		supplies[destChain] += amount;
 
 		// run relayer extensions
-		for(uint i=0; i<extRelayerSendMessage.length; i++){
-      IExtRelayerSupply(extRelayerSendSupply[i])._afterSupplyReceived(destChain, destAddress, amount);
+		for(uint i=0; i<extRelayerSendSupply.length; i++){
+			bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", destChain, destAddress, amount );
+			_staticCall(extRelayerSendSupply[i], encodedData);
     }
 
 	}
@@ -420,11 +438,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function onCrosschainMessage(uint256 destChain, address destAddress, string calldata message) external {
+	function onCrosschainMessage(uint256 toChain, address toAddress, string calldata message) external {
 
 		// run relayer extensions
 		for(uint i=0; i<extRelayerSendMessage.length; i++){
-      IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destChain, destAddress, message);
+			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(uint256 toChain, address toAddress, string calldata message)", toChain, toAddress, message );
+			_staticCall(extRelayerSendMessage[i], encodedData);
     }
 
 	}
@@ -571,97 +590,56 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ********************************************* Proxy ********************************************
 	// ************************************************************************************************
-
-	// Find facet for function that is called and execute the
-	// function if a facet is found and return any value.
-	/*fallback() external payable {
-
-		// get facet from function selector
-		address facet = LibDiamondStorage.diamondStorage().selectorToFacetAndPosition[msg.sig].facetAddress;
-		require(facet != address(0), "Diamond: Function does not exist");
-
-		// Execute external function from facet using delegatecall and return any value.
+	function _delegateCall(address implementation, bytes memory encodedData) internal virtual returns (bytes memory returnData) {
 		assembly {
-			// copy function selector and any arguments
-			calldatacopy(0, 0, calldatasize())
+			let result := delegatecall(
+				gas(), 
+				implementation, 
+				add(encodedData, 0x20), 
+				mload(encodedData), 
+				0x00, 
+				0x20
+			)
 
-
-			// execute function call using the facet
-			let result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)
-
-			// Route based on desired safety / isolation tier
-			let result := 0
-			switch route.routeType
-			case 0 { // DELEGATECALL (Fast, low isolation)
-					result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)
-			}
-			case 1 { // CALL (Isolated State Writes)
-					result := call(gas(), facet, callvalue(), 0, calldatasize(), 0, 0)
-			}
-			case 2 { // STATICCALL (Strict Read-Only)
-					result := staticcall(gas(), facet, 0, calldatasize(), 0, 0)
-			}
-
-      // Copy the return data back to memory
-			returndatacopy(0, 0, returndatasize())
+			let size := returndatasize()
+			mstore(0x00, size)
+			returndatacopy(0x20, 0x00, size)
 			
-			// return any return value or error back to the caller
-			switch result
-				case 0 {
-					revert(0, returndatasize())
-				}
-				default {
-					return(0, returndatasize())
-				}
+			returnData := add(0x00, 0x20)
+			
+			if iszero(result) {
+					revert(0x20, size)
+			}
 		}
 	}
+
+	function _staticCall(address implementation, bytes memory encodedData) internal virtual returns (bytes memory returnData) {
+		assembly {
+			let result := staticcall(
+				gas(), 
+				implementation, 
+				add(encodedData, 0x20), 
+				mload(encodedData), 
+				0x00, 
+				0x20
+			)
+
+			let size := returndatasize()
+			mstore(0x00, size)
+			returndatacopy(0x20, 0x00, size)
+			
+			returnData := add(0x00, 0x20)
+			
+			if iszero(result) {
+					revert(0x20, size)
+			}
+		}
+	}
+
 
 	receive() external payable {
-
-		// get diamond storage
-		LibDiamondStorage.DiamondStorage storage ds;
-		bytes32 position = LibDiamondStorage.DIAMOND_STORAGE_POSITION;
-		assembly {
-			ds.slot := position
-		}
-	
-		require(ds.receiveFacet !=  address(0), "Diamond: Address cannot be null");
-
-		// get facet from function selector
-		address facet = ds.receiveFacet;
-
-		// Execute external function from facet using delegatecall and return any value.
-		assembly {
-			// copy function selector and any arguments
-			calldatacopy(0, 0, calldatasize())
-			// execute function call using the facet
-			let result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)
-			// get any return value
-			returndatacopy(0, 0, returndatasize())
-			// return any return value or error back to the caller
-			switch result
-				case 0 {
-					revert(0, returndatasize())
-				}
-				default {
-					return(0, returndatasize())
-				}
-		}
 	}
-
-	function setReceiveFacet(address payable receiveFacet_) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(receiveFacet_ !=  address(0), "Diamond: Address cannot be null");
-
-		LibDiamondStorage.DiamondStorage storage ds;
-		bytes32 position = LibDiamondStorage.DIAMOND_STORAGE_POSITION;
-		assembly {
-			ds.slot := position
-		}
-
-		//console.log('setReceiveFacet', receiveFacet_);
-		ds.receiveFacet = receiveFacet_;
-	}*/
-
+	fallback() external payable {
+	}
 
 }

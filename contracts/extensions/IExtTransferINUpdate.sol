@@ -9,6 +9,6 @@ interface IExtTransferINUpdate {
 	 * @param to Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTokenTransferUpdate(address from, address to, uint256 amount) external returns (uint256);
+	function _beforeTransferUpdate(address from, address to, uint256 amount) external returns (uint256);
 		
 }

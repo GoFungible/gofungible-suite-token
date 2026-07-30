@@ -84,8 +84,6 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.getPendingResourcesIds()).to.not.be.reverted;
 		//await expect(fungibleContract.releaseResource(45, 0)).to.not.be.reverted;
 
-		await expect(fungibleContract.setReceiveFacet(addr1.address)).to.not.be.reverted;
-
 	});
 
 	it("Only Owner functions are not ok for not owner", async() => {
@@ -109,9 +107,7 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.connect(addr1).addResource(45, 1, fungibleAddress, 0, 10, 10)).to.be.revertedWith('Ownable: caller is not the owner');
 		await expect(fungibleContract.connect(addr1).getPendingResourcesIds()).to.not.be.reverted;
 		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith('Ownable: caller is not the owner');
-
-		await expect(fungibleContract.connect(addr1).setReceiveFacet(addr1.address)).to.be.revertedWith('Ownable: caller is not the owner');
-
+		
 	});
 
 	/********************************************************************************************************/

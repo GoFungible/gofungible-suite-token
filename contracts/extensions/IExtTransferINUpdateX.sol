@@ -9,6 +9,6 @@ interface IExtTransferINUpdateX {
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTokenTransferUpdate(uint256 toChain, address toAddress, uint256 amount) external returns (uint256);
+	function _beforeTransferUpdate(uint256 toChain, address toAddress, uint256 amount) external returns (uint256);
 		
 }

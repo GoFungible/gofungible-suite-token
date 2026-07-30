@@ -79,7 +79,7 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param to Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTokenTransferBlock(address from, address to, uint256 amount) external override returns (bool) {
+	function _beforeTransferBlock(address from, address to, uint256 amount) external override returns (bool) {
 
 	}
 
@@ -89,7 +89,7 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param to Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTokenTransferLog(address from, address to, uint256 amount) external override {
+	function _beforeTransferLog(address from, address to, uint256 amount) external override {
 
 	}
 
@@ -99,7 +99,7 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param to Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTokenTransferUpdate(address from, address to, uint256 amount) external override returns (uint256) {
+	function _beforeTransferUpdate(address from, address to, uint256 amount) external override returns (uint256) {
 		
 	}
 
@@ -109,7 +109,7 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param to Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _afterTokenTransfer(address from, address to, uint256 amount) external override {
+	function _afterTransferLog(address from, address to, uint256 amount) external override {
 
 	}
 
@@ -119,7 +119,7 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTokenTransferBlock(uint256 toChain, address toAddress, uint256 amount) external override returns (bool) {
+	function _beforeTransferBlock(uint256 toChain, address toAddress, uint256 amount) external override returns (bool) {
 
 	}
 
@@ -129,7 +129,7 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTokenTransferLog(uint256 toChain, address toAddress, uint256 amount) external override {
+	function _beforeTransferLog(uint256 toChain, address toAddress, uint256 amount) external override {
 
 	}
 
@@ -139,7 +139,7 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTokenTransferUpdate(uint256 toChain, address toAddress, uint256 amount) external override returns (uint256) {
+	function _beforeTransferUpdate(uint256 toChain, address toAddress, uint256 amount) external override returns (uint256) {
 
 	}
 
@@ -149,7 +149,7 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _afterTokenTransfer(uint256 toChain, address toAddress, uint256 amount) external override {
+	function _afterTransferLog(uint256 toChain, address toAddress, uint256 amount) external override {
 
 	}
 

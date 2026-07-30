@@ -37,7 +37,7 @@ describe("Deploy Extension", function () {
 		// ********************************************************* Install Versionable Facets and register in factory **********************************************
 		// ***********************************************************************************************************************************************************
 		// deploy DiamondCutFacet (CUD)
-		const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
+		/*const DiamondCutFacet = await ethers.getContractFactory('DiamondCutFacet')
 		let diamondCutFacet = await DiamondCutFacet.deploy()
 		await diamondCutFacet.waitForDeployment()
 		console.log('DiamondCutFacet deployed:', await diamondCutFacet.getAddress())
@@ -46,7 +46,7 @@ describe("Deploy Extension", function () {
 		const DiamondLoupeFacet = await ethers.getContractFactory('DiamondLoupeFacet')
 		let diamondLoupeFacet = await DiamondLoupeFacet.deploy()
 		await diamondLoupeFacet.waitForDeployment()
-		console.log('DiamondLoupeFacet deployed:', await diamondLoupeFacet.getAddress())
+		console.log('DiamondLoupeFacet deployed:', await diamondLoupeFacet.getAddress())*/
 
 		// deploy Fungible
 		const Fungible = await ethers.getContractFactory("Fungible");

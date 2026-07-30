@@ -9,6 +9,6 @@ interface IExtTransferOUTLogX {
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _afterTokenTransfer(uint256 toChain, address toAddress, uint256 amount) external;
+	function _afterTransferLog(uint256 toChain, address toAddress, uint256 amount) external;
 		
 }
