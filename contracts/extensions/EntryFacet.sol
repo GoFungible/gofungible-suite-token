@@ -8,11 +8,11 @@ import "./IExtRelayerSyncSupply.sol";
 import "./IExtTransferINBlock.sol";
 import "./IExtTransferINUpdate.sol";
 import "./IExtTransferINLog.sol";
-import "./IExtTransferOUT.sol";
+import "./IExtTransferOUTLog.sol";
 import "./IExtTransferINBlockX.sol";
 import "./IExtTransferINUpdateX.sol";
 import "./IExtTransferINLogX.sol";
-import "./IExtTransferOUTX.sol";
+import "./IExtTransferOUTLogX.sol";
 
 /**
  * @title EntryFacet
@@ -27,12 +27,12 @@ contract EntryFacet is 	IOwnershipProvider,
 												IExtTransferINBlock, 
 												IExtTransferINLog, 
 												IExtTransferINUpdate, 
-												IExtTransferOUT,
+												IExtTransferOUTLog,
 
 												IExtTransferINBlockX, 
 												IExtTransferINLogX, 
 												IExtTransferINUpdateX, 
-												IExtTransferOUTX {
+												IExtTransferOUTLogX {
 
 	/**
 	 * @dev Updates owner

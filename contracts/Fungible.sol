@@ -21,13 +21,11 @@ import "./extensions/IExtRelayerSyncSupply.sol";
 import "./extensions/IExtTransferINBlock.sol";
 import "./extensions/IExtTransferINUpdate.sol";
 import "./extensions/IExtTransferINLog.sol";
-import "./extensions/IExtTransferOUT.sol";
+import "./extensions/IExtTransferOUTLog.sol";
 import "./extensions/IExtTransferINBlockX.sol";
 import "./extensions/IExtTransferINUpdateX.sol";
 import "./extensions/IExtTransferINLogX.sol";
-import "./extensions/IExtTransferOUTX.sol";
-
-import "./extensions/framework/LibDiamondStorage.sol";
+import "./extensions/IExtTransferOUTLogX.sol";
 
 import "hardhat/console.sol";
 
@@ -105,7 +103,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _totalSupply;
 	}
 
-	function _mint(address to, uint256 amount) internal {
+	function _mint(address to, uint256 amount) private {
 		require(to != address(0), "ERC20: mint to zero address");
 		require(msg.sender == _gateway, "Relayer: must be defined");
 
@@ -115,7 +113,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		emit Transfer(address(0), to, amount);
 	}
 	
-	function _burn(address from, uint256 amount) internal {
+	function _burn(address from, uint256 amount) private {
 		require(from != address(0), "ERC20: burn from zero address");
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
 		require(msg.sender == _gateway, "Relayer: must be defined");
@@ -181,7 +179,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		
 		// run OUT extensions
 		for(uint i=0; i<extTransportOUT.length; i++){
-      IExtTransferOUT(extTransportOUT[i])._afterTokenTransfer(from, to, amount);
+      IExtTransferOUTLog(extTransportOUT[i])._afterTokenTransfer(from, to, amount);
     }
 
 		emit Transfer(from, to, amount);
@@ -295,18 +293,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// sync supplies on master chain
 		if (_masterChain > 0) {
-			syncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
+			sendCrosschainsyncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
 			return;
 		}
 
 		// sync supplies on all chains
 		for(uint i=0; i<knownChains.length; i++){
-			syncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
+			sendCrosschainsyncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
 		}
 
 	}
 
-	function onSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) external {
+	function onCrossChainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) external {
 		require(msg.sender == _gateway, "SupplySyncer: must be defined");
 
 		// update supply
@@ -351,7 +349,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// run OUT extensions
 		for(uint i=0; i<extTransportOUT.length; i++){
-      IExtTransferOUTX(extTransportOUT[i])._afterTokenTransfer(toChain, toAddress, amount);
+      IExtTransferOUTLogX(extTransportOUT[i])._afterTokenTransfer(toChain, toAddress, amount);
     }
 
 		return true;
@@ -402,7 +400,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function syncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
+	function sendCrosschainsyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
 
 		// IERC7786GatewaySource(_gateway).sendMessage();
 		
@@ -415,7 +413,19 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		} else if (false) {
 			//onCrosschainSupply();
+
+		} else if (false) {
+			//onCrossChainSyncSupplies();
 		}
+
+	}
+
+	function onCrosschainMessage(uint256 destChain, address destAddress, string calldata message) external {
+
+		// run relayer extensions
+		for(uint i=0; i<extRelayerSendMessage.length; i++){
+      IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destChain, destAddress, message);
+    }
 
 	}
 
@@ -452,18 +462,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	address[] public extTransportINBlockX;
 
 	address[] public extTransportOUTX;
-
-	// *************************************************************************************************
-	// ************************************** Relayers Extensions **************************************
-	// *************************************************************************************************
-	function onCrosschainMessage(uint256 destChain, address destAddress, string calldata message) external {
-
-		// run relayer extensions
-		for(uint i=0; i<extRelayerSendMessage.length; i++){
-      IExtRelayerMessage(extRelayerSendMessage[i])._afterMessageReceived(destChain, destAddress, message);
-    }
-
-	}
 
 	// *************************************************************************************************
 	// ************************************** Resources Injection **************************************
@@ -576,7 +574,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// Find facet for function that is called and execute the
 	// function if a facet is found and return any value.
-	fallback() external payable {
+	/*fallback() external payable {
 
 		// get facet from function selector
 		address facet = LibDiamondStorage.diamondStorage().selectorToFacetAndPosition[msg.sig].facetAddress;
@@ -586,10 +584,27 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		assembly {
 			// copy function selector and any arguments
 			calldatacopy(0, 0, calldatasize())
+
+
 			// execute function call using the facet
 			let result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)
-			// get any return value
+
+			// Route based on desired safety / isolation tier
+			let result := 0
+			switch route.routeType
+			case 0 { // DELEGATECALL (Fast, low isolation)
+					result := delegatecall(gas(), facet, 0, calldatasize(), 0, 0)
+			}
+			case 1 { // CALL (Isolated State Writes)
+					result := call(gas(), facet, callvalue(), 0, calldatasize(), 0, 0)
+			}
+			case 2 { // STATICCALL (Strict Read-Only)
+					result := staticcall(gas(), facet, 0, calldatasize(), 0, 0)
+			}
+
+      // Copy the return data back to memory
 			returndatacopy(0, 0, returndatasize())
+			
 			// return any return value or error back to the caller
 			switch result
 				case 0 {
@@ -646,7 +661,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		//console.log('setReceiveFacet', receiveFacet_);
 		ds.receiveFacet = receiveFacet_;
-	}
+	}*/
 
 
 }
