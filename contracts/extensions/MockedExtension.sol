@@ -14,6 +14,8 @@ import "./IExtTransferINUpdateX.sol";
 import "./IExtTransferINLogX.sol";
 import "./IExtTransferOUTLogX.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title EntryFacet
  * @dev Example ERC20 token demonstrating _beforeTokenTransfer and _afterTokenTransfer hooks
@@ -39,8 +41,8 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param _newOwner Address of the previous owner
 	 * @return newOwner Address of the new owner
 	 */
-	function transferOwnership(address _oldOwner, address _newOwner) external override returns (address) {
-
+	function transferOwnership(address _oldOwner, address _newOwner) external pure override returns (address) {
+		return _newOwner;
 	}
 
 	/**
@@ -49,8 +51,10 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address receiving tokens (address(0) for burns)
 	 * @param message Message being transferred (ERC20)
 	 */
-	function _afterMessageReceived(uint256 toChain, address toAddress, string calldata message) external override returns (bool) {
-
+	function _afterMessageReceived(uint256 toChain, address toAddress, string calldata message) external override pure{
+		console.log("message received in chain", toChain);
+		console.log("message received in address", toAddress);
+		console.log("message received ", message);
 	}
 
 	/**
@@ -59,8 +63,10 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount) external override returns (bool) {
-
+	function _afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount) external override pure{
+		console.log("supply received in chain", toChain);
+		console.log("supply received in address", toAddress);
+		console.log("supply received ", amount);
 	}
 
 	/**
@@ -69,8 +75,10 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _afterSyncSupplyReceived(uint256 toChain, address toAddress, uint256 amount) external override returns (bool) {
-
+	function _afterSyncSupplyReceived(uint256 toChain, address toAddress, uint256 amount) external override pure {
+		console.log("sync supply received in chain", toChain);
+		console.log("sync supply received in address", toAddress);
+		console.log("sync supply received ", amount);
 	}
 
 	/**
@@ -79,8 +87,11 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param to Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTransferBlock(address from, address to, uint256 amount) external override returns (bool) {
-
+	function _beforeTransferBlock(address from, address to, uint256 amount) external override pure returns (bool) {
+		console.log("_beforeTransferBlock", from);
+		console.log("_beforeTransferBlock", to);
+		console.log("_beforeTransferBlock", amount);
+		return true;
 	}
 
 	/**
@@ -89,8 +100,10 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param to Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTransferLog(address from, address to, uint256 amount) external override {
-
+	function _beforeTransferLog(address from, address to, uint256 amount) external override pure {
+		console.log("_beforeTransferBlock", from);
+		console.log("_beforeTransferBlock", to);
+		console.log("_beforeTransferBlock", amount);
 	}
 
 	/**
@@ -99,8 +112,11 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param to Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTransferUpdate(address from, address to, uint256 amount) external override returns (uint256) {
-		
+	function _beforeTransferUpdate(address from, address to, uint256 amount) external override pure returns (uint256) {
+		console.log("_beforeTransferBlock", from);
+		console.log("_beforeTransferBlock", to);
+		console.log("_beforeTransferBlock", amount);
+		return amount * 8 / 10;
 	}
 
 	/**
@@ -109,8 +125,10 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param to Address receiving tokens (address(0) for burns)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _afterTransferLog(address from, address to, uint256 amount) external override {
-
+	function _afterTransferLog(address from, address to, uint256 amount) external override pure {
+		console.log("_afterTransferLog", from);
+		console.log("_afterTransferLog", to);
+		console.log("_afterTransferLog", amount);
 	}
 
 	/**
@@ -119,8 +137,11 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTransferBlock(uint256 toChain, address toAddress, uint256 amount) external override returns (bool) {
-
+	function _beforeTransferBlock(uint256 toChain, address toAddress, uint256 amount) external override pure returns (bool) {
+		console.log("toChain", toChain);
+		console.log("toAddress", toAddress);
+		console.log("amount", amount);
+		return true;
 	}
 
 	/**
@@ -129,8 +150,10 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTransferLog(uint256 toChain, address toAddress, uint256 amount) external override {
-
+	function _beforeTransferLog(uint256 toChain, address toAddress, uint256 amount) external override pure {
+		console.log("toChain", toChain);
+		console.log("toAddress", toAddress);
+		console.log("amount", amount);
 	}
 
 	/**
@@ -139,8 +162,11 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _beforeTransferUpdate(uint256 toChain, address toAddress, uint256 amount) external override returns (uint256) {
-
+	function _beforeTransferUpdate(uint256 toChain, address toAddress, uint256 amount) external override pure returns (uint256) {
+		console.log("toChain", toChain);
+		console.log("toAddress", toAddress);
+		console.log("_beforeTransferBlock", amount);
+		return amount * 8 / 10;
 	}
 
 	/**
@@ -149,8 +175,10 @@ contract EntryFacet is 	IOwnershipProvider,
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _afterTransferLog(uint256 toChain, address toAddress, uint256 amount) external override {
-
+	function _afterTransferLog(uint256 toChain, address toAddress, uint256 amount) external override pure {
+		console.log("toChain", toChain);
+		console.log("toAddress", toAddress);
+		console.log("amount", amount);
 	}
 
 }

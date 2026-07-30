@@ -9,6 +9,6 @@ interface IExtRelayerMessage {
 	 * @param toAddress Address receiving tokens (address(0) for burns)
 	 * @param message Message being transferred (ERC20)
 	 */
-	function _afterMessageReceived(uint256 toChain, address toAddress, string calldata message) external returns (bool);
+	function _afterMessageReceived(uint256 toChain, address toAddress, string calldata message) external;
 		
 }
