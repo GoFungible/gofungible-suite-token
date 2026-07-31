@@ -55,6 +55,25 @@ describe("ERC-20 Supply", function () {
 	});
 
 	/********************************************************************************************************/
+	/*************************************************** metadata *******************************************/
+	/********************************************************************************************************/
+	it("Should return symbol.", async() => {
+		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
+		expect(await fungibleContract.symbol()).to.equal("FGT");
+	});
+
+	it("Should return name.", async() => {
+		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
+		expect(await fungibleContract.name()).to.equal("FungiTest");
+	});
+	
+	it("Should return decimals.", async() => {
+		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
+		expect(await fungibleContract.decimals()).to.equal(18);
+	});
+
+
+	/********************************************************************************************************/
 	/********************************************* Total Supply *********************************************/
 	/********************************************************************************************************/
 	it("Should have correct initial supply", async function () {

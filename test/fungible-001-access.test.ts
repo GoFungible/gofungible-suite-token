@@ -123,7 +123,7 @@ describe("Deploy Token", function () {
 		
 	});
 
-	it("Only not Owner not Gateway functions are not ok for not owner not gateway", async() => {
+	it("Not Owner not Gateway functions are not ok for owner and gateway", async() => {
 		const fungibleContract = Fungible__factory.connect(fungibleAddress, addr1);
 		await expect(() => fungibleContract.connect(addr1).name()).to.not.throw();
 		await expect(() => fungibleContract.connect(addr1).symbol()).to.not.throw();
@@ -146,24 +146,5 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith('Ownable: caller is not the owner');
 		
 	});
-
-	/********************************************************************************************************/
-	/*************************************************** metadata *******************************************/
-	/********************************************************************************************************/
-	it("Should return symbol.", async() => {
-		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
-		expect(await fungibleContract.symbol()).to.equal("FGT");
-	});
-
-	it("Should return name.", async() => {
-		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
-		expect(await fungibleContract.name()).to.equal("FungiTest");
-	});
-	
-	it("Should return decimals.", async() => {
-		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
-		expect(await fungibleContract.decimals()).to.equal(18);
-	});
-
 
 });
