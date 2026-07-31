@@ -63,30 +63,67 @@ describe("Deploy Token", function () {
 	/********************************************************************************************************/
 	it("Only Owner functions are ok for owner", async() => {
 		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
+
+		// erc-173 functions
+		await expect(() => fungibleContract.owner()).to.not.throw();
+		await expect(fungibleContract.transferOwnership(owner.address)).to.not.be.reverted;
+
+		// erc-20 functions
 		await expect(() => fungibleContract.name()).to.not.throw();
 		await expect(() => fungibleContract.symbol()).to.not.throw();
 		await expect(() => fungibleContract.decimals()).to.not.throw();
-
 		await expect(fungibleContract.totalSupply()).to.not.be.reverted;
 		await expect(fungibleContract.balanceOf(owner)).to.not.be.reverted;
-
 		await expect(fungibleContract.transfer(addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 		await expect(fungibleContract.approve(addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 		await expect(fungibleContract.allowance(owner.address, addr1.address)).to.not.be.reverted;
 		await expect(fungibleContract.connect(addr1).transferFrom(owner.address, addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 
-		await expect(fungibleContract.globalSupply()).to.not.be.reverted;
+		// erc-7866 functions
+		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWith("Relayer: must be defined");
+
+		// erc-20n functions
+		await expect(fungibleContract.addChain(0, addr1)).to.not.be.reverted;
+		await expect(() => fungibleContract.getMasterChain()).to.not.throw();
+		await expect(fungibleContract.setMasterChain(1)).to.be.revertedWith("Relayer: must be defined");
+		await expect(() => fungibleContract.globalSupply()).to.not.throw();
 		await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
+		await expect(() => fungibleContract.getSuppliesChecksum()).to.not.throw();
+		await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Relayer: must be defined");
 
-		//await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
-
+		// extensions functions
 		await expect(fungibleContract.addResource(45, 1, fungibleAddress, 0, 10, 10)).to.not.be.reverted;
-		await expect(fungibleContract.getPendingResourcesIds()).to.not.be.reverted;
-		//await expect(fungibleContract.releaseResource(45, 0)).to.not.be.reverted;
+		await expect(() => fungibleContract.getPendingResourcesIds()).to.not.throw();
+		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith("Position: position does not match resource");
+		await expect(fungibleContract.migratetoken(addr1)).to.not.be.reverted;
 
 	});
 
-	it("Only Owner functions are not ok for not owner", async() => {
+	it("Only Gateway functions are ok for gateway", async() => {
+		const fungibleContract = Fungible__factory.connect(fungibleAddress, addr1);
+		await expect(() => fungibleContract.connect(addr1).name()).to.not.throw();
+		await expect(() => fungibleContract.connect(addr1).symbol()).to.not.throw();
+		await expect(() => fungibleContract.connect(addr1).decimals()).to.not.throw();
+
+		await expect(fungibleContract.connect(addr1).totalSupply()).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).balanceOf(owner)).to.not.be.reverted;
+
+		await expect(fungibleContract.connect(owner).transfer(addr1.address, ethers.parseUnits("20", 18))).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).approve(addr2.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+		//await expect(fungibleContract.connect(addr1).transferFrom(addr1.address, addr2.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
+
+		await expect(fungibleContract.connect(addr1).globalSupply()).to.not.be.reverted;
+		await expect(fungibleContract.connect(addr1).getAllRemoteSupplies()).to.not.be.reverted;
+
+		await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith('Ownable: caller is not the owner');
+
+		await expect(fungibleContract.connect(addr1).addResource(45, 1, fungibleAddress, 0, 10, 10)).to.be.revertedWith('Ownable: caller is not the owner');
+		await expect(fungibleContract.connect(addr1).getPendingResourcesIds()).to.not.be.reverted;
+		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith('Ownable: caller is not the owner');
+		
+	});
+
+	it("Only not Owner not Gateway functions are not ok for not owner not gateway", async() => {
 		const fungibleContract = Fungible__factory.connect(fungibleAddress, addr1);
 		await expect(() => fungibleContract.connect(addr1).name()).to.not.throw();
 		await expect(() => fungibleContract.connect(addr1).symbol()).to.not.throw();

@@ -65,12 +65,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		address oldOwner = _owner;
 
-		if (_ownershipProvider != address(0)) {
+		if (_ownershipProvider == address(0)) {
+			_owner = _newOwner;
+		} else {
 			bytes memory encodedData = abi.encodeWithSignature( "transferOwnership(address _owner)", _owner);
 			bytes memory resultBytes = _staticCall(_ownershipProvider, encodedData);
 			_owner = abi.decode(resultBytes, (address));
-		} else {
-			_owner = _newOwner;
 		}
 
 		emit OwnershipTransferred(oldOwner, _owner);
@@ -141,13 +141,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	mapping(address => mapping(address => uint256)) private _allowances;
 
 	// transfer
-	function transferFrom(address from, address to, uint256 amount) public returns (bool) {
+	function transferFrom(address from, address to, uint256 amount) external returns (bool) {
 		_spendAllowance(from, msg.sender, amount);
 		_transfer(from, to, amount);
 		return true;
 	}
 
-	function transfer(address to, uint256 amount) public returns (bool) {
+	function transfer(address to, uint256 amount) external returns (bool) {
 
 		// do the actual operation
 		_transfer(msg.sender, to, amount);
@@ -220,6 +220,48 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
+	// ****************************************** Gateway *********************************************
+	// ************************************************************************************************
+	function sendCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal view {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+
+		// IERC7786GatewaySource(_gateway).sendMessage();
+
+	}
+
+	function sendCrosschainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
+		require(msg.sender == _gateway, "Relayer: must be defined");
+
+		// IERC7786GatewaySource(_gateway).sendMessage();
+		
+	}
+
+	function receiveMessage(bytes32 receiveId, bytes calldata sender, bytes calldata payload) external payable returns (bytes4) {
+		require(msg.sender == _gateway, "Relayer: must be defined");
+
+		if (true) {
+			//onCrosschainMessage();
+
+		} else if (false) {
+			//onCrosschainSupply();
+
+		} else if (false) {
+			//onCrossChainSyncSupplies();
+		}
+
+	}
+
+	function onCrosschainMessage(uint256 toChain, address toAddress, string calldata message) internal {
+
+		// run relayer extensions
+		for(uint i=0; i<extRelayerSendMessage.length; i++){
+			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(uint256 toChain, address toAddress, string calldata message)", toChain, toAddress, message );
+			_staticCall(extRelayerSendMessage[i], encodedData);
+    }
+
+	}
+
+	// ************************************************************************************************
 	// ************************************* ERC-20X Network ******************************************
 	// ************************************************************************************************  
 	uint256[] knownChains;
@@ -232,13 +274,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		knownChains.push(chainId);
 		addresses[chainId] = chainAddress;
-	}
-
-	// https://github.com/ZeframLou/token-migrator
-	// https://forum.openzeppelin.com/t/how-to-migrate-a-non-upgradeable-erc20-token-to-a-new-version/3406/8
-	// https://johnjvester.medium.com/bridging-the-gap-better-token-standards-for-cross-chain-assets-6a5793a215c3
-	function migratetoken(address newToken) external {
-
 	}
 
 	// ************************************************************************************************
@@ -302,19 +337,19 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// sync supplies on master chain
 		if (_masterChain > 0) {
-			sendCrosschainsyncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
+			sendCrosschainSyncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
 			return;
 		}
 
 		// sync supplies on all chains
 		for(uint i=0; i<knownChains.length; i++){
-			sendCrosschainsyncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
+			sendCrosschainSyncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
 		}
 
 	}
 
-	function onCrossChainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) external {
-		require(msg.sender == _gateway, "SupplySyncer: must be defined");
+	function onCrossChainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
+		require(msg.sender == _gateway, "Gateway: caller is not gateway");
 
 		// update supply
 		supplies[fromChain] -= amount;
@@ -393,7 +428,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// Receives supply transfer
-	function onCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) external {
+	function onCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal {
 		require(msg.sender == _gateway, "Relayer: must be defined");
 
 		// update both supplies locally
@@ -405,45 +440,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		for(uint i=0; i<extRelayerSendSupply.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", destChain, destAddress, amount );
 			_staticCall(extRelayerSendSupply[i], encodedData);
-    }
-
-	}
-
-	// ************************************************************************************************
-	// ****************************************** Gateway *********************************************
-	// ************************************************************************************************
-	function sendCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal {
-
-		// IERC7786GatewaySource(_gateway).sendMessage();
-
-	}
-
-	function sendCrosschainsyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
-
-		// IERC7786GatewaySource(_gateway).sendMessage();
-		
-	}
-
-	function receiveMessage(bytes32 receiveId, bytes calldata sender, bytes calldata payload) external payable returns (bytes4) {
-
-		if (true) {
-			//onCrosschainMessage();
-
-		} else if (false) {
-			//onCrosschainSupply();
-
-		} else if (false) {
-			//onCrossChainSyncSupplies();
-		}
-
-	}
-
-	function onCrosschainMessage(uint256 toChain, address toAddress, string calldata message) external {
-
-		// run relayer extensions
-		for(uint i=0; i<extRelayerSendMessage.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(uint256 toChain, address toAddress, string calldata message)", toChain, toAddress, message );
-			_staticCall(extRelayerSendMessage[i], encodedData);
     }
 
 	}
@@ -585,6 +581,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			size := extcodesize(_addr)
 		}
 		return size > 0;
+	}
+
+	// https://github.com/ZeframLou/token-migrator
+	// https://forum.openzeppelin.com/t/how-to-migrate-a-non-upgradeable-erc20-token-to-a-new-version/3406/8
+	// https://johnjvester.medium.com/bridging-the-gap-better-token-standards-for-cross-chain-assets-6a5793a215c3
+	function migratetoken(address newToken) external {
+
 	}
 
 	// ************************************************************************************************
