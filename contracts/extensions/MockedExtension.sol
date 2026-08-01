@@ -20,7 +20,7 @@ import "hardhat/console.sol";
  * @title EntryFacet
  * @dev Example ERC20 token demonstrating _beforeTokenTransfer and _afterTokenTransfer hooks
  */
-contract EntryFacet is 	IOwnershipProvider, 
+contract MockedExtension is IOwnershipProvider, 
 
 												IExtRelayerMessage, 
 												IExtRelayerSupply, 
