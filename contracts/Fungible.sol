@@ -3,29 +3,31 @@ pragma solidity 0.8.30;
 
 // core
 import "./IFungible.sol";
+
+// erc-173 (access)
 import "./erc-173/ERC173.sol";
+import "./erc-173/IOwnershipProvider.sol";
+
+// erc-20 (token)
 import "./erc-20/IERC20.sol";
+import "./erc-20/IExtTransferINBlock.sol";
+import "./erc-20/IExtTransferINUpdate.sol";
+import "./erc-20/IExtTransferINLog.sol";
+import "./erc-20/IExtTransferOUTLog.sol";
+
+// gateway
 import "./erc-7786/IERC7786GatewaySource.sol";
 import "./erc-7786/IERC7786Recipient.sol";
-import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
-
-// ownership processors
-import "./extensions/IOwnershipProvider.sol";
-
-// multichain processors
-import "./extensions/IExtRelayerMessage.sol";
-import "./extensions/IExtRelayerSupply.sol";
-import "./extensions/IExtRelayerSyncSupply.sol";
+import "./erc-7786/IExtRelayerMessage.sol";
+import "./erc-7786/IExtRelayerSupply.sol";
+import "./erc-7786/IExtRelayerSyncSupply.sol";
 
 // extension processors
-import "./extensions/IExtTransferINBlock.sol";
-import "./extensions/IExtTransferINUpdate.sol";
-import "./extensions/IExtTransferINLog.sol";
-import "./extensions/IExtTransferOUTLog.sol";
-import "./extensions/IExtTransferINBlockX.sol";
-import "./extensions/IExtTransferINUpdateX.sol";
-import "./extensions/IExtTransferINLogX.sol";
-import "./extensions/IExtTransferOUTLogX.sol";
+import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
+import "./erc-20n/IExtTransferINBlockX.sol";
+import "./erc-20n/IExtTransferINUpdateX.sol";
+import "./erc-20n/IExtTransferINLogX.sol";
+import "./erc-20n/IExtTransferOUTLogX.sol";
 
 import "hardhat/console.sol";
 
