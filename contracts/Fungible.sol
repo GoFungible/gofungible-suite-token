@@ -15,14 +15,14 @@ import "./erc-20/IExtTransferINUpdate.sol";
 import "./erc-20/IExtTransferINLog.sol";
 import "./erc-20/IExtTransferOUTLog.sol";
 
-// gateway
+// gateway (relayers)
 import "./erc-7786/IERC7786GatewaySource.sol";
 import "./erc-7786/IERC7786Recipient.sol";
 import "./erc-7786/IExtRelayerMessage.sol";
 import "./erc-7786/IExtRelayerSupply.sol";
 import "./erc-7786/IExtRelayerSyncSupply.sol";
 
-// extension processors
+// erc-20n (multichain token)
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 import "./erc-20n/IExtTransferINBlockX.sol";
 import "./erc-20n/IExtTransferINUpdateX.sol";
@@ -54,7 +54,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ******************************************** Owner *********************************************
+	// ******************************************** Access ********************************************
 	// ************************************************************************************************
 	address private _owner;
 
@@ -79,7 +79,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ******************************************* Metadata *******************************************
+	// ************************************** ERC-20 Metadata *****************************************
 	// ************************************************************************************************   
 	string private _name;
 	string private _symbol;
@@ -222,7 +222,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ****************************************** Gateway *********************************************
+	// ************************************ ERC-7786 Gateway ******************************************
 	// ************************************************************************************************
   function gateway() view external returns(address) {
 		return _gateway;
@@ -456,7 +456,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// Ownership
 	address private _ownershipProvider;
 
-	// Relayer
+	// Gateway
 	address private _gateway;
 
 	// Relayer Extensions
@@ -600,7 +600,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ********************************************* Proxy ********************************************
+	// ************************************ Resources Proxy *******************************************
 	// ************************************************************************************************
 	function _delegateCall(address implementation, bytes memory encodedData) internal virtual returns (bytes memory returnData) {
 		assembly {
