@@ -222,6 +222,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ****************************************** Gateway *********************************************
 	// ************************************************************************************************
+  function gateway() view external returns(address) {
+		return _gateway;
+	}
+
 	function sendCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal view {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
@@ -505,7 +509,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint256 numVotes;
 	}
 
-  uint[] public pendingResourceIds;
+  uint[] private pendingResourceIds;
 
   mapping (uint => PendingResource) pendingResources;
 
@@ -530,7 +534,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function releaseResource(uint16 _resourceId, uint16 _position) external {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(_resourceId != pendingResourceIds[_position], "Position: position does not match resource");
+		require(pendingResourceIds.length > 0, "Resource: no resources to release");
+		console.log(_resourceId);
+		console.log(pendingResourceIds[_position]);
+		require(_resourceId == pendingResourceIds[_position], "Position: position does not match resource");
 
 		PendingResource memory pendingResource = pendingResources[_resourceId];
 
