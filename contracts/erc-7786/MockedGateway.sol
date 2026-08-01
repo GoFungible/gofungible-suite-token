@@ -3,7 +3,7 @@ pragma solidity 0.8.30;
 
 import "../erc-7786/IERC7786GatewaySource.sol";
 
-contract MockedRelayer is IERC7786GatewaySource {
+contract MockedGateway is IERC7786GatewaySource {
 
 	function sendMessage(
 			string calldata destinationChain, // CAIP-2 chain identifier
