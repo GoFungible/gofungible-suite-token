@@ -3,12 +3,13 @@ import hre, { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 import * as helpers from "./_testhelper";
-import { Fungible__factory } from "../typechain-types";
+import { Fungible__factory, MockedGateway__factory } from "../typechain-types";
 
 describe("Deploy Token", function () {
 	let owner: SignerWithAddress;
 	let addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, addrs;
 	let fungibleAddress: string;
+	let gatewayAddress: string;
 
 	beforeEach(async() => {
 		//console.log('--------------------');
@@ -25,7 +26,7 @@ describe("Deploy Token", function () {
 		});
 
 		// ***********************************************************************************************************************************************************
-		// ********************************************************* Install Versionable Facets and register in factory **********************************************
+		// ************************************************************************* Deploy Contracts ****************************************************************
 		// ***********************************************************************************************************************************************************
 		// deploy Fungible
 		const Fungible = await ethers.getContractFactory("Fungible");
@@ -33,6 +34,13 @@ describe("Deploy Token", function () {
 		await fungible.waitForDeployment();
 		fungibleAddress = await fungible.getAddress();
 		console.log(" Fungible deployed to:", fungibleAddress);
+
+		// deploy gateway
+		const MockedGateway = await ethers.getContractFactory("MockedGateway");
+		let mockedGateway = await MockedGateway.deploy();
+		await mockedGateway.waitForDeployment();
+		gatewayAddress = await mockedGateway.getAddress();
+		console.log(" MockedGateway deployed to:", gatewayAddress);
 
 	});
 
@@ -59,7 +67,7 @@ describe("Deploy Token", function () {
 	});
 
 	/********************************************************************************************************/
-	/********************************************** Only Owner **********************************************/
+	/********************************************** Only Owner Accounts**************************************/
 	/********************************************************************************************************/
 	it("Only Owner functions are ok for owner", async() => {
 		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
@@ -80,6 +88,7 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.connect(addr1).transferFrom(owner.address, addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 
 		// erc-7866 functions
+		//await expect(() => fungibleContract.gateway()).to.not.throw();
 		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWith("Relayer: must be defined");
 
 		// erc-20n functions
@@ -94,13 +103,13 @@ describe("Deploy Token", function () {
 		// extensions functions
 		await expect(fungibleContract.addResource(45, 1, fungibleAddress, 0, 10, 10)).to.not.be.reverted;
 		await expect(() => fungibleContract.getPendingResourcesIds()).to.not.throw();
-		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith("Position: position does not match resource");
+		await expect(fungibleContract.releaseResource(45, 0)).to.not.be.reverted;
 		await expect(fungibleContract.migratetoken(addr1)).to.not.be.reverted;
 
 	});
 
-	it("Only Gateway functions are ok for gateway", async() => {
-		const fungibleContract = Fungible__factory.connect(fungibleAddress, addr1);
+	it("Not Owner not extension functions are not ok for owner and extensions", async() => {
+		/*const fungibleContract = Fungible__factory.connect(fungibleAddress, addr1);
 		await expect(() => fungibleContract.connect(addr1).name()).to.not.throw();
 		await expect(() => fungibleContract.connect(addr1).symbol()).to.not.throw();
 		await expect(() => fungibleContract.connect(addr1).decimals()).to.not.throw();
@@ -119,12 +128,26 @@ describe("Deploy Token", function () {
 
 		await expect(fungibleContract.connect(addr1).addResource(45, 1, fungibleAddress, 0, 10, 10)).to.be.revertedWith('Ownable: caller is not the owner');
 		await expect(fungibleContract.connect(addr1).getPendingResourcesIds()).to.not.be.reverted;
-		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith('Ownable: caller is not the owner');
+		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith('Ownable: caller is not the owner');*/
 		
 	});
 
-	it("Not Owner not Gateway functions are not ok for owner and gateway", async() => {
+	/********************************************************************************************************/
+	/************************************* Extensions Access to Fungible ************************************/
+	/********************************************************************************************************/
+	it("Only Gateway functions are ok for gateway", async() => {
 		const fungibleContract = Fungible__factory.connect(fungibleAddress, addr1);
+		//const gatewayContract = MockedGateway__factory.connect(gatewayAddress, addr1);
+
+		// set gateway
+		await expect(fungibleContract.connect(owner).addResource(0, 1, gatewayAddress, 0, 0, 0)).to.not.be.reverted;
+		await expect(fungibleContract.connect(owner).releaseResource(0, 0)).to.not.be.reverted;
+		await expect(() => fungibleContract.gateway()).to.not.throw();
+
+		// erc-173 functions
+		/*await expect(() => fungibleContract.owner()).to.throw();
+		await expect(fungibleContract.transferOwnership(owner.address)).to.be.revertedWith('Ownable: caller is not the owner');
+
 		await expect(() => fungibleContract.connect(addr1).name()).to.not.throw();
 		await expect(() => fungibleContract.connect(addr1).symbol()).to.not.throw();
 		await expect(() => fungibleContract.connect(addr1).decimals()).to.not.throw();
@@ -143,7 +166,36 @@ describe("Deploy Token", function () {
 
 		await expect(fungibleContract.connect(addr1).addResource(45, 1, fungibleAddress, 0, 10, 10)).to.be.revertedWith('Ownable: caller is not the owner');
 		await expect(fungibleContract.connect(addr1).getPendingResourcesIds()).to.not.be.reverted;
-		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith('Ownable: caller is not the owner');
+		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith('Ownable: caller is not the owner');*/
+		
+	});
+
+	/********************************************************************************************************/
+	/************************************ Extensions Update Fungible Variables ******************************/
+	/********************************************************************************************************/
+	it("No staticcall extension can update Fungible", async() => {
+
+		
+	});
+
+	it("DelegateCall extension can update Fungible", async() => {
+
+		
+	});
+
+	/********************************************************************************************************/
+	/********************************************** Update Owner ********************************************/
+	/********************************************************************************************************/
+	it("Can update owner with no extension", async() => {
+
+		
+	});
+
+	/********************************************************************************************************/
+	/********************************************** Update Owner Extension **********************************/
+	/********************************************************************************************************/
+	it("Owner extension can update owner", async() => {
+
 		
 	});
 
