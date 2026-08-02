@@ -58,6 +58,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	address private _owner;
 
+	address private _extOwnershipProvider;
+
   function owner() view external returns(address) {
 		return _owner;
 	}
@@ -67,11 +69,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		address oldOwner = _owner;
 
-		if (_ownershipProvider == address(0)) {
+		if (_extOwnershipProvider == address(0)) {
 			_owner = _newOwner;
 		} else {
 			bytes memory encodedData = abi.encodeWithSignature( "transferOwnership(address _owner)", _owner);
-			bytes memory resultBytes = _staticCall(_ownershipProvider, encodedData);
+			bytes memory resultBytes = _staticCall(_extOwnershipProvider, encodedData);
 			_owner = abi.decode(resultBytes, (address));
 		}
 
@@ -109,7 +111,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _mint(address to, uint256 amount) private {
 		require(to != address(0), "ERC20: mint to zero address");
-		require(msg.sender == _gateway, "Relayer: must be defined");
+		require(msg.sender == _extGateway, "Relayer: must be defined");
 
 		_totalSupply += amount;
 		_balances[to] += amount;
@@ -120,7 +122,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function _burn(address from, uint256 amount) private {
 		require(from != address(0), "ERC20: burn from zero address");
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
-		require(msg.sender == _gateway, "Relayer: must be defined");
+		require(msg.sender == _extGateway, "Relayer: must be defined");
 
 		_balances[from] -= amount;
 		_totalSupply -= amount;
@@ -140,7 +142,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// **************************************** ERC-20 Transfer ***************************************
 	// ************************************************************************************************
-	mapping(address => mapping(address => uint256)) private _allowances;
+	// ERC-20 Extensions
+	address[] public _extTrxInBlock;
+
+	address[] public _extTrxInUpdate;
+
+	address[] public _extTrxInLog;
+
+	address[] public _extTrxOutLog;
 
 	// transfer
 	function transferFrom(address from, address to, uint256 amount) external returns (bool) {
@@ -163,38 +172,43 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
 
 		// run INBLOCK extensions
-		for(uint i=0; i<extTransportINBlock.length; i++){
+		for(uint i=0; i<_extTrxInBlock.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "_beforeTransferBlock(address from, address to, uint256 amount)", from, to, amount );
-			bytes memory resultBytes = _staticCall(extTransportINBlock[i], encodedData);
+			bytes memory resultBytes = _staticCall(_extTrxInBlock[i], encodedData);
 			bool isBlocked = abi.decode(resultBytes, (bool));
 			if (isBlocked)
 				return;
     }
 
 		// run INUPDATE extensions
-		for(uint i=0; i<extTransportINUpdate.length; i++){
+		for(uint i=0; i<_extTrxInUpdate.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "_beforeTransferUpdate(address from, address to, uint256 amount)", from, to, amount );
-			bytes memory resultBytes = _delegateCall(extTransportINUpdate[i], encodedData);
+			bytes memory resultBytes = _delegateCall(_extTrxInUpdate[i], encodedData);
 			amount = abi.decode(resultBytes, (uint256));
     }
 
 		// run INLOG extensions
-		for(uint i=0; i<extTransportINLog.length; i++){
+		for(uint i=0; i<_extTrxInLog.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "_beforerTransferLog(address from, address to, uint256 amount)", from, to, amount );
-			_staticCall(extTransportINLog[i], encodedData);
+			_staticCall(_extTrxInLog[i], encodedData);
     }
 		
 		_balances[from] -= amount;
 		_balances[to] += amount;
 		
 		// run OUT extensions
-		for(uint i=0; i<extTransportOUT.length; i++){
+		for(uint i=0; i<_extTrxOutLog.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "_afterTransferLog(address from, address to, uint256 amount)", from, to, amount );
-			_staticCall(extTransportOUT[i], encodedData);
+			_staticCall(_extTrxOutLog[i], encodedData);
     }
 
 		emit Transfer(from, to, amount);
 	}
+
+	// ************************************************************************************************
+	// ************************************* ERC-20 Allowances ****************************************
+	// ************************************************************************************************
+	mapping(address => mapping(address => uint256)) private _allowances;
 
 	// allowance
 	function allowance(address owner_, address spender) public view returns (uint256) {
@@ -224,8 +238,17 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ************************************ ERC-7786 Gateway ******************************************
 	// ************************************************************************************************
+	// Gateway Extensions
+	address private _extGateway;
+
+	address[] public _extGatewaySendMessage;
+
+	address[] public _extGatewaySendSupply;
+
+	address[] public _extGatewaySyncSupply;
+
   function gateway() view external returns(address) {
-		return _gateway;
+		return _extGateway;
 	}
 
 	function sendCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal view {
@@ -236,14 +259,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function sendCrosschainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
-		require(msg.sender == _gateway, "Relayer: must be defined");
+		require(msg.sender == _extGateway, "Relayer: must be defined");
 
 		// IERC7786GatewaySource(_gateway).sendMessage();
 		
 	}
 
 	function receiveMessage(bytes32 receiveId, bytes calldata sender, bytes calldata payload) external payable returns (bytes4) {
-		require(msg.sender == _gateway, "Relayer: must be defined");
+		require(msg.sender == _extGateway, "Relayer: must be defined");
 
 		if (true) {
 			//onCrosschainMessage();
@@ -260,9 +283,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function onCrosschainMessage(uint256 toChain, address toAddress, string calldata message) internal {
 
 		// run relayer extensions
-		for(uint i=0; i<extRelayerSendMessage.length; i++){
+		for(uint i=0; i<_extGatewaySendMessage.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(uint256 toChain, address toAddress, string calldata message)", toChain, toAddress, message );
-			_staticCall(extRelayerSendMessage[i], encodedData);
+			_staticCall(_extGatewaySendMessage[i], encodedData);
     }
 
 	}
@@ -355,7 +378,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function onCrossChainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
-		require(msg.sender == _gateway, "Gateway: caller is not gateway");
+		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
 
 		// update supply
 		supplies[fromChain] -= amount;
@@ -365,9 +388,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(checksum == getSuppliesChecksum(), "SupplySyncer: checksums are not matching. Reverted");
 
 		// run relayer extensions
-		for(uint i=0; i<extRelayerSyncSupply.length; i++){
+		for(uint i=0; i<_extGatewaySyncSupply.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "_afterSyncSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", toChain, onChain, amount );
-			_staticCall(extRelayerSyncSupply[i], encodedData);
+			_staticCall(_extGatewaySyncSupply[i], encodedData);
     }
 
 	}
@@ -375,39 +398,48 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ************************************* ERC-20X TransferX ****************************************
 	// ************************************************************************************************
+	// ERC-20X Extensions
+	address[] public _extTrnInBlock;
+
+	address[] public _extTrnInUpdate;
+
+	address[] public _extTrnInLog;
+
+	address[] public _extTrnOutLog;
+
 	// Performs supply transfer
 	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
 		// run INBLOCK extensions
-		for(uint i=0; i<extTransportINBlockX.length; i++){
+		for(uint i=0; i<_extTrnInBlock.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "extTransportINBlockX(uint256 from, address to, uint256 amount)", toChain, toAddress, amount );
-			bytes memory resultBytes = _staticCall(extTransportINBlockX[i], encodedData);
+			bytes memory resultBytes = _staticCall(_extTrnInBlock[i], encodedData);
 			bool isBlocked = abi.decode(resultBytes, (bool));
 			if (isBlocked)
 				return false;
     }
 
 		// run INUPDATE extensions
-		for(uint i=0; i<extTransportINUpdateX.length; i++){
+		for(uint i=0; i<_extTrnInUpdate.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "extTransportINUpdateX(uint256 from, address to, uint256 amount)", toChain, toAddress, amount );
-			bytes memory resultBytes = _delegateCall(extTransportINUpdateX[i], encodedData);
+			bytes memory resultBytes = _delegateCall(_extTrnInUpdate[i], encodedData);
 			amount = abi.decode(resultBytes, (uint256));
     }
 
 		// run INLOG extensions
-		for(uint i=0; i<extTransportINLogX.length; i++){
+		for(uint i=0; i<_extTrnInLog.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "extTransportINLogX(uint256 from, address to, uint256 amount)", toChain, toAddress, amount );
-			_staticCall(extTransportINLogX[i], encodedData);
+			_staticCall(_extTrnInLog[i], encodedData);
     }
 
 		// do real transation
 		_transferX(toChain, toAddress, amount);
 
 		// run OUT extensions
-		for(uint i=0; i<extTransportOUTX.length; i++){
+		for(uint i=0; i<_extTrnOutLog.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "extTransportOUTX(uint256 from, address to, uint256 amount)", toChain, toAddress, amount );
-			_staticCall(extTransportOUTX[i], encodedData);
+			_staticCall(_extTrnOutLog[i], encodedData);
     }
 
 		return true;
@@ -415,7 +447,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _transferX(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(_gateway != address(0), "Relayer: must be defined");
+		require(_extGateway != address(0), "Relayer: must be defined");
 
 		// do supply transation
 		sendCrosschainSupply(toChain, toAddress, amount);
@@ -435,7 +467,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// Receives supply transfer
 	function onCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal {
-		require(msg.sender == _gateway, "Relayer: must be defined");
+		require(msg.sender == _extGateway, "Relayer: must be defined");
 
 		// update both supplies locally
 		_mint(addresses[destChain], amount);
@@ -443,63 +475,33 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		supplies[destChain] += amount;
 
 		// run relayer extensions
-		for(uint i=0; i<extRelayerSendSupply.length; i++){
+		for(uint i=0; i<_extGatewaySendSupply.length; i++){
 			bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", destChain, destAddress, amount );
-			_staticCall(extRelayerSendSupply[i], encodedData);
+			_staticCall(_extGatewaySendSupply[i], encodedData);
     }
 
 	}
 
 	// *************************************************************************************************
-	// ************************************* Approved Resources ****************************************
+	// ************************************** Extension Injection **************************************
 	// *************************************************************************************************
-	// Ownership
-	address private _ownershipProvider;
+	enum ExtensionType { 
+		EXT_OWNERSHIP_PROVIDER,
 
-	// Gateway
-	address private _gateway;
+		EXT_GATEWAY,
+		EXT_GATEWAY_SEND_MESSAGE,
+		EXT_GATEWAY_SEND_SUPPLY,
+		EXT_GATEWAY_SEND_SYNC_SUPPLY,
 
-	// Relayer Extensions
-	address[] public extRelayerSendMessage;
+		EXT_TRX_IN_BLOCK,
+		EXT_TRX_IN_UPDATE,
+		EXT_TRX_IN_LOG,
+		EXT_TRX_OUT_LOG,
 
-	address[] public extRelayerSendSupply;
-
-	address[] public extRelayerSyncSupply;
-
-	// ERC-20 Extensions
-	address[] public extTransportINLog;
-
-	address[] public extTransportINUpdate;
-
-	address[] public extTransportINBlock;
-
-	address[] public extTransportOUT;
-
-	// ERC-20X Extensions
-	address[] public extTransportINLogX;
-
-	address[] public extTransportINUpdateX;
-
-	address[] public extTransportINBlockX;
-
-	address[] public extTransportOUTX;
-
-	// *************************************************************************************************
-	// ************************************** Resources Injection **************************************
-	// *************************************************************************************************
-	enum ResourceTypes{ 
-		OWNERSHIP_PROVIDER,
-		GATEWAY,
-		SUPPLY_RELAYER,
-		SUPPLY_SYNCER,
-		INBLOCK,
-		INUPDATE,
-		INLOG,
-		OUT,
-		INBLOCKX,
-		INUPDATEX,
-		INLOGX,
-		OUTX 
+		EXT_TRN_IN_BLOCKX,
+		EXT_TRN_IN_UPDATE,
+		EXT_TRN_IN_LOG,
+		EXT_TRN_OUT_LOG 
 	}
 
 	struct PendingResource {
@@ -557,26 +559,40 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// release resource
 		uint resourceType = pendingResource.resourceType;
 		address resourceAddress = pendingResource.resourceAddress;
-		if (resourceType == uint(ResourceTypes.OWNERSHIP_PROVIDER)) {
-			_ownershipProvider = address(resourceAddress);
-		} else if (resourceType == uint(ResourceTypes.GATEWAY)) {
-			_gateway = address(resourceAddress);
-		} else if (resourceType == uint(ResourceTypes.INBLOCK)) {
-			extTransportINBlock.push(resourceAddress);
-		} else if (resourceType == uint(ResourceTypes.INUPDATE)) {
-			extTransportINUpdate.push(resourceAddress);
-		} else if (resourceType == uint(ResourceTypes.INLOG)) {
-			extTransportINLog.push(resourceAddress);
-		} else if (resourceType == uint(ResourceTypes.OUT)) {
-			extTransportOUT.push(resourceAddress);
-		} else if (resourceType == uint(ResourceTypes.INBLOCKX)) {
-			extTransportINBlockX.push(resourceAddress);
-		} else if (resourceType == uint(ResourceTypes.INUPDATEX)) {
-			extTransportINUpdateX.push(resourceAddress);
-		} else if (resourceType == uint(ResourceTypes.INLOGX)) {
-			extTransportINLogX.push(resourceAddress);
-		} else if (resourceType == uint(ResourceTypes.OUTX)) {
-			extTransportOUTX.push(resourceAddress);
+
+		// access
+		if (resourceType == uint(ExtensionType.EXT_OWNERSHIP_PROVIDER)) {
+			_extOwnershipProvider = address(resourceAddress);
+
+		// gateway
+		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY)) {
+			_extGateway = address(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_MESSAGE)) {
+			_extGatewaySendMessage.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_SUPPLY)) {
+			_extGatewaySendSupply.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_SYNC_SUPPLY)) {
+			_extGatewaySyncSupply.push(resourceAddress);
+
+		// transfer
+		} else if (resourceType == uint(ExtensionType.EXT_TRX_IN_BLOCK)) {
+			_extTrxInBlock.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_TRX_IN_UPDATE)) {
+			_extTrxInUpdate.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_TRX_IN_LOG)) {
+			_extTrxInLog.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_TRX_OUT_LOG)) {
+			_extTrxOutLog.push(resourceAddress);
+
+		// transfern
+		} else if (resourceType == uint(ExtensionType.EXT_TRN_IN_BLOCKX)) {
+			_extTrnInBlock.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_TRN_IN_UPDATE)) {
+			_extTrnInUpdate.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_TRN_IN_LOG)) {
+			_extTrnInLog.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_TRN_OUT_LOG)) {
+			_extTrnOutLog.push(resourceAddress);
 		}
 
 		// remove resource from the pending list
@@ -648,7 +664,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		}
 	}
 
-
+	// ************************************************************************************************
+	// ********************************************* Defaut *******************************************
+	// ************************************************************************************************
 	receive() external payable {
 	}
 	fallback() external payable {
