@@ -3,13 +3,12 @@ pragma solidity 0.8.30;
 
 /**
  * @title IERC7786Recipient
- * @dev Standard interface that the destination contract must implement to receive messages.
+ * @dev Recipient interface adapted to match the binary address format parameters.
  */
 interface IERC7786Recipient {
-    function receiveMessage(
-        bytes32 outboxId,
-        string calldata sourceChain,
-        string calldata sender,
-        bytes calldata payload
-    ) external returns (bytes4);
+	function receiveMessage(
+			bytes32 sendId,
+			bytes calldata sender,
+			bytes calldata payload
+	) external returns (bytes4);
 }

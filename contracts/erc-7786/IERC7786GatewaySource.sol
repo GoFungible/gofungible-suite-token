@@ -7,17 +7,21 @@ pragma solidity 0.8.30;
  */
 interface IERC7786GatewaySource {
     event MessageSent(
-        bytes32 indexed outboxId,
-        string indexed destinationChain,
-        string receiver,
+        bytes32 indexed sendId,
+        bytes sender,    // Binary Interoperable Address
+        bytes recipient, // Binary Interoperable Address
         bytes payload,
-        string[] attributes
+        uint256 value,
+        bytes[] attributes
     );
 
+    error UnsupportedAttribute(bytes4 selector);
+
+    function supportsAttribute(bytes4 selector) external view returns (bool);
+
     function sendMessage(
-        string calldata destinationChain,
-        string calldata receiver,
+        bytes calldata recipient, // Binary Interoperable Address
         bytes calldata payload,
-        string[] calldata attributes
-    ) external payable returns (bytes32 outboxId);
+        bytes[] calldata attributes
+    ) external payable returns (bytes32 sendId);
 }

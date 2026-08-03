@@ -111,7 +111,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _mint(address to, uint256 amount) private {
 		require(to != address(0), "ERC20: mint to zero address");
-		require(msg.sender == _extGateway, "Relayer: must be defined");
+		require(msg.sender == _extGateway, "Gateway: must be provided");
 
 		_totalSupply += amount;
 		_balances[to] += amount;
@@ -122,7 +122,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function _burn(address from, uint256 amount) private {
 		require(from != address(0), "ERC20: burn from zero address");
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
-		require(msg.sender == _extGateway, "Relayer: must be defined");
+		require(msg.sender == _extGateway, "Gateway: must be provided");
 
 		_balances[from] -= amount;
 		_totalSupply -= amount;
@@ -265,7 +265,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		
 	}
 
-	function receiveMessage(bytes32 outboxId, string calldata sourceChain, string calldata sender, bytes calldata payload) external returns (bytes4) {
+	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata payload) external returns (bytes4) {
 		require(msg.sender == _extGateway, "Gateway: must be provided");
 
 		if (true) {
@@ -447,7 +447,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _transferX(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(_extGateway != address(0), "Relayer: must be defined");
+		require(_extGateway != address(0), "Gateway: must be provided");
 
 		// do supply transation
 		sendCrosschainSupply(toChain, toAddress, amount);
@@ -467,7 +467,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// Receives supply transfer
 	function onCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal {
-		require(msg.sender == _extGateway, "Relayer: must be defined");
+		require(msg.sender == _extGateway, "Gateway: must be provided");
 
 		// update both supplies locally
 		_mint(addresses[destChain], amount);

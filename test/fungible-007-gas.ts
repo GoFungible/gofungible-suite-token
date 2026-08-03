@@ -2,9 +2,6 @@ import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
-import * as helpers from "./_testhelper";
-import { Fungible__factory } from "../typechain-types";
-
 describe("Deploy Extension", function () {
 
   let user1: SignerWithAddress;

@@ -3,7 +3,7 @@ import hre, { ethers } from "hardhat";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
 
 import * as helpers from "./_testhelper";
-import { Fungible__factory, MockedGateway__factory } from "../typechain-types";
+import { Fungible__factory } from "../typechain-types";
 
 describe("Deploy Token", function () {
 	let owner: SignerWithAddress;
@@ -36,8 +36,8 @@ describe("Deploy Token", function () {
 		console.log(" Fungible deployed to:", fungibleAddress);
 
 		// deploy gateway
-		const MockedGateway = await ethers.getContractFactory("MockedGateway");
-		let mockedGateway = await MockedGateway.deploy();
+		const MockedERC7786Gateway = await ethers.getContractFactory("MockedERC7786Gateway");
+		let mockedGateway = await MockedERC7786Gateway.deploy();
 		await mockedGateway.waitForDeployment();
 		gatewayAddress = await mockedGateway.getAddress();
 		console.log(" MockedGateway deployed to:", gatewayAddress);
@@ -89,16 +89,16 @@ describe("Deploy Token", function () {
 
 		// erc-7866 functions
 		//await expect(() => fungibleContract.gateway()).to.not.throw();
-		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWith("Relayer: must be defined");
+		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWith("Gateway: must be provided");
 
 		// erc-20n functions
 		await expect(fungibleContract.addChain(0, addr1)).to.not.be.reverted;
 		await expect(() => fungibleContract.getMasterChain()).to.not.throw();
-		await expect(fungibleContract.setMasterChain(1)).to.be.revertedWith("Relayer: must be defined");
+		await expect(fungibleContract.setMasterChain(1)).to.be.revertedWith("Gateway: must be provided");
 		await expect(() => fungibleContract.globalSupply()).to.not.throw();
 		await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
 		await expect(() => fungibleContract.getSuppliesChecksum()).to.not.throw();
-		await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Relayer: must be defined");
+		await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Gateway: must be provided");
 
 		// extensions functions
 		await expect(fungibleContract.addResource(45, 1, fungibleAddress, 0, 10, 10)).to.not.be.reverted;
