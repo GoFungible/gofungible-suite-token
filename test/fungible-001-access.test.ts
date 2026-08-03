@@ -89,7 +89,7 @@ describe("Deploy Token", function () {
 
 		// erc-7866 functions
 		//await expect(() => fungibleContract.gateway()).to.not.throw();
-		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWith("Gateway: must be provided");
+		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWith("Gateway: only gateway allowed");
 
 		// erc-20n functions
 		await expect(fungibleContract.addChain(0, addr1)).to.not.be.reverted;

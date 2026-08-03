@@ -247,6 +247,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	address[] public _extGatewaySyncSupply;
 
+	/**
+	 * @title BridgeActionPayload
+	 * @notice A good blueprint struct for cross-chain execution.
+	 */
+	struct FungiblePayload {
+		address tokenAddress;    	// The token contract address on the destination chain
+		address recipient;       	// The ultimate user receiving the tokens or action
+		uint256 amount;          	// The total amount of tokens being moved
+		uint256 minOutputAmount; 	// Slippage protection metric
+		bytes op; 								// Type of operation
+	}
+
   function gateway() view external returns(address) {
 		return _extGateway;
 	}
@@ -254,20 +266,57 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function sendCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal view {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
-		// IERC7786GatewaySource(_gateway).sendMessage();
+    // Build your application's data package
+    FungiblePayload memory payload = FungiblePayload({
+			tokenAddress: destAddress,
+			recipient: msg.sender,
+			amount: amount,
+			minOutputAmount: amount,
+			op: "SUP"
+    });
+
+    // Compress the struct safely into standard bytes
+    bytes memory packedPayload = abi.encode(payload);
+
+    // Hand off the bytes to your gateway
+    //_extGateway.sendMessage{value: msg.value}(recipientBytes, packedPayload, attributes);
 
 	}
 
 	function sendCrosschainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
 		require(msg.sender == _extGateway, "Gateway: must be provided");
 
-		// IERC7786GatewaySource(_gateway).sendMessage();
+    // Build your application's data package
+    FungiblePayload memory payload = FungiblePayload({
+			tokenAddress: address(0),
+			recipient: msg.sender,
+			amount: 1000e18,
+			minOutputAmount: 995e18,
+			op: "SYS"
+    });
+
+    // Compress the struct safely into standard bytes
+    bytes memory packedPayload = abi.encode(payload);
+
+    // Hand off the bytes to your gateway
+    //_extGateway.sendMessage{value: msg.value}(recipientBytes, packedPayload, attributes);
 		
 	}
 
-	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata payload) external returns (bytes4) {
-		require(msg.sender == _extGateway, "Gateway: must be provided");
+	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata payload) external override returns (bytes4) {
+		require(msg.sender == _extGateway, "Gateway: only gateway allowed");
 
+		// Reentrancy/Idempotency Check: Prevent the same message ID from executing twice
+		//if (executedMessages[sendId]) revert MessageAlreadyExecuted();
+		//executedMessages[sendId] = true;
+
+		// Address Recovery: Convert the binary sender back into a standard EVM address
+		address sourceSender = address(bytes20(sender[0:20]));
+
+		// Unpack the byte envelope straight back into the struct format
+		FungiblePayload memory payloadData = abi.decode(payload, (FungiblePayload));
+
+		// process payload
 		if (true) {
 			//onCrosschainMessage();
 
@@ -277,6 +326,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		} else if (false) {
 			//onCrossChainSyncSupplies();
 		}
+
+		// Execution Simulation (Emit event for test verification)
+		emit MessageReceived(sendId, sourceSender, payload);
+
+		// Compliance Return: Return the exact function selector (0x3ca22197)
+		return IERC7786Recipient.receiveMessage.selector;
 
 	}
 
