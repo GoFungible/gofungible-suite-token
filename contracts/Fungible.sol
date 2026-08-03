@@ -259,14 +259,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function sendCrosschainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
-		require(msg.sender == _extGateway, "Relayer: must be defined");
+		require(msg.sender == _extGateway, "Gateway: must be provided");
 
 		// IERC7786GatewaySource(_gateway).sendMessage();
 		
 	}
 
-	function receiveMessage(bytes32 receiveId, bytes calldata sender, bytes calldata payload) external payable returns (bytes4) {
-		require(msg.sender == _extGateway, "Relayer: must be defined");
+	function receiveMessage(bytes32 outboxId, string calldata sourceChain, string calldata sender, bytes calldata payload) external returns (bytes4) {
+		require(msg.sender == _extGateway, "Gateway: must be provided");
 
 		if (true) {
 			//onCrosschainMessage();
@@ -662,14 +662,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 					revert(0x20, size)
 			}
 		}
-	}
-
-	// ************************************************************************************************
-	// ********************************************* Defaut *******************************************
-	// ************************************************************************************************
-	receive() external payable {
-	}
-	fallback() external payable {
 	}
 
 }
