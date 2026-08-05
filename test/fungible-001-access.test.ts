@@ -103,7 +103,7 @@ describe("Deploy Token", function () {
 		// extensions functions
 		await expect(fungibleContract.addResource(45, 1, fungibleAddress, 0, 10, 10)).to.not.be.reverted;
 		await expect(() => fungibleContract.getPendingResourcesIds()).to.not.throw();
-		await expect(fungibleContract.releaseResource(45, 0)).to.not.be.reverted;
+		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
 		await expect(fungibleContract.migratetoken(addr1)).to.not.be.reverted;
 
 	});
@@ -141,7 +141,7 @@ describe("Deploy Token", function () {
 
 		// set gateway
 		await expect(fungibleContract.connect(owner).addResource(0, 1, gatewayAddress, 0, 0, 0)).to.not.be.reverted;
-		await expect(fungibleContract.connect(owner).releaseResource(0, 0)).to.not.be.reverted;
+		await expect(fungibleContract.connect(owner).releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
 		await expect(() => fungibleContract.gateway()).to.not.throw();
 
 		// erc-173 functions

@@ -176,8 +176,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			bytes memory encodedData = abi.encodeWithSignature( "_beforeTransferBlock(address from, address to, uint256 amount)", from, to, amount );
 			bytes memory resultBytes = _staticCall(_extTrxInBlock[i], encodedData);
 			bool isBlocked = abi.decode(resultBytes, (bool));
-			if (isBlocked)
-				return;
+      require(!isBlocked, "Extension: Transfer blocked by Extension");
     }
 
 		// run INUPDATE extensions
@@ -248,8 +247,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	address[] public _extGatewaySyncSupply;
 
 	/**
-	 * @title BridgeActionPayload
-	 * @notice A good blueprint struct for cross-chain execution.
+	 * @title FungiblePayload
+	 * @notice Message blueprint struct for cross-chain execution.
 	 */
 	struct FungiblePayload {
 		address tokenAddress;    	// The token contract address on the destination chain
@@ -415,9 +414,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function _syncSupplies(uint256 fromChain, uint256 toChain, uint256 amount) internal {
 
 		// do nothing as this is the master chain
-		if (_masterChain == CHAIN_ID) {
-			return;
-		}
+		require(_masterChain != CHAIN_ID, "Sync Supplies: Master chain already in sync.");
 
 		// sync supplies on master chain
 		if (_masterChain > 0) {
@@ -471,8 +468,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			bytes memory encodedData = abi.encodeWithSignature( "extTransportINBlockX(uint256 from, address to, uint256 amount)", toChain, toAddress, amount );
 			bytes memory resultBytes = _staticCall(_extTrnInBlock[i], encodedData);
 			bool isBlocked = abi.decode(resultBytes, (bool));
-			if (isBlocked)
-				return false;
+      require(!isBlocked, "Extension: Transfer blocked by Extension");
     }
 
 		// run INUPDATE extensions
@@ -602,14 +598,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// check if the resource can be released by time
 		uint256 releaseDate = pendingResource.releaseDate;
-		if (releaseDate > 0 && block.timestamp >= releaseDate)
-			return;
+		require(releaseDate > 0, "Resource: releaseDate is not valid.");
+		require(block.timestamp >= releaseDate, "Resource: cannot be released yet.");
 
 		// check if the resource can be released by votes
 		uint256 minVotes = pendingResource.minVotes;
 		uint256 releaseNumVotes = pendingResource.releaseNumVotes;
-		if (releaseNumVotes < minVotes)
-			return;
+		require(releaseNumVotes < minVotes, "Resource: not nought votes to release resource.");
 
 		// release resource
 		uint resourceType = pendingResource.resourceType;
@@ -671,7 +666,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************ Resources Proxy *******************************************
+	// ************************************ Extensions Proxy ******************************************
 	// ************************************************************************************************
 	function _delegateCall(address implementation, bytes memory encodedData) internal virtual returns (bytes memory returnData) {
 		assembly {
@@ -717,6 +712,46 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 					revert(0x20, size)
 			}
 		}
+	}
+
+	// ************************************************************************************************
+	// ************************************ Extensions Config *****************************************
+	// ************************************************************************************************
+	
+  // Key-value store for extensions configuration
+  mapping(bytes32 => bytes32) private configStore;
+
+	function writeConfig(bytes32 key, bytes32 value) external override {
+		configStore[key] = value;
+	}
+
+	function readConfig(bytes32 key) external view override returns (bytes32) {
+		return configStore[key];
+	}
+
+	// update the configuration
+	function updateConfiguration(address extension, bytes calldata payload) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+					
+    bytes32 result;
+
+    assembly {
+        // 1. Allocate memory pointer (free memory pointer)
+        let memPtr := mload(0x40)
+        
+        // 2. Copy the actual payload from calldata into memory
+        // calleePayload.offset gives the start position in calldata
+        // calleePayload.length gives the exact byte size
+        calldatacopy(memPtr, payload.offset, payload.length)
+        
+        // 3. Execute the delegatecall using the memory pointer and length
+        result := delegatecall(gas(), extension, memPtr, payload.length, 0, 0)
+        
+        // 4. (Optional) Check success status
+        if iszero(result) {
+            revert(0, 0)
+        }
+    }
 	}
 
 }
