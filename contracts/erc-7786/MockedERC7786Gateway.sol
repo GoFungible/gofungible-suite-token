@@ -4,6 +4,8 @@ pragma solidity 0.8.30;
 import "../erc-7786/IERC7786GatewaySource.sol";
 import "../erc-7786/IERC7786Recipient.sol";
 
+import "hardhat/console.sol";
+
 contract MockedERC7786Gateway is IERC7786GatewaySource {
   
 	// ************************************************************************************************
@@ -37,6 +39,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 	 */
 	function sendMessage(bytes calldata recipient, bytes calldata payload, bytes[] calldata attributes) external payable override nonReentrant returns (bytes32 outboxId) {
 		require(recipient.length == 20, "MockERC7786: Invalid recipient address length");
+		console.log("sending Message 1");
 
 		// State & Identifier updates
 		_nonce++;
@@ -44,15 +47,22 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 		
 		bytes memory senderBytes = abi.encodePacked(msg.sender);
 		address receiverAddress = address(bytes20(recipient[0:20]));
+		console.log("sending Message 2", receiverAddress);
 
 		// Execution hand-off interaction (External Call)
 		bytes4 magicValue = IERC7786Recipient(receiverAddress).receiveMessage(outboxId, senderBytes, payload);
 
+		console.log("sending Message 3");
+
 		// Verification
 		require(magicValue == IERC7786Recipient.receiveMessage.selector, "ERC7786: invalid receiver response");
 
+		console.log("sending Message 4");
+
 		// Emitting log safely at the end of the call execution sequence
 		emit MessageSent(outboxId, senderBytes, recipient, payload, msg.value, attributes);
+
+		console.log("sending Message 5");
 
 	}
 

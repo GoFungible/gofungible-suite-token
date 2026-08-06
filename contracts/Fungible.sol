@@ -109,6 +109,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _totalSupply;
 	}
 
+	// ************************************************************************************************
+	// ************************************* ERC-20 Supply by Account *********************************
+	// ************************************************************************************************
+	mapping(address => uint256) private _balances;
+	
+	function balanceOf(address account) public view returns (uint256) {
+		return _balances[account];
+	}
+
 	function _mint(address to, uint256 amount) private {
 		require(to != address(0), "ERC20: mint to zero address");
 		require(msg.sender == _extGateway, "Gateway: must be provided");
@@ -122,21 +131,17 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function _burn(address from, uint256 amount) private {
 		require(from != address(0), "ERC20: burn from zero address");
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
-		require(msg.sender == _extGateway, "Gateway: must be provided");
+		console.log("burning", msg.sender);
+		console.log("amount", amount);
+		console.log("from", from);
+		console.log("_balances[from]", _balances[from]);
+		//require(msg.sender == _extGateway, "Gateway: must be provided");
 
 		_balances[from] -= amount;
 		_totalSupply -= amount;
 		
+		console.log("burned");
 		emit Transfer(from, address(0), amount);
-	}
-
-	// ************************************************************************************************
-	// ************************************* ERC-20 Supply by Account *********************************
-	// ************************************************************************************************
-	mapping(address => uint256) private _balances;
-	
-	function balanceOf(address account) public view returns (uint256) {
-		return _balances[account];
 	}
 	
 	// ************************************************************************************************
@@ -251,6 +256,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 * @notice Message blueprint struct for cross-chain execution.
 	 */
 	struct FungiblePayload {
+		bytes targetChain;    		// The id of te target chain
 		address tokenAddress;    	// The token contract address on the destination chain
 		address recipient;       	// The ultimate user receiving the tokens or action
 		uint256 amount;          	// The total amount of tokens being moved
@@ -262,24 +268,34 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _extGateway;
 	}
 
-	function sendCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal view {
+	function sendCrosschainSupply(uint32 destChain, address destAddress, uint256 amount) internal {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
     // Build your application's data package
     FungiblePayload memory payload = FungiblePayload({
+			targetChain: abi.encode(destChain),
 			tokenAddress: destAddress,
 			recipient: msg.sender,
 			amount: amount,
 			minOutputAmount: amount,
 			op: "SUP"
     });
-		console.log("sendCrosschainSupply");
+		console.log("sendCrosschainSupply1");
+
+		bytes memory recipient = abi.encodePacked(destAddress);
+
+		console.log("sendCrosschainSupply2");
 
     // Compress the struct safely into standard bytes
     bytes memory packedPayload = abi.encode(payload);
+		console.log("sendCrosschainSupply3");
+
+		bytes[] memory attributes = new bytes[](0);
+		console.log("sendCrosschainSupply4", _extGateway);
 
     // Hand off the bytes to your gateway
-    //_extGateway.sendMessage{value: msg.value}(recipientBytes, packedPayload, attributes);
+    IERC7786GatewaySource(_extGateway).sendMessage{value: msg.value}(recipient, packedPayload, attributes);
+		console.log("sendCrosschainSupply5");
 
 	}
 
@@ -288,6 +304,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
     // Build your application's data package
     FungiblePayload memory payload = FungiblePayload({
+			targetChain: abi.encode(toChain),
 			tokenAddress: address(0),
 			recipient: msg.sender,
 			amount: 1000e18,
@@ -305,6 +322,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata payload) external override returns (bytes4) {
 		require(msg.sender == _extGateway, "Gateway: only gateway allowed");
+		console.log("MessageReceived");
 
 		// Reentrancy/Idempotency Check: Prevent the same message ID from executing twice
 		//if (executedMessages[sendId]) revert MessageAlreadyExecuted();
@@ -326,6 +344,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		} else if (false) {
 			//onCrossChainSyncSupplies();
 		}
+		console.log("Message Processed. Returning");
 
 		// Execution Simulation (Emit event for test verification)
 		emit MessageReceived(sendId, sourceSender, payload);
@@ -461,7 +480,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	address[] public _extTrnOutLog;
 
 	// Performs supply transfer
-	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
+	function transferX(uint32 toChain, address toAddress, uint256 amount) external returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		console.log("transferX");
 
@@ -499,7 +518,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return true;
 	}
 
-	function _transferX(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
+	function _transferX(uint32 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		console.log("transferring2");
 		require(_extGateway != address(0), "Gateway: must be provided");
@@ -507,13 +526,20 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// do supply transation
 		sendCrosschainSupply(toChain, toAddress, amount);
+		console.log("transferrin4");
 
 		// update local ERC-20
 		_burn(msg.sender, amount);
 
+		console.log("burning from chain", CHAIN_ID);
+		console.log("burning from supplies[CHAIN_ID]", supplies[CHAIN_ID]);
+		console.log("burning to chain", toChain);
+		console.log("burning to supplies[toChain]", supplies[toChain]);
+
 		// update supplies
 		supplies[CHAIN_ID] += amount;
 		supplies[toChain] -= amount;
+		console.log("transferrin5");
 
 		// sync other networks
 		_syncSupplies(CHAIN_ID, toChain, amount);
