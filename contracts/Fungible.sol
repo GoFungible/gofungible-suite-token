@@ -273,6 +273,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			minOutputAmount: amount,
 			op: "SUP"
     });
+		console.log("sendCrosschainSupply");
 
     // Compress the struct safely into standard bytes
     bytes memory packedPayload = abi.encode(payload);
@@ -462,6 +463,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// Performs supply transfer
 	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		console.log("transferX");
 
 		// run INBLOCK extensions
 		for(uint i=0; i<_extTrnInBlock.length; i++){
@@ -485,6 +487,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     }
 
 		// do real transation
+		console.log("transferring");
 		_transferX(toChain, toAddress, amount);
 
 		// run OUT extensions
@@ -498,7 +501,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _transferX(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		console.log("transferring2");
 		require(_extGateway != address(0), "Gateway: must be provided");
+		console.log("transferrin3");
 
 		// do supply transation
 		sendCrosschainSupply(toChain, toAddress, amount);
@@ -560,7 +565,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		address resourceAddress;
 		uint256 releaseDate;
 		uint256 releaseNumVotes;
-		uint256 minVotes;
+		uint256 requiredVotes;
 		uint256 numVotes;
 	}
 
@@ -572,12 +577,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	event ResourceUpdated(address indexed oldImplementation, address indexed newImplementation);
 
-	function addResource(uint16 _resourceId, uint16 _resourceType, address _newResourceAddress, uint256 releaseDate, uint256 minVotes, uint256 numVotes) external {
+	function addResource(uint16 _resourceId, uint16 _resourceType, address _newResourceAddress, uint256 releaseDate, uint256 requiredVotes, uint256 numVotes) external {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		require(_newResourceAddress != address(0), "Invalid address");
 		require(_isContract(_newResourceAddress), "Address must be a contract");
 
-		pendingResources[_resourceId] = PendingResource(_resourceType, _newResourceAddress, releaseDate, minVotes, numVotes, 0);
+		pendingResources[_resourceId] = PendingResource(_resourceType, _newResourceAddress, releaseDate, requiredVotes, numVotes, 0);
 		pendingResourceIds.push(_resourceId);
 				
 		emit ResourceAdded(_newResourceAddress);
@@ -602,9 +607,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(block.timestamp >= releaseDate, "Resource: cannot be released yet.");
 
 		// check if the resource can be released by votes
-		uint256 minVotes = pendingResource.minVotes;
+		uint256 requiredVotes = pendingResource.requiredVotes;
 		uint256 releaseNumVotes = pendingResource.releaseNumVotes;
-		require(releaseNumVotes < minVotes, "Resource: not nought votes to release resource.");
+		require(releaseNumVotes <= requiredVotes, "Resource: not enought votes to release resource.");
 
 		// release resource
 		uint resourceType = pendingResource.resourceType;
@@ -617,6 +622,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// gateway
 		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY)) {
 			_extGateway = address(resourceAddress);
+			console.log("released gateway");
 		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_MESSAGE)) {
 			_extGatewaySendMessage.push(resourceAddress);
 		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_SUPPLY)) {
