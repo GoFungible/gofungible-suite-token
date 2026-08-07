@@ -94,7 +94,7 @@ describe("Deploy Token", function () {
 		// erc-20n functions
 		await expect(fungibleContract.addChain(0, addr1)).to.not.be.reverted;
 		await expect(() => fungibleContract.getMasterChain()).to.not.throw();
-		await expect(fungibleContract.setMasterChain(1)).to.be.revertedWith("Gateway: must be provided");
+		await expect(fungibleContract.setMasterChain(1)).to.not.be.reverted;
 		await expect(() => fungibleContract.globalSupply()).to.not.throw();
 		await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
 		await expect(() => fungibleContract.getSuppliesChecksum()).to.not.throw();

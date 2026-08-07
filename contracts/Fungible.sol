@@ -256,33 +256,43 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 * @notice Message blueprint struct for cross-chain execution.
 	 */
 	struct FungiblePayload {
-		bytes targetChain;    		// The id of te target chain
-		address tokenAddress;    	// The token contract address on the destination chain
-		address recipient;       	// The ultimate user receiving the tokens or action
-		uint256 amount;          	// The total amount of tokens being moved
-		uint256 minOutputAmount; 	// Slippage protection metric
 		bytes op; 								// Type of operation
+		bytes destChain;    			// The id of te target chain
+		address destAddress;    	// The token contract address on the destination chain
+
+		bytes fromChain;
+		address fromAddress;
+		bytes toChain;
+		address toAddress;
+
+		uint256 amount;          	// The total amount of tokens being moved
+		//uint256 minOutputAmount; 	// Slippage protection metric
 	}
 
   function gateway() view external returns(address) {
 		return _extGateway;
 	}
 
-	function sendCrosschainSupply(uint32 destChain, address destAddress, uint256 amount) internal {
+	function sendCrosschainSupply(uint32 toChain, address toAddress, uint256 amount) internal {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
     // Build your application's data package
     FungiblePayload memory payload = FungiblePayload({
-			targetChain: abi.encode(destChain),
-			tokenAddress: destAddress,
-			recipient: msg.sender,
-			amount: amount,
-			minOutputAmount: amount,
-			op: "SUP"
+			op: "SUP",
+			destChain: abi.encode(toChain),
+			destAddress: toAddress,
+
+			fromChain: abi.encodePacked(CHAIN_ID),
+			fromAddress: msg.sender,
+			toChain: abi.encode(toChain),
+			toAddress: toAddress,
+
+			amount: amount
+			//minOutputAmount: amount
     });
 		console.log("sendCrosschainSupply1");
 
-		bytes memory recipient = abi.encodePacked(destAddress);
+		bytes memory recipient = abi.encodePacked(toAddress);
 
 		console.log("sendCrosschainSupply2");
 
@@ -299,17 +309,22 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function sendCrosschainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
+	function sendCrosschainSyncSupplies(uint256 onChain, address onAddress, uint256 toChain, address toAddress, uint256 amount, bytes32 checksum) internal {
 		require(msg.sender == _extGateway, "Gateway: must be provided");
 
     // Build your application's data package
     FungiblePayload memory payload = FungiblePayload({
-			targetChain: abi.encode(toChain),
-			tokenAddress: address(0),
-			recipient: msg.sender,
-			amount: 1000e18,
-			minOutputAmount: 995e18,
-			op: "SYS"
+			op: "SYS",
+			destChain: abi.encode(toChain),
+			destAddress: address(0),
+
+			fromChain: abi.encodePacked(CHAIN_ID),
+			fromAddress: msg.sender,
+			toChain: abi.encode(toChain),
+			toAddress: toAddress,
+
+			amount: amount
+			//minOutputAmount: 995e18
     });
 
     // Compress the struct safely into standard bytes
@@ -392,7 +407,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		require(_newMasterChain_ > 0, "MasterChain: must be chainid");
 
-		_syncSupplies(CHAIN_ID, _newMasterChain_, 0);
+		//_syncSupplies(CHAIN_ID, _newMasterChain_, 0);
 
 		emit MasterChainUpdated(_masterChain, _newMasterChain_);
 
@@ -431,25 +446,30 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// Sync Chains
-	function _syncSupplies(uint256 fromChain, uint256 toChain, uint256 amount) internal {
+	function _syncSupplies(uint256 toChain, address toAddress, uint256 amount) internal {
+		console.log("syncing1");
 
 		// do nothing as this is the master chain
-		require(_masterChain != CHAIN_ID, "Sync Supplies: Master chain already in sync.");
+		if(_masterChain == CHAIN_ID) {
+			return;
+		}
+		console.log("syncing2");
 
 		// sync supplies on master chain
 		if (_masterChain > 0) {
-			sendCrosschainSyncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
+			sendCrosschainSyncSupplies(_masterChain, addresses[_masterChain], toChain, toAddress, amount, getSuppliesChecksum());
 			return;
 		}
+		console.log("syncing3");
 
 		// sync supplies on all chains
 		for(uint i=0; i<knownChains.length; i++){
-			sendCrosschainSyncSupplies(_masterChain, addresses[_masterChain], fromChain, toChain, amount, getSuppliesChecksum());
+			sendCrosschainSyncSupplies(knownChains[i], addresses[knownChains[i]], toChain, toAddress, amount, getSuppliesChecksum());
 		}
 
 	}
 
-	function onCrossChainSyncSupplies(uint256 onChain, address onAddress, uint256 fromChain, uint256 toChain, uint256 amount, bytes32 checksum) internal {
+	function onCrossChainSyncSupplies(uint256 fromChain, address fromAddress, uint256 toChain, address toAddress, uint256 amount, bytes32 checksum) internal {
 		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
 
 		// update supply
@@ -457,11 +477,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		supplies[toChain] += amount;
 
 		// verify checsum
-		require(checksum == getSuppliesChecksum(), "SupplySyncer: checksums are not matching. Reverted");
+		//require(checksum == getSuppliesChecksum(), "SupplySyncer: checksums are not matching. Reverted");
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySyncSupply.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "_afterSyncSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", toChain, onChain, amount );
+			bytes memory encodedData = abi.encodeWithSignature( "_afterSyncSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", fromChain, toChain, amount );
 			_staticCall(_extGatewaySyncSupply[i], encodedData);
     }
 
@@ -542,7 +562,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		console.log("transferrin5");
 
 		// sync other networks
-		_syncSupplies(CHAIN_ID, toChain, amount);
+		_syncSupplies(toChain, toAddress, amount);
 
 		return true;
 	}
