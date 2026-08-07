@@ -273,28 +273,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _extGateway;
 	}
 
-	function sendCrosschainSupply(uint32 toChain, address toAddress, uint256 amount) internal {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
-    // Build your application's data package
-    FungiblePayload memory payload = FungiblePayload({
-			op: "SUP",
-			destChain: abi.encode(toChain),
-			destAddress: toAddress,
-
-			fromChain: abi.encodePacked(CHAIN_ID),
-			fromAddress: msg.sender,
-			toChain: abi.encode(toChain),
-			toAddress: toAddress,
-
-			amount: amount
-			//minOutputAmount: amount
-    });
-		console.log("sendCrosschainSupply1");
+  function _sendMessage(uint256 toChain, address toAddress, FungiblePayload memory payload) internal {
 
 		bytes memory recipient = abi.encodePacked(toAddress);
-
-		console.log("sendCrosschainSupply2");
 
     // Compress the struct safely into standard bytes
     bytes memory packedPayload = abi.encode(payload);
@@ -303,36 +285,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes[] memory attributes = new bytes[](0);
 		console.log("sendCrosschainSupply4", _extGateway);
 
-    // Hand off the bytes to your gateway
     IERC7786GatewaySource(_extGateway).sendMessage{value: msg.value}(recipient, packedPayload, attributes);
-		console.log("sendCrosschainSupply5");
-
-	}
-
-	function sendCrosschainSyncSupplies(uint256 onChain, address onAddress, uint256 toChain, address toAddress, uint256 amount, bytes32 checksum) internal {
-		require(msg.sender == _extGateway, "Gateway: must be provided");
-
-    // Build your application's data package
-    FungiblePayload memory payload = FungiblePayload({
-			op: "SYS",
-			destChain: abi.encode(toChain),
-			destAddress: address(0),
-
-			fromChain: abi.encodePacked(CHAIN_ID),
-			fromAddress: msg.sender,
-			toChain: abi.encode(toChain),
-			toAddress: toAddress,
-
-			amount: amount
-			//minOutputAmount: 995e18
-    });
-
-    // Compress the struct safely into standard bytes
-    bytes memory packedPayload = abi.encode(payload);
-
-    // Hand off the bytes to your gateway
-    //_extGateway.sendMessage{value: msg.value}(recipientBytes, packedPayload, attributes);
-		
 	}
 
 	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata payload) external override returns (bytes4) {
@@ -382,11 +335,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ************************************* ERC-20X Network ******************************************
 	// ************************************************************************************************  
-	uint256[] knownChains;
+	uint32[] knownChains;
 
 	mapping(uint256 => address) public addresses;
 
-	function addChain(uint256 chainId, address chainAddress) external {
+	function addChain(uint32 chainId, address chainAddress) external {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		require(addresses[chainId] == address(0), "Network: thi chainId already has a contract");
 
@@ -428,21 +381,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	mapping(uint256 => uint256) public supplies;
 
-	function getAllRemoteSupplies() external view returns (uint256[] memory chainIds, uint256[] memory _supplies) {
+	function getAllRemoteSupplies() external view returns (uint32[] memory chainIds, uint256[] memory _supplies) {
 			chainIds = knownChains;
 			_supplies = new uint256[](knownChains.length);
 			
 			for (uint i = 0; i < knownChains.length; i++) {
 				_supplies[i] = supplies[knownChains[i]];
 			}
-	}
-
-	function getSuppliesChecksum() public view returns (bytes32) {
-			bytes32 checksum;
-			for (uint256 i = 0; i < knownChains.length; i++) {
-				checksum = keccak256(abi.encodePacked(checksum, knownChains[i], supplies[knownChains[i]]));
-			}
-			return checksum;
 	}
 
 	// Sync Chains
@@ -469,6 +414,29 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
+	function sendCrosschainSyncSupplies(uint256 onChain, address onAddress, uint256 toChain, address toAddress, uint256 amount, bytes32 checksum) internal {
+		require(msg.sender == _extGateway, "Gateway: must be provided");
+
+    // Build your application's data package
+    FungiblePayload memory payload = FungiblePayload({
+			op: "SYS",
+			destChain: abi.encode(toChain),
+			destAddress: address(0),
+
+			fromChain: abi.encodePacked(CHAIN_ID),
+			fromAddress: msg.sender,
+			toChain: abi.encode(toChain),
+			toAddress: toAddress,
+
+			amount: amount
+			//minOutputAmount: 995e18
+    });
+
+		console.log("_sendMessage");
+		_sendMessage(toChain, toAddress, payload);
+		
+	}
+
 	function onCrossChainSyncSupplies(uint256 fromChain, address fromAddress, uint256 toChain, address toAddress, uint256 amount, bytes32 checksum) internal {
 		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
 
@@ -487,6 +455,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
+	function getSuppliesChecksum() public view returns (bytes32) {
+		bytes32 checksum;
+		for (uint256 i = 0; i < knownChains.length; i++) {
+			checksum = keccak256(abi.encodePacked(checksum, knownChains[i], supplies[knownChains[i]]));
+		}
+		return checksum;
+	}
+
 	// ************************************************************************************************
 	// ************************************* ERC-20X TransferX ****************************************
 	// ************************************************************************************************
@@ -500,7 +476,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	address[] public _extTrnOutLog;
 
 	// Performs supply transfer
-	function transferX(uint32 toChain, address toAddress, uint256 amount) external returns (bool) {
+	function transferX(uint256 toChain, address toAddress, uint256 amount) external returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		console.log("transferX");
 
@@ -538,7 +514,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return true;
 	}
 
-	function _transferX(uint32 toChain, address toAddress, uint256 amount) internal returns (bool) {
+	function _transferX(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		console.log("transferring2");
 		require(_extGateway != address(0), "Gateway: must be provided");
@@ -565,6 +541,29 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_syncSupplies(toChain, toAddress, amount);
 
 		return true;
+	}
+
+	function sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+
+    // Build your application's data package
+    FungiblePayload memory payload = FungiblePayload({
+			op: "SUP",
+			destChain: abi.encode(toChain),
+			destAddress: toAddress,
+
+			fromChain: abi.encodePacked(CHAIN_ID),
+			fromAddress: msg.sender,
+			toChain: abi.encode(toChain),
+			toAddress: toAddress,
+
+			amount: amount
+			//minOutputAmount: amount
+    });
+
+		console.log("_sendMessage");
+		_sendMessage(toChain, toAddress, payload);
+
 	}
 
 	// Receives supply transfer
