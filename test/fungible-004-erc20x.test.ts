@@ -118,7 +118,6 @@ describe("ERC-20X Supply", function () {
 
 		await expect(fungible1.transferX(1337, fungibleAddress2, ethers.parseEther("1000"))).to.not.be.reverted;
 
-
 		console.log("fungible1 globalSupply", await fungible1.globalSupply());
 		console.log("fungible1 balance", await fungible1.balanceOf(owner));
 		console.log("fungible2 globalSupply", await fungible2.globalSupply());

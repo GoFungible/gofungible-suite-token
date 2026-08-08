@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import "hardhat/console.sol";
+
 library LibERC7786ToEthAdapter {
 
-	// Magic protocol version indicator for Interoperable Addresses
-	bytes2 private constant V1_PREFIX = 0x23CE; 
-	// CAIP-350 Namespace Identifier for standard EVM chains
-	bytes1 private constant CHAIN_TYPE_EVM = 0x01; 
+	// Unique standard Type/Namespace for EVM/EIP-155 chains (equivalent to 0x0001)
+	bytes2 private constant EVM_NAMESPACE = 0x0001;
 
 	/**
 	 * @notice Encodes a standard EVM address and chainId into an ERC-7930 Interoperable Address payload.
@@ -15,88 +15,38 @@ library LibERC7786ToEthAdapter {
 	 * @return The fully compliant ERC-7930 binary record.
 	 */
 	function generateERC7930Record(uint256 chainId, address targetAccount) internal pure returns (bytes memory) {
-		// Step 1: Compress the chain ID down into minimal packed bytes
-		bytes memory chainRef = _encodeMinLengthUint(chainId);
-		bytes1 chainRefLength = bytes1(uint8(chainRef.length));
+		// ABI encode the numeric chainId and account address into explicit sub-buffers
+		bytes memory chainReference = abi.encode(chainId);
+		bytes memory addr = abi.encode(targetAccount);
 
-		// Step 2: Pack everything tightly together without standard ABI padding
-		return abi.encodePacked(
-			V1_PREFIX,
-			CHAIN_TYPE_EVM,
-			chainRefLength,
-			chainRef,
-			targetAccount
-		);
+		// Pack the profile fields together linearly using standard ABI sequence serialization
+		return abi.encode(EVM_NAMESPACE, chainReference, addr);
 	}
-
-	/**
-	 * @dev Helper to drop high-order zero bytes from an integer for tight binary envelopes.
-	 */
-	function _encodeMinLengthUint(uint256 value) internal pure returns (bytes memory) {
-		if (value == 0) {
-			return abi.encodePacked(bytes1(0x00));
-		}
-		
-		// Calculate dynamic byte-length footprint
-		uint256 temp = value;
-		uint256 length = 0;
-		while (temp > 0) {
-			length++;
-			temp >>= 8;
-		}
-
-		bytes memory result = new bytes(length);
-		for (uint256 i = 0; i < length; i++) {
-			result[length - 1 - i] = bytes1(uint8(value >> (i * 8)));
-		}
-		return result;
-	}
-
-	error InvalidPrefix();
-	error UnsupportedChainType();
-	error InvalidAddressLength();
-	error ChainIdOverflow();
 
 	/**
 	 * @notice Parses an ERC-7930 byte payload to extract the destination chainId and EVM address.
-	 * @param record The raw ERC-7930 interoperable binary payload.
+	 * @param interoperableRecord The raw ERC-7930 interoperable binary payload.
 	 * @return chainId The target network EIP-155 identifier (uint256 to support EVM standards).
-	 * @return targetAddress The decoded 20-byte native EVM wallet or contract address.
+	 * @return targetAccount The decoded 20-byte native EVM wallet or contract address.
 	 */
-	function parseERC7930Record(bytes calldata record) external pure returns (uint256 chainId, address targetAddress) {
-		// Enforce basic structural length checks (Prefix 2B + Type 1B + RefLen 1B + AddrLen 1B + Addr 20B = 25B minimum)
-		if (record.length < 25) revert InvalidPrefix();
+	// Parse ERC7930 record
+	function parseERC7930Record(bytes memory interoperableRecord) internal pure returns (uint256 chainId, address targetAccount) {
+		// Enforce that the data array contains at least enough bytes for basic structural layout
+		require(interoperableRecord.length >= 68, "Malformed record layout");
 
-		// 1. Validate the Magic Prefix (Bytes 0-1)
-		bytes2 prefix = bytes2(record[0:2]);
-		if (prefix != V1_PREFIX) revert InvalidPrefix();
+		// Decode the structure back into its base components
+		(bytes2 chainType, bytes memory chainReference, bytes memory addr) = abi.decode(interoperableRecord, (bytes2, bytes, bytes));
 
-		// 2. Validate the Namespace Architecture (Byte 2)
-		bytes1 chainType = record[2];
-		if (chainType != CHAIN_TYPE_EVM) revert UnsupportedChainType();
+		// Enforce type validation to ensure it matches the standard EVM namespace type
+		require(chainType == EVM_NAMESPACE, "Unsupported chain namespace");
 
-		// 3. Extract Chain Reference Length (Byte 3)
-		uint8 chainRefLength = uint8(record[3]);
-		if (chainRefLength > 32) revert ChainIdOverflow(); // Cannot exceed 32 bytes for a uint256
-		
-		// 4. Decode the variable-length ChainReference into a uint256
-		uint256 cursor = 4;
-		for (uint256 i = 0; i < chainRefLength; i++) {
-			chainId = (chainId << 8) | uint8(record[cursor]);
-			cursor++;
-		}
+		// Convert the dynamic inner data blocks back to native Solidity variable definitions
+		chainId = abi.decode(chainReference, (uint256));
+		targetAccount = abi.decode(addr, (address));
 
-		// 5. Extract Address Length and validate it matches EVM constraints (20 bytes)
-		uint8 addrLength = uint8(record[cursor]);
-		if (addrLength != 20) revert InvalidAddressLength();
-		cursor++;
+    console.log("chainId OUT", chainId);
+    console.log("targetAccount OUT", targetAccount);
 
-		// 6. Slice out the native address payload using assembly pointer arithmetic
-		assembly {
-			// Calldata array storage layout offsets the underlying payload by 34 bytes 
-			// (32 bytes length slot + offset start pointer location)
-			targetAddress := shr(96, calldataload(add(record.offset, cursor)))
-		}
+    return (chainId, targetAccount);
 	}
-
 }

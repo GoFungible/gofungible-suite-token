@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-import "../erc-7786/IERC7786GatewaySource.sol";
-import "../erc-7786/IERC7786Recipient.sol";
-import "../erc-7786/LibERC7786ToEthAdapter.sol";
+import "./IERC7786GatewaySource.sol";
+import "./IERC7786Recipient.sol";
+import {LibERC7786ToEthAdapter} from "./LibERC7786ToEthAdapter.sol";
 
 import "hardhat/console.sol";
 
+// Look at how ERC-7985 handles EVM gas limits and execution timeouts within the gateway. 
 contract MockedERC7786Gateway is IERC7786GatewaySource {
-  
+
 	// ************************************************************************************************
 	// *************************************** Reentrancy Guard ***************************************
 	// ************************************************************************************************  
@@ -39,7 +40,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 	 * @notice Synchronously forwards messages protected by the custom nonReentrant modifier.
 	 */
 	function sendMessage(bytes calldata recipient, bytes calldata payload, bytes[] calldata attributes) external payable override nonReentrant returns (bytes32 outboxId) {
-		require(recipient.length == 20, "MockERC7786: Invalid recipient address length");
+		//require(recipient.length == 20, "MockERC7786: Invalid recipient address length");
 		console.log("sending Message 1");
 
 		// State & Identifier updates
@@ -48,7 +49,8 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 chainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipient);
-		console.log("sending Message 2", receiverAddress);
+		console.log("sending Message 2 chainId", chainId);
+		console.log("sending Message 2 receiverAddress", receiverAddress);
 		
 		bytes memory senderBytes = abi.encodePacked(msg.sender);
 

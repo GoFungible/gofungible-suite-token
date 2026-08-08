@@ -18,10 +18,11 @@ import "./erc-20/IExtTransferOUTLog.sol";
 // gateway (relayers)
 import "./erc-7786/IERC7786GatewaySource.sol";
 import "./erc-7786/IERC7786Recipient.sol";
-import "./erc-7786/LibERC7786ToEthAdapter.sol";
+//import "./erc-7786/LibERC7786ToEthAdapter.sol";
 import "./erc-7786/IExtRelayerMessage.sol";
 import "./erc-7786/IExtRelayerSupply.sol";
 import "./erc-7786/IExtRelayerSyncSupply.sol";
+import {LibERC7786ToEthAdapter} from "./erc-7786/LibERC7786ToEthAdapter.sol";
 
 // erc-20n (multichain token)
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
@@ -274,9 +275,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _extGateway;
 	}
 
-
   function _sendMessage(uint256 toChain, address toAddress, FungiblePayload memory payload) internal {
+		console.log("toChain", toChain);
+		console.log("toAddress", toAddress);
 
+		// By doing this, this contract only interacts with the based networks. Be aware.
 		bytes memory recipient = LibERC7786ToEthAdapter.generateERC7930Record(toChain, toAddress);
 
     // Compress the struct safely into standard bytes
@@ -305,13 +308,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// process payload
 		if (true) {
-			//onCrosschainMessage();
+			//onCrossChainSyncSupplies();
 
 		} else if (false) {
 			//onCrosschainSupply();
 
 		} else if (false) {
-			//onCrossChainSyncSupplies();
+			//onCrosschainMessage();
 		}
 		console.log("Message Processed. Returning");
 
