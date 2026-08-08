@@ -3,6 +3,7 @@ pragma solidity 0.8.30;
 
 import "../erc-7786/IERC7786GatewaySource.sol";
 import "../erc-7786/IERC7786Recipient.sol";
+import "../erc-7786/LibERC7786ToEthAdapter.sol";
 
 import "hardhat/console.sol";
 
@@ -44,10 +45,12 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 		// State & Identifier updates
 		_nonce++;
 		outboxId = keccak256(abi.encodePacked(block.timestamp, msg.sender, _nonce));
+
+		// TODO: HERE IS A CAIP-350.
+		(uint256 chainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipient);
+		console.log("sending Message 2", receiverAddress);
 		
 		bytes memory senderBytes = abi.encodePacked(msg.sender);
-		address receiverAddress = address(bytes20(recipient[0:20]));
-		console.log("sending Message 2", receiverAddress);
 
 		// Execution hand-off interaction (External Call)
 		bytes4 magicValue = IERC7786Recipient(receiverAddress).receiveMessage(outboxId, senderBytes, payload);

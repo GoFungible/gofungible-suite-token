@@ -18,6 +18,7 @@ import "./erc-20/IExtTransferOUTLog.sol";
 // gateway (relayers)
 import "./erc-7786/IERC7786GatewaySource.sol";
 import "./erc-7786/IERC7786Recipient.sol";
+import "./erc-7786/LibERC7786ToEthAdapter.sol";
 import "./erc-7786/IExtRelayerMessage.sol";
 import "./erc-7786/IExtRelayerSupply.sol";
 import "./erc-7786/IExtRelayerSyncSupply.sol";
@@ -276,7 +277,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
   function _sendMessage(uint256 toChain, address toAddress, FungiblePayload memory payload) internal {
 
-		bytes memory recipient = abi.encodePacked(toAddress);
+		bytes memory recipient = LibERC7786ToEthAdapter.generateERC7930Record(toChain, toAddress);
 
     // Compress the struct safely into standard bytes
     bytes memory packedPayload = abi.encode(payload);
