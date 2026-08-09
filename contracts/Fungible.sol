@@ -274,22 +274,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _extGateway, "Gateway: only gateway allowed");
 		console.log("MessageReceived");
 
-		// Reentrancy/Idempotency Check: Prevent the same message ID from executing twice
-		//if (executedMessages[sendId]) revert MessageAlreadyExecuted();
-		//executedMessages[sendId] = true;
-
 		// Address Recovery: Convert the binary sender back into a standard EVM address
 		address sourceSender = address(bytes20(sender[0:20]));
 
-		// Unpack the byte envelope straight back into the struct format
-		FungibleSyncPayload memory payloadData = abi.decode(payload, (FungibleSyncPayload));
-
 		// process payload
-		if (true) {
-			//onCloneSupplies();
+		if (false) {
+			onCloneSupplies(payload);
 
 		} else if (false) {
-			//onSyncSupplies();
+			onSyncSupplies(payload);
 
 		} else if (false) {
 			//onCrosschainSupply();
@@ -460,6 +453,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function onSyncSupplies(bytes calldata payload) internal {
 		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
 
+		// Unpack the byte envelope straight back into the struct format
+		FungibleSyncPayload memory payloadData = abi.decode(payload, (FungibleSyncPayload));
+
 		// update supply
 		//supplies[fromChain] -= amount;
 		//supplies[toChain] += amount;
@@ -490,7 +486,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes32 checksum;					// checksum
 	}
 
-	function cloneSupplies(uint256 toChain, address toAddress) external {
+	function cloneSupplies(uint256 toChain, address toAddress) internal {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
 		uint256[] memory suppliesList = new uint256[](knownChains.length);
@@ -518,8 +514,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function onCloneSupplies(bytes calldata payload) external {
-
+	function onCloneSupplies(bytes calldata payload) internal {
+		// Unpack the byte envelope straight back into the struct format
+		FungibleClonePayload memory payloadData = abi.decode(payload, (FungibleClonePayload));
 	}
 
 	function getSuppliesChecksum() public view returns (bytes32) {
