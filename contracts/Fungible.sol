@@ -296,22 +296,24 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		Metadata memory mefadata = message.metadata;
 		uint32 srcChainId = mefadata.srcChainId;
+		bytes32 srcAddress = mefadata.srcAddress;
+		address fromAddress = address(uint160(uint256(srcAddress)));
 
 		// Address Recovery: Convert the binary sender back into a standard EVM address
 		address sourceSender = address(bytes20(sender[0:20]));
 
 		// process payload
 		if (false) {
-			onCrosschainSupply(srcChainId, payload);
+			onCrosschainSupply(srcChainId, fromAddress, payload);
 
 		} else if (false) {
-			onSyncSupplies(srcChainId, payload);
+			onSyncSupplies(srcChainId, fromAddress, payload);
 
 		} else if (false) {
-			onCloneSupplies(srcChainId, payload);
+			onCloneSupplies(srcChainId, fromAddress, payload);
 
 		} else if (false) {
-			onCrosschainMessage(srcChainId, payload);
+			onCrosschainMessage(srcChainId, fromAddress, payload);
 		}
 		console.log("Message Processed. Returning");
 
@@ -323,11 +325,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function onCrosschainMessage(uint256 fromChain, bytes memory payload) internal {
+	function onCrosschainMessage(uint256 fromChain, address fromAddress, bytes memory payload) internal {
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySendMessage.length; i++){
-			//bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(uint256 toChain, address toAddress, string calldata message)", toChain, toAddress, message );
+			//bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(uint256 toChain, address toAddress, string calldata message)", fromChain, srcAddress, message );
 			//_staticCall(_extGatewaySendMessage[i], encodedData);
     }
 
@@ -465,7 +467,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		
 	}
 
-	function onSyncSupplies(uint256 fromChain, bytes memory payload) internal {
+	function onSyncSupplies(uint256 fromChain, address fromAddress, bytes memory payload) internal {
 		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -524,7 +526,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_sendMessage(toChain, packedPayload);
 	}
 
-	function onCloneSupplies(uint256 fromChain, bytes memory payload) internal {
+	function onCloneSupplies(uint256 fromChain, address fromAddress, bytes memory payload) internal {
 		require(knownChains.length == 0, "Clone: can only be done once");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -648,7 +650,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// Receives supply transfer
-	function onCrosschainSupply(uint256 fromChain, bytes memory payload) internal {
+	function onCrosschainSupply(uint256 fromChain, address fromAddress, bytes memory payload) internal {
 		require(msg.sender == _extGateway, "Gateway: must be provided");
 
 		// update both supplies locally
