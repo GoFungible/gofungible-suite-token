@@ -339,17 +339,27 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ************************************* ERC-20X Network ******************************************
 	// ************************************************************************************************  
-	uint32[] knownChains;
+	uint256[] knownChains;
+
+	function getChains() external view returns (uint256[] memory) {
+		return knownChains;
+	}
 
 	mapping(uint256 => address) public addresses;
 
-	function addChain(uint32 chainId, address chainAddress) external {
+	function getChainAddress(uint256 chainId) external view returns (address) {
+		return addresses[chainId];
+	}
+
+	/*function addChain(uint32 chainId, address chainAddress) external {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		require(addresses[chainId] == address(0), "Network: thi chainId already has a contract");
 
 		knownChains.push(chainId);
 		addresses[chainId] = chainAddress;
-	}
+	}*/
+
+
 
 	// ************************************************************************************************
 	// *********************************** ERC-20X Master Chain ***************************************
@@ -385,14 +395,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	mapping(uint256 => uint256) public supplies;
 
-	function getAllRemoteSupplies() external view returns (uint32[] memory chainIds, uint256[] memory _supplies) {
+	function getChainSupply(uint256 chainId) external view returns (uint256) {
+		return supplies[chainId];
+	}
+
+	/*function getAllRemoteSupplies() external view returns (uint32[] memory chainIds, uint256[] memory _supplies) {
 			chainIds = knownChains;
 			_supplies = new uint256[](knownChains.length);
 			
 			for (uint i = 0; i < knownChains.length; i++) {
 				_supplies[i] = supplies[knownChains[i]];
 			}
-	}
+	}*/
 
 	// Sync Chains
 	function _syncSupplies(uint256 toChain, address toAddress, uint256 amount) internal {
@@ -465,6 +479,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			checksum = keccak256(abi.encodePacked(checksum, knownChains[i], supplies[knownChains[i]]));
 		}
 		return checksum;
+	}
+
+	function cloneSupplies(uint256 onChain, address onAddress) external {
+
 	}
 
 	// ************************************************************************************************
