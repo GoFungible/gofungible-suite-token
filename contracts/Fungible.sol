@@ -23,6 +23,7 @@ import "./erc-7786/IExtRelayerMessage.sol";
 import "./erc-7786/IExtRelayerSupply.sol";
 import "./erc-7786/IExtRelayerSyncSupply.sol";
 import {LibERC7786ToEthAdapter} from "./erc-7786/LibERC7786ToEthAdapter.sol";
+import "./erc-7841/ERC7841Message.sol";
 
 // erc-20n (multichain token)
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
@@ -264,10 +265,25 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// By doing this, this contract only interacts with the based networks. Be aware.
 		bytes memory recipient = LibERC7786ToEthAdapter.generateERC7930Record(toChain, addresses[toChain]);
 
+		// message content
+		Metadata memory metadata = Metadata({
+			srcChainId: uint32(CHAIN_ID),
+			destChainId: uint32(toChain),
+			srcAddress: bytes32(uint256(uint160(address(this)))),
+			destAddress: bytes32(uint256(uint160(addresses[toChain]))),
+			sessionId: 0,
+			nonce: 0
+		});
+		Message memory message = Message({
+			metadata: metadata,
+			payload: packedPayload
+		});
+		bytes memory packedMessage = abi.encode(message);
+
 		bytes[] memory attributes = new bytes[](0);
 
 		console.log("sendCrosschainSupply4", _extGateway);
-    IERC7786GatewaySource(_extGateway).sendMessage{value: msg.value}(recipient, packedPayload, attributes);
+    IERC7786GatewaySource(_extGateway).sendMessage{value: msg.value}(recipient, packedMessage, attributes);
 	}
 
 	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata payload) external override returns (bytes4) {
@@ -286,7 +302,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		} else if (false) {
 			onCloneSupplies(payload);
-			
+
 		} else if (false) {
 			//onCrosschainMessage();
 		}
@@ -388,8 +404,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 */
 	struct FungibleSyncPayload {
 		bytes op; 								// Type of operation
-		bytes destChain;    			// The id of te target chain
-		address destAddress;    	// The token contract address on the destination chain
 
 		bytes outChain;
 		bytes inChain;
@@ -428,8 +442,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     // Build your application's data package
     FungibleSyncPayload memory payload = FungibleSyncPayload({
 			op: "SYS",
-			destChain: abi.encode(toChain),
-			destAddress: addresses[toChain],
 
 			outChain: abi.encodePacked(CHAIN_ID),
 			inChain: abi.encode(inChain),
@@ -473,8 +485,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 */
 	struct FungibleClonePayload {
 		bytes op; 								// Type of operation
-		bytes toChain;    			// The id of te target chain
-		address toAddress;    	// The token contract address on the destination chain
 
 		uint256[] chains;
 		uint256[] supplies;       // The total amount of tokens being moved
@@ -493,8 +503,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     // Build your application's data package
     FungibleClonePayload memory payload = FungibleClonePayload({
 			op: "CLO",
-			toChain: abi.encode(toChain),
-			toAddress: addresses[toChain],
 
 			chains: knownChains,
 			supplies: suppliesList,
@@ -604,8 +612,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 */
 	struct FungibleSupplyPayload {
 		bytes op; 								// Type of operation
-		bytes toChain;    				// The id of te target chain
-		address toAddress;    		// The token contract address on the destination chain
 
 		address toAccountAddress; // The token contract address on the destination chain
 		uint256 amount;          	// The total amount of tokens being moved
@@ -613,16 +619,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes32 checksum;					// checksum
 	}
 
-	function sendCrosschainSupply(uint256 toTokenChain, address toAccountAddress, uint256 amount) internal {
+	function sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
     // Build your application's data package
     FungibleSupplyPayload memory payload = FungibleSupplyPayload({
 			op: "SUP",
-			toChain: abi.encode(toTokenChain),
-			toAddress: addresses[toTokenChain],
 
-			toAccountAddress: toAccountAddress,
+			toAccountAddress: toAddress,
 			amount: amount,
 
 			//minOutputAmount: amount
@@ -633,7 +637,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
     bytes memory packedPayload = abi.encode(payload);
 
-		_sendMessage(toTokenChain, packedPayload);
+		_sendMessage(toChain, packedPayload);
 	}
 
 	// Receives supply transfer
