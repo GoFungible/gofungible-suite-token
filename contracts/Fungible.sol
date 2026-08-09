@@ -286,42 +286,49 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     IERC7786GatewaySource(_extGateway).sendMessage{value: msg.value}(recipient, packedMessage, attributes);
 	}
 
-	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata payload) external override returns (bytes4) {
+	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata messageBytes) external override returns (bytes4) {
 		require(msg.sender == _extGateway, "Gateway: only gateway allowed");
 		console.log("MessageReceived");
+
+		Message memory message = abi.decode(messageBytes, (Message));
+		bytes memory payload = message.payload;
+
+
+		Metadata memory mefadata = message.metadata;
+		uint32 srcChainId = mefadata.srcChainId;
 
 		// Address Recovery: Convert the binary sender back into a standard EVM address
 		address sourceSender = address(bytes20(sender[0:20]));
 
 		// process payload
 		if (false) {
-			//onCrosschainSupply();
+			onCrosschainSupply(srcChainId, payload);
 
 		} else if (false) {
-			onSyncSupplies(payload);
+			onSyncSupplies(srcChainId, payload);
 
 		} else if (false) {
-			onCloneSupplies(payload);
+			onCloneSupplies(srcChainId, payload);
 
 		} else if (false) {
-			//onCrosschainMessage();
+			onCrosschainMessage(srcChainId, payload);
 		}
 		console.log("Message Processed. Returning");
 
 		// Execution Simulation (Emit event for test verification)
-		emit MessageReceived(sendId, sourceSender, payload);
+		emit MessageReceived(sendId, sourceSender, messageBytes);
 
 		// Compliance Return: Return the exact function selector (0x3ca22197)
 		return IERC7786Recipient.receiveMessage.selector;
 
 	}
 
-	function onCrosschainMessage(uint256 toChain, address toAddress, string calldata message) internal {
+	function onCrosschainMessage(uint256 fromChain, bytes memory payload) internal {
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySendMessage.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(uint256 toChain, address toAddress, string calldata message)", toChain, toAddress, message );
-			_staticCall(_extGatewaySendMessage[i], encodedData);
+			//bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(uint256 toChain, address toAddress, string calldata message)", toChain, toAddress, message );
+			//_staticCall(_extGatewaySendMessage[i], encodedData);
     }
 
 	}
@@ -458,7 +465,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		
 	}
 
-	function onSyncSupplies(bytes calldata payload) internal {
+	function onSyncSupplies(uint256 fromChain, bytes memory payload) internal {
 		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -517,7 +524,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_sendMessage(toChain, packedPayload);
 	}
 
-	function onCloneSupplies(bytes calldata payload) internal {
+	function onCloneSupplies(uint256 fromChain, bytes memory payload) internal {
 		require(knownChains.length == 0, "Clone: can only be done once");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -641,18 +648,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// Receives supply transfer
-	function onCrosschainSupply(uint256 destChain, address destAddress, uint256 amount) internal {
+	function onCrosschainSupply(uint256 fromChain, bytes memory payload) internal {
 		require(msg.sender == _extGateway, "Gateway: must be provided");
 
 		// update both supplies locally
-		_mint(addresses[destChain], amount);
+		//_mint(addresses[fromChain], amount);
 		//supplies[sourceChain] -= amount;
-		supplies[destChain] += amount;
+		//supplies[fromChain] += amount;
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySendSupply.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", destChain, destAddress, amount );
-			_staticCall(_extGatewaySendSupply[i], encodedData);
+			//bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", destChain, destAddress, amount );
+			//_staticCall(_extGatewaySendSupply[i], encodedData);
     }
 
 	}
