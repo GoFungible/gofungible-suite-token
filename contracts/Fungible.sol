@@ -21,7 +21,6 @@ import "./erc-7786/IERC7786Recipient.sol";
 //import "./erc-7786/LibERC7786ToEthAdapter.sol";
 import "./erc-7786/IExtRelayerMessage.sol";
 import "./erc-7786/IExtRelayerSupply.sol";
-import "./erc-7786/IExtRelayerSyncSupply.sol";
 import {LibERC7786ToEthAdapter} from "./erc-7786/LibERC7786ToEthAdapter.sol";
 import "./erc-7841/ERC7841Message.sol";
 
@@ -304,16 +303,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// process payload
 		if (false) {
-			onCrosschainSupply(srcChainId, fromAddress, payload);
+			onCrosschainSupply(payload);
 
 		} else if (false) {
-			onSyncSupplies(srcChainId, fromAddress, payload);
+			onCloneSupplies(payload);
 
 		} else if (false) {
-			onCloneSupplies(srcChainId, fromAddress, payload);
-
-		} else if (false) {
-			onCrosschainMessage(srcChainId, fromAddress, payload);
+			onCrosschainMessage(payload);
 		}
 		console.log("Message Processed. Returning");
 
@@ -325,7 +321,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function onCrosschainMessage(uint256 fromChain, address fromAddress, bytes memory payload) internal {
+	function onCrosschainMessage(bytes memory payload) internal {
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySendMessage.length; i++){
@@ -411,87 +407,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 * @title FungibleSyncPayload
 	 * @notice Message blueprint struct for cross-chain execution.
 	 */
-	struct FungibleSyncPayload {
-		bytes op; 								// Type of operation
-
-		bytes outChain;
-		bytes inChain;
-		uint256 amount;          	// The total amount of tokens being moved
-
-		bytes32 checksum;					// checksum
-	}
-	
-	// Sync Chains
-	function _syncSupplies(uint256 inChain, uint256 amount) internal {
-		console.log("syncing1");
-
-		// do nothing as this is the master chain
-		if(_masterChain == CHAIN_ID) {
-			return;
-		}
-		console.log("syncing2");
-
-		// sync supplies on master chain
-		if (_masterChain > 0) {
-			syncSupplies(_masterChain, inChain, amount);
-			return;
-		}
-		console.log("syncing3");
-
-		// sync supplies on all chains
-		for(uint i=0; i<knownChains.length; i++){
-			syncSupplies(knownChains[i], inChain, amount);
-		}
-
-	}
-
-	function syncSupplies(uint256 toChain, uint256 inChain, uint256 amount) internal {
-		require(msg.sender == _extGateway, "Gateway: must be provided");
-
-    // Build your application's data package
-    FungibleSyncPayload memory payload = FungibleSyncPayload({
-			op: "SYS",
-
-			outChain: abi.encodePacked(CHAIN_ID),
-			inChain: abi.encode(inChain),
-			amount: amount,
-
-			//minOutputAmount: 995e18
-			checksum: getSuppliesChecksum()
-    });
-
-		console.log("_sendMessage");
-    bytes memory packedPayload = abi.encode(payload);
-
-		_sendMessage(toChain, packedPayload);
-		
-	}
-
-	function onSyncSupplies(uint256 fromChain, address fromAddress, bytes memory payload) internal {
-		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
-
-		// Unpack the byte envelope straight back into the struct format
-		FungibleSyncPayload memory payloadData = abi.decode(payload, (FungibleSyncPayload));
-
-		// update supply
-		//supplies[fromChain] -= amount;
-		//supplies[toChain] += amount;
-
-		// verify checsum
-		//require(checksum == getSuppliesChecksum(), "SupplySyncer: checksums are not matching. Reverted");
-
-		// run relayer extensions
-		for(uint i=0; i<_extGatewaySyncSupply.length; i++){
-			//bytes memory encodedData = abi.encodeWithSignature( "_afterSyncSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", fromChain, toChain, amount );
-			//_staticCall(_extGatewaySyncSupply[i], encodedData);
-    }
-
-	}
-
-	/**
-	 * @title FungibleSyncPayload
-	 * @notice Message blueprint struct for cross-chain execution.
-	 */
 	struct FungibleClonePayload {
 		bytes op; 								// Type of operation
 
@@ -526,7 +441,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_sendMessage(toChain, packedPayload);
 	}
 
-	function onCloneSupplies(uint256 fromChain, address fromAddress, bytes memory payload) internal {
+	function onCloneSupplies(bytes memory payload) internal {
 		require(knownChains.length == 0, "Clone: can only be done once");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -592,7 +507,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		console.log("transferring");
 
 		// do supply transation
-		sendCrosschainSupply(toTokenChain, toAccountAddress, amount);
 		console.log("transferrin4");
 
 		// update local ERC-20
@@ -604,7 +518,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// sync other networks
 		console.log("syncing");
-		_syncSupplies(toTokenChain, amount);
+		sendCrosschainSupply(toTokenChain, toAccountAddress, amount);
+		//_syncSupplies(toTokenChain, amount);
 
 		// run OUT extensions
 		for(uint i=0; i<_extTrnOutLog.length; i++){
@@ -622,7 +537,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	struct FungibleSupplyPayload {
 		bytes op; 								// Type of operation
 
-		address toAccountAddress; // The token contract address on the destination chain
+		uint256 outChain;
+		address outAddress;
+		uint256 inChain;
+		address inAddress;
 		uint256 amount;          	// The total amount of tokens being moved
 
 		bytes32 checksum;					// checksum
@@ -635,7 +553,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     FungibleSupplyPayload memory payload = FungibleSupplyPayload({
 			op: "SUP",
 
-			toAccountAddress: toAddress,
+			outChain: CHAIN_ID,
+			outAddress: msg.sender,
+			inChain: toChain,
+			inAddress: toAddress,
 			amount: amount,
 
 			//minOutputAmount: amount
@@ -646,22 +567,55 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
     bytes memory packedPayload = abi.encode(payload);
 
+		console.log("syncing1");
+
+		// notify receiver token
 		_sendMessage(toChain, packedPayload);
+
+		// sync supplies on master chain
+		if (_masterChain > 0) {
+			_sendMessage(_masterChain, packedPayload);
+			return;
+		}
+		console.log("syncing3");
+
+		// sync supplies on all chains
+		for(uint i=0; i<knownChains.length; i++){
+			_sendMessage(knownChains[i], packedPayload);
+		}
+
 	}
 
 	// Receives supply transfer
-	function onCrosschainSupply(uint256 fromChain, address fromAddress, bytes memory payload) internal {
-		require(msg.sender == _extGateway, "Gateway: must be provided");
+	function onCrosschainSupply(bytes memory payload) internal {
+		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
+
+		// Unpack the byte envelope straight back into the struct format
+		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
+
+		uint256 outChain = payloadData.outChain;
+		//address outAddress = payloadData.outAddress;
+		uint256 inChain = payloadData.inChain;
+		address inAddress = payloadData.inAddress;
+		uint256 amount = payloadData.amount;
 
 		// update both supplies locally
-		//_mint(addresses[fromChain], amount);
-		//supplies[sourceChain] -= amount;
-		//supplies[fromChain] += amount;
+		if (CHAIN_ID == inChain) {
+			_totalSupply += amount;
+			_balances[inAddress] += amount;
+		}
+
+		supplies[inChain] += amount;
+		supplies[outChain] -= amount;
+
+		// verify checsum
+		bytes32 checksum = payloadData.checksum;
+		require(checksum == getSuppliesChecksum(), "SupplySyncer: checksums are not matching. Reverted");
 
 		// run relayer extensions
-		for(uint i=0; i<_extGatewaySendSupply.length; i++){
-			//bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", destChain, destAddress, amount );
-			//_staticCall(_extGatewaySendSupply[i], encodedData);
+		for(uint i=0; i<_extGatewaySyncSupply.length; i++){
+			//bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", fromChain, toChain, amount );
+			//_staticCall(_extGatewaySyncSupply[i], encodedData);
     }
 
 	}
