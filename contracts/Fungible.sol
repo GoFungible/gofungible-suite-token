@@ -130,22 +130,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		emit Transfer(address(0), to, amount);
 	}
 	
-	function _burn(address from, uint256 amount) private {
-		require(from != address(0), "ERC20: burn from zero address");
-		require(_balances[from] >= amount, "ERC20: insufficient balance");
-		console.log("burning", msg.sender);
-		console.log("amount", amount);
-		console.log("from", from);
-		console.log("_balances[from]", _balances[from]);
-		//require(msg.sender == _extGateway, "Gateway: must be provided");
-
-		_balances[from] -= amount;
-		_totalSupply -= amount;
-		
-		console.log("burned");
-		emit Transfer(from, address(0), amount);
-	}
-	
 	// ************************************************************************************************
 	// **************************************** ERC-20 Transfer ***************************************
 	// ************************************************************************************************
@@ -400,6 +384,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		}
 	}
 
+	function getSuppliesChecksum() public view returns (bytes32) {
+		bytes32 checksum;
+		for (uint256 i = 0; i < knownChains.length; i++) {
+			checksum = keccak256(abi.encodePacked(checksum, knownChains[i], supplies[knownChains[i]]));
+		}
+		return checksum;
+	}
+
 	// ************************************************************************************************
 	// ***************************** ERC-20X Supply by Chain Operations *******************************
 	// ************************************************************************************************
@@ -457,14 +449,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function getSuppliesChecksum() public view returns (bytes32) {
-		bytes32 checksum;
-		for (uint256 i = 0; i < knownChains.length; i++) {
-			checksum = keccak256(abi.encodePacked(checksum, knownChains[i], supplies[knownChains[i]]));
-		}
-		return checksum;
-	}
-
 	// ************************************************************************************************
 	// ************************************* ERC-20X TransferX ****************************************
 	// ************************************************************************************************
@@ -503,14 +487,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			_staticCall(_extTrnInLog[i], encodedData);
     }
 
-		// do real transation
-		console.log("transferring");
-
-		// do supply transation
-		console.log("transferrin4");
-
-		// update local ERC-20
-		_burn(msg.sender, amount);
+		// burn in this chain
+		_balances[msg.sender] -= amount;
+		_totalSupply -= amount;
 
 		// update supplies
 		supplies[CHAIN_ID] -= amount;
@@ -519,7 +498,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// sync other networks
 		console.log("syncing");
 		sendCrosschainSupply(toTokenChain, toAccountAddress, amount);
-		//_syncSupplies(toTokenChain, amount);
 
 		// run OUT extensions
 		for(uint i=0; i<_extTrnOutLog.length; i++){
@@ -599,12 +577,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		address inAddress = payloadData.inAddress;
 		uint256 amount = payloadData.amount;
 
-		// update both supplies locally
+		// mint if this is the inChain
 		if (CHAIN_ID == inChain) {
 			_totalSupply += amount;
 			_balances[inAddress] += amount;
 		}
 
+		// update 
 		supplies[inChain] += amount;
 		supplies[outChain] -= amount;
 

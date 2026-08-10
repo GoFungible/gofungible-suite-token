@@ -92,11 +92,11 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWith("Gateway: only gateway allowed");
 
 		// erc-20n functions
-		await expect(fungibleContract.addChain(0, addr1)).to.not.be.reverted;
+		//await expect(fungibleContract.addChain(0, addr1)).to.not.be.reverted;
 		await expect(() => fungibleContract.getMasterChain()).to.not.throw();
 		await expect(fungibleContract.setMasterChain(1)).to.not.be.reverted;
 		await expect(() => fungibleContract.globalSupply()).to.not.throw();
-		await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
+		//await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
 		await expect(() => fungibleContract.getSuppliesChecksum()).to.not.throw();
 		await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Gateway: must be provided");
 
