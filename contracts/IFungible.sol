@@ -46,11 +46,15 @@ abstract contract IFungible {
 	// ************************************************************************************************
 	// ************************************** Good Practices Applied **********************************
 	// ************************************************************************************************
-	// * CEI Pattern (Checks-Effects-Interactions)
-	// * nonReentrant
-	// * Cross-Contract Reentrancy
-	// * Use non-zero values (like 1 and 2) as changing a storage slot from 0 to 1 costs more gas than changing it from 1 to 2.
-	// * Place interactions at the very end to minimize reentrancy risks.
+	// * Code:
+	// 			- CEI Pattern (Checks-Effects-Interactions)
+	// 			- nonReentrant
+	// 			- Cross-Contract Reentrancy
+	// 			- Use non-zero values (like 1 and 2) as changing a storage slot from 0 to 1 costs more gas than changing it from 1 to 2.
+	// 			- Place interactions at the very end to minimize reentrancy risks.
+	// * On creation:
+	// 			- cannot create a fake token because a timestamp is stored in both sides. synchronizationKey in master and slave
+
 
 
 

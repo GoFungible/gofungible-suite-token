@@ -36,10 +36,11 @@ import "hardhat/console.sol";
 contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// ************************************************************************************************
-	// ******************************************** Contract ******************************************
+	// ******************************************** Token *********************************************
 	// ************************************************************************************************   
 	uint256 public immutable CHAIN_ID;
 	
+	// slaves can only be initialized after creation to prevent issuer creating fakes
 	constructor(string memory name_, string memory symbol_, uint256 globalSupply_) {
 		CHAIN_ID = block.chainid;
 		_owner = msg.sender;
@@ -48,11 +49,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_name = name_;
 		_symbol = symbol_;
 		_decimals = 18;
-		
-		// Mint global supply to owner. No more external mints allowed.
+
+		// mint all to this chain
 		_globalSupply = globalSupply_ * 10 ** _decimals;
+		supplies[CHAIN_ID] = _globalSupply;
+
+		// mint all to owner
 		_totalSupply = _globalSupply;
 		_balances[_owner] = _globalSupply;
+
 	}
 
 	// ************************************************************************************************
@@ -99,6 +104,87 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	
 	function decimals() public view returns (uint8) {
 		return _decimals;
+	}
+
+	// ************************************************************************************************
+	// *************************************** Multichain State ***************************************
+	// ************************************************************************************************
+	// _synchronizationKey guarantees token has been initialized by master chain
+	uint256 _synchronizationKey;
+
+	function synchronizationKey() public view returns (uint256) {
+		return _synchronizationKey;
+	}
+
+	/**
+	 * @title FungibleSyncPayload
+	 * @notice Message blueprint struct for cross-chain execution.
+	 */
+	struct FungibleStatePayload {
+		bytes op; 								// Type of operation
+
+		string name;
+		string symbol;
+		uint8 decimals;
+		uint256 globalSupply;
+		uint256[] chains;
+		uint256[] supplies;       // The total amount of tokens being moved
+
+		bytes32 checksum;					// checksum
+	}
+
+	function cloneState(uint256 toChain) internal {
+		require(_synchronizationKey != 0, "Token: only one sync is allowed");
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+
+		uint256[] memory suppliesList = new uint256[](knownChains.length);
+		for(uint i=0; i<knownChains.length; i++) {
+			suppliesList[i] = supplies[knownChains[i]];
+		}
+
+    // Build your application's data package
+    FungibleStatePayload memory payload = FungibleStatePayload({
+			op: "CLO",
+
+			name: _name,
+			symbol: _symbol,
+			decimals: _decimals,
+			globalSupply: _globalSupply,
+			chains: knownChains,
+			supplies: suppliesList,
+
+			checksum: getSuppliesChecksum()
+    });
+
+
+		console.log("_sendMessage");
+    bytes memory packedPayload = abi.encode(payload);
+
+		_sendMessage(toChain, packedPayload);
+	}
+
+	function onCloneState(bytes memory payload) internal {
+		require(knownChains.length == 0, "Clone: can only be done once");
+
+		// Unpack the byte envelope straight back into the struct format
+		FungibleStatePayload memory payloadData = abi.decode(payload, (FungibleStatePayload));
+
+		// metadata
+		_name = payloadData.name;
+		_symbol = payloadData.symbol;
+		_decimals = payloadData.decimals;
+
+		// global supply
+		_globalSupply = payloadData.globalSupply;
+
+		// create knownChains
+		knownChains = payloadData.chains;
+		
+		// create supplies
+		for(uint i=0; i<knownChains.length; i++) {
+			supplies[knownChains[i]] = payloadData.supplies[i];
+		}
+
 	}
 
 	// ************************************************************************************************
@@ -290,7 +376,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			onCrosschainSupply(payload);
 
 		} else if (false) {
-			onCloneSupplies(payload);
+			onCloneState(payload);
 
 		} else if (false) {
 			onCrosschainMessage(payload);
@@ -390,63 +476,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			checksum = keccak256(abi.encodePacked(checksum, knownChains[i], supplies[knownChains[i]]));
 		}
 		return checksum;
-	}
-
-	// ************************************************************************************************
-	// ***************************** ERC-20X Supply by Chain Operations *******************************
-	// ************************************************************************************************
-	/**
-	 * @title FungibleSyncPayload
-	 * @notice Message blueprint struct for cross-chain execution.
-	 */
-	struct FungibleClonePayload {
-		bytes op; 								// Type of operation
-
-		uint256[] chains;
-		uint256[] supplies;       // The total amount of tokens being moved
-
-		bytes32 checksum;					// checksum
-	}
-
-	function cloneSupplies(uint256 toChain) internal {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-
-		uint256[] memory suppliesList = new uint256[](knownChains.length);
-		for(uint i=0; i<knownChains.length; i++) {
-			suppliesList[i] = supplies[knownChains[i]];
-		}
-
-    // Build your application's data package
-    FungibleClonePayload memory payload = FungibleClonePayload({
-			op: "CLO",
-
-			chains: knownChains,
-			supplies: suppliesList,
-
-			checksum: getSuppliesChecksum()
-    });
-
-
-		console.log("_sendMessage");
-    bytes memory packedPayload = abi.encode(payload);
-
-		_sendMessage(toChain, packedPayload);
-	}
-
-	function onCloneSupplies(bytes memory payload) internal {
-		require(knownChains.length == 0, "Clone: can only be done once");
-
-		// Unpack the byte envelope straight back into the struct format
-		FungibleClonePayload memory payloadData = abi.decode(payload, (FungibleClonePayload));
-
-		// create knownChains
-		knownChains = payloadData.chains;
-		
-		// create supplies
-		for(uint i=0; i<knownChains.length; i++) {
-			supplies[knownChains[i]] = payloadData.supplies[i];
-		}
-
 	}
 
 	// ************************************************************************************************
