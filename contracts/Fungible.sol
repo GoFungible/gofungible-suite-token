@@ -107,15 +107,26 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// *************************************** Multichain State ***************************************
+	// *************************************** Synchronization ****************************************
 	// ************************************************************************************************
 	// _synchronizationKey guarantees token has been initialized by master chain
+	// This is the same that the counterpart contract address, right?
+	// Maybe no as is not predetermined
 	uint256 _synchronizationKey;
 
 	function synchronizationKey() public view returns (uint256) {
 		return _synchronizationKey;
 	}
 
+	mapping(uint256 => uint256) private _synchronizationKeys;
+	
+	function synchronizationKey(uint256 chainId) public view returns (uint256) {
+		return _synchronizationKeys[chainId];
+	}
+
+	// ************************************************************************************************
+	// *************************************** Multichain State ***************************************
+	// ************************************************************************************************
 	/**
 	 * @title FungibleSyncPayload
 	 * @notice Message blueprint struct for cross-chain execution.
@@ -128,9 +139,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint8 decimals;
 		uint256 globalSupply;
 		uint256[] chains;
-		uint256[] supplies;       // The total amount of tokens being moved
+		uint256[] syncs;
+		uint256[] supplies;       				// The total amount of tokens being moved
 
-		bytes32 checksum;					// checksum
+		bytes32 checksum;									// checksum
 	}
 
 	function cloneState(uint256 toChain) internal {
@@ -142,6 +154,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			suppliesList[i] = supplies[knownChains[i]];
 		}
 
+		uint256[] memory synchronizationKeys = new uint256[](knownChains.length);
+		for(uint i=0; i<knownChains.length; i++) {
+			synchronizationKeys[i] = _synchronizationKeys[knownChains[i]];
+		}
+
     // Build your application's data package
     FungibleStatePayload memory payload = FungibleStatePayload({
 			op: "CLO",
@@ -151,6 +168,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			decimals: _decimals,
 			globalSupply: _globalSupply,
 			chains: knownChains,
+			syncs: synchronizationKeys,
 			supplies: suppliesList,
 
 			checksum: getSuppliesChecksum()
