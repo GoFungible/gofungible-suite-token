@@ -57,11 +57,11 @@ abstract contract IFungible {
 
 
 
-	event MasterChainUpdated(uint256 fromMasterChain, uint256 toMasterChain);
+	event MasterChainUpdated(uint256 fromMasterChain, address fromMasterAddress, uint256 toMasterChain, address toMasterAddress);
 
 	function getMasterChain() external view virtual returns (uint256);
 
-	function setMasterChain(uint256 masterChain_) external virtual;
+	function setMasterChain(uint256 masterChain_, address newMasterAddress) external virtual;
 
 
 

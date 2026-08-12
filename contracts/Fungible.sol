@@ -63,26 +63,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************** ERC-20 Metadata *****************************************
-	// ************************************************************************************************   
-
-	string private _name;
-	string private _symbol;
-	uint8 private _decimals;
-
-	function name() public view returns (string memory) {
-		return _name;
-	}
-	
-	function symbol() public view returns (string memory) {
-		return _symbol;
-	}
-	
-	function decimals() public view returns (uint8) {
-		return _decimals;
-	}
-
-	// ************************************************************************************************
 	// ******************************************** Access ********************************************
 	// ************************************************************************************************
 	address private _owner;
@@ -110,7 +90,27 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************** ERC-20 Total Supply *************************************
+	// ************************************** ERC-20: 1. Metadata *************************************
+	// ************************************************************************************************   
+
+	string private _name;
+	string private _symbol;
+	uint8 private _decimals;
+
+	function name() public view returns (string memory) {
+		return _name;
+	}
+	
+	function symbol() public view returns (string memory) {
+		return _symbol;
+	}
+	
+	function decimals() public view returns (uint8) {
+		return _decimals;
+	}
+
+	// ************************************************************************************************
+	// ************************************** ERC-20: 2. Supply ***************************************
 	// ************************************************************************************************   
 	uint256 private _totalSupply;
 
@@ -120,26 +120,16 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************* ERC-20 Supply by Account *********************************
+	// *************************************** ERC-20: 3. Balance *************************************
 	// ************************************************************************************************
 	mapping(address => uint256) private _balances;
 	
 	function balanceOf(address account) public view returns (uint256) {
 		return _balances[account];
 	}
-
-	function _mint(address to, uint256 amount) private {
-		require(to != address(0), "ERC20: mint to zero address");
-		require(msg.sender == _extGateway, "Gateway: must be provided");
-
-		_totalSupply += amount;
-		_balances[to] += amount;
-		
-		emit Transfer(address(0), to, amount);
-	}
 	
 	// ************************************************************************************************
-	// **************************************** ERC-20 Transfer ***************************************
+	// **************************************** ERC-20: 4. Transfer ***********************************
 	// ************************************************************************************************
 	// ERC-20 Extensions
 	address[] public _extTrxInBlock;
@@ -204,7 +194,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************* ERC-20 Allowances ****************************************
+	// ************************************* ERC-20: 5. Allowances ************************************
 	// ************************************************************************************************
 	mapping(address => mapping(address => uint256)) private _allowances;
 
@@ -249,12 +239,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _extGateway;
 	}
 
-  function _sendMessage(uint256 toChain, bytes memory packedPayload) internal {
+  function _sendMessage(uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bool) {
 		require(_extGateway != address(0), "Gateway: must be defined");
 		console.log("toChain", toChain);
 
 		// By doing this, this contract only interacts with the based networks. Be aware.
-		bytes memory recipient = LibERC7786ToEthAdapter.generateERC7930Record(toChain, addresses[toChain]);
+		bytes memory recipient = LibERC7786ToEthAdapter.generateERC7930Record(toChain, toAddress);
 
 		// message content
 		Metadata memory metadata = Metadata({
@@ -275,6 +265,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		console.log("sendCrosschainSupply4", _extGateway);
     IERC7786GatewaySource(_extGateway).sendMessage{value: msg.value}(recipient, packedMessage, attributes);
+
+		return true;
 	}
 
 	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata messageBytes) external override returns (bytes4) {
@@ -324,94 +316,29 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// *********************************** ERC-20X Master Chain ***************************************
+	// *********************************** ERC-20X: 1. Master Chain ***********************************
 	// ************************************************************************************************  
 	// master chain
 	uint256 _masterChain;
+
+	address _masterAddress;
 
 	function getMasterChain() external view override returns (uint256) {
 		return _masterChain;
 	}
 
-	function setMasterChain(uint256 _newMasterChain_) external override {
+	function setMasterChain(uint256 _newMasterChain_, address _newMasterAddress) external override {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		require(_newMasterChain_ > 0, "MasterChain: must be chainid");
+		require(_newMasterAddress != address(0), "MasterAddress: cannot be zero address");
 
-		emit MasterChainUpdated(_masterChain, _newMasterChain_);
+		emit MasterChainUpdated(_masterChain, _masterAddress, _newMasterChain_, _newMasterAddress);
 
 		_masterChain = _newMasterChain_;
 	}
 
-		// ************************************************************************************************
-	// *************************************** Multichain State ***************************************
 	// ************************************************************************************************
-	/**
-	 * @title FungibleSyncPayload
-	 * @notice Message blueprint struct for cross-chain execution.
-	 */
-	struct FungibleStatePayload {
-		bytes op; 								// Type of operation
-
-		string name;
-		string symbol;
-		uint8 decimals;
-		uint256[] chains;
-		uint256[] supplies;       				// The total amount of tokens being moved
-
-		bytes32 checksum;									// checksum
-	}
-
-	function cloneState(uint256 toChain) internal {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-
-		uint256[] memory suppliesList = new uint256[](knownChains.length);
-		for(uint i=0; i<knownChains.length; i++) {
-			suppliesList[i] = supplies[knownChains[i]];
-		}
-
-    // Build your application's data package
-    FungibleStatePayload memory payload = FungibleStatePayload({
-			op: "CLO",
-
-			name: _name,
-			symbol: _symbol,
-			decimals: _decimals,
-			chains: knownChains,
-			supplies: suppliesList,
-
-			checksum: getSuppliesChecksum()
-    });
-
-
-		console.log("_sendMessage");
-    bytes memory packedPayload = abi.encode(payload);
-
-		_sendMessage(toChain, packedPayload);
-	}
-
-	function onCloneState(bytes memory payload) internal {
-		require(knownChains.length == 0, "Clone: can only be done once");
-
-		// Unpack the byte envelope straight back into the struct format
-		FungibleStatePayload memory payloadData = abi.decode(payload, (FungibleStatePayload));
-
-		// metadata
-		_name = payloadData.name;
-		_symbol = payloadData.symbol;
-		_decimals = payloadData.decimals;
-
-		// create knownChains
-		knownChains = payloadData.chains;
-		
-		// create supplies
-		for(uint i=0; i<knownChains.length; i++) {
-			supplies[knownChains[i]] = payloadData.supplies[i];
-		}
-
-	}
-
-	// ************************************************************************************************
-	// ************************************* ERC-20X Network ******************************************
+	// ********************************** ERC-20X: 2. Token Perimeter *********************************
 	// ************************************************************************************************  
 	uint256[] knownChains;
 
@@ -434,7 +361,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}*/
 
 	// ************************************************************************************************
-	// ********************************** ERC-20X Supply by Chain *************************************
+	// ********************************** ERC-20X: 3. Supply by Chain *********************************
 	// ************************************************************************************************
 	mapping(uint256 => uint256) public supplies;
 
@@ -451,7 +378,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************* ERC-20X TransferX ****************************************
+	// ************************************* ERC-20X: 4. TransferX ************************************
 	// ************************************************************************************************
 	// ERC-20X Extensions
 	address[] public _extTrnInBlock;
@@ -488,17 +415,20 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			_staticCall(_extTrnInLog[i], encodedData);
     }
 
+		// sync master
+		if (CHAIN_ID != _masterChain) {
+			console.log("syncing");
+			bool result = sendCrosschainSupplyToMaster(toTokenChain, toAccountAddress, amount);
+			require (result, "Transfer failure");
+		}
+
 		// burn in this chain
 		_balances[msg.sender] -= amount;
 		_totalSupply -= amount;
 
-		// update supplies
+		// update supplies in this chain
 		supplies[CHAIN_ID] -= amount;
 		supplies[toTokenChain] += amount;
-
-		// sync other networks
-		console.log("syncing");
-		sendCrosschainSupply(toTokenChain, toAccountAddress, amount);
 
 		// run OUT extensions
 		for(uint i=0; i<_extTrnOutLog.length; i++){
@@ -515,6 +445,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 */
 	struct FungibleSupplyPayload {
 		bytes op; 								// Type of operation
+		uint256 toChain;
+		address toAddress;
 
 		uint256 outChain;
 		address outAddress;
@@ -525,12 +457,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes32 checksum;					// checksum
 	}
 
-	function sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal {
+	function sendCrosschainSupplyToMaster(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
     // Build your application's data package
     FungibleSupplyPayload memory payload = FungibleSupplyPayload({
 			op: "SUP",
+			toChain: _masterChain,
+			toAddress: _masterAddress,
 
 			outChain: CHAIN_ID,
 			outAddress: msg.sender,
@@ -541,27 +475,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			//minOutputAmount: amount
 			checksum: getSuppliesChecksum()
     });
-
-		console.log("_sendMessage");
-
     bytes memory packedPayload = abi.encode(payload);
 
 		console.log("syncing1");
 
-		// notify receiver token
-		_sendMessage(toChain, packedPayload);
-
-		// sync supplies on master chain
-		if (_masterChain > 0) {
-			_sendMessage(_masterChain, packedPayload);
-			return;
-		}
-		console.log("syncing3");
-
-		// sync supplies on all chains
-		for(uint i=0; i<knownChains.length; i++){
-			_sendMessage(knownChains[i], packedPayload);
-		}
+		// notify master
+		bool result = _sendMessage(_masterChain, _masterAddress, packedPayload);
+		return result;
 
 	}
 
@@ -600,8 +520,76 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
+	// ************************************************************************************************
+	// ********************************* ERC-20X: 5. Multichain State *********************************
+	// ************************************************************************************************
+	/**
+	 * @title FungibleSyncPayload
+	 * @notice Message blueprint struct for cross-chain execution.
+	 */
+	struct FungibleStatePayload {
+		bytes op; 								// Type of operation
+
+		string name;
+		string symbol;
+		uint8 decimals;
+		uint256[] chains;
+		uint256[] supplies;       				// The total amount of tokens being moved
+
+		bytes32 checksum;									// checksum
+	}
+
+	function cloneState(uint256 toChain, address toAddress) internal {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+
+		uint256[] memory suppliesList = new uint256[](knownChains.length);
+		for(uint i=0; i<knownChains.length; i++) {
+			suppliesList[i] = supplies[knownChains[i]];
+		}
+
+    // Build your application's data package
+    FungibleStatePayload memory payload = FungibleStatePayload({
+			op: "CLO",
+
+			name: _name,
+			symbol: _symbol,
+			decimals: _decimals,
+			chains: knownChains,
+			supplies: suppliesList,
+
+			checksum: getSuppliesChecksum()
+    });
+
+
+		console.log("_send Message");
+    bytes memory packedPayload = abi.encode(payload);
+
+		_sendMessage(toChain, toAddress, packedPayload);
+	}
+
+	function onCloneState(bytes memory payload) internal {
+		require(knownChains.length == 0, "Clone: can only be done once");
+
+		// Unpack the byte envelope straight back into the struct format
+		FungibleStatePayload memory payloadData = abi.decode(payload, (FungibleStatePayload));
+
+		// metadata
+		_name = payloadData.name;
+		_symbol = payloadData.symbol;
+		_decimals = payloadData.decimals;
+
+		// create knownChains
+		knownChains = payloadData.chains;
+		
+		// create supplies
+		for(uint i=0; i<knownChains.length; i++) {
+			supplies[knownChains[i]] = payloadData.supplies[i];
+		}
+
+	}
+
 	// *************************************************************************************************
-	// ************************************** Extension Injection **************************************
+	// ************************************ Extension: 1. Injection ************************************
 	// *************************************************************************************************
 	enum ExtensionType { 
 		EXT_OWNERSHIP_PROVIDER,
@@ -734,7 +722,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************ Extensions Proxy ******************************************
+	// ************************************ Extensions: 2. Proxy **************************************
 	// ************************************************************************************************
 	function _delegateCall(address implementation, bytes memory encodedData) internal virtual returns (bytes memory returnData) {
 		assembly {
@@ -783,7 +771,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************ Extensions Config *****************************************
+	// ************************************ Extensions: 3. Config *************************************
 	// ************************************************************************************************
 	
   // Key-value store for extensions configuration
