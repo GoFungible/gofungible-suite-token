@@ -57,5 +57,14 @@ abstract contract IFungible {
 
 
 
+	event MasterChainUpdated(uint256 fromMasterChain, uint256 toMasterChain);
+
+	function getMasterChain() external view virtual returns (uint256);
+
+	function setMasterChain(uint256 masterChain_) external virtual;
+
+
+
+
 
 }
