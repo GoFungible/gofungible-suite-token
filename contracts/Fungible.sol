@@ -290,10 +290,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			onCrosschainSupply(payload);
 
 		} else if (false) {
-			onCloneState(payload);
+			onCrosschainMessage(payload);
 
 		} else if (false) {
-			onCrosschainMessage(payload);
+			onCloneState(payload);
 		}
 		console.log("Message Processed. Returning");
 
@@ -390,13 +390,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	address[] public _extTrnOutLog;
 
 	// Performs supply transfer
-	function transferX(uint256 toTokenChain, address toAccountAddress, uint256 amount) external returns (bool) {
+	function transferX(uint256 inChain, address inAddress, uint256 amount) external returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		console.log("transferX");
 
 		// run INBLOCK extensions
 		for(uint i=0; i<_extTrnInBlock.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "extTransportINBlockX(uint256 from, address to, uint256 amount)", toTokenChain, toAccountAddress, amount );
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportINBlockX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
 			bytes memory resultBytes = _staticCall(_extTrnInBlock[i], encodedData);
 			bool isBlocked = abi.decode(resultBytes, (bool));
       require(!isBlocked, "Extension: Transfer blocked by Extension");
@@ -404,37 +404,49 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// run INUPDATE extensions
 		for(uint i=0; i<_extTrnInUpdate.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "extTransportINUpdateX(uint256 from, address to, uint256 amount)", toTokenChain, toAccountAddress, amount );
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportINUpdateX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
 			bytes memory resultBytes = _delegateCall(_extTrnInUpdate[i], encodedData);
 			amount = abi.decode(resultBytes, (uint256));
     }
 
 		// run INLOG extensions
 		for(uint i=0; i<_extTrnInLog.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "extTransportINLogX(uint256 from, address to, uint256 amount)", toTokenChain, toAccountAddress, amount );
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportINLogX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
 			_staticCall(_extTrnInLog[i], encodedData);
     }
 
-		// sync master
-		if (CHAIN_ID != _masterChain) {
-			console.log("syncing");
-			bool result = sendCrosschainSupplyToMaster(toTokenChain, toAccountAddress, amount);
+		// if transferring from master update remote before, then update master
+		if (CHAIN_ID == _masterChain) {
+
+			bool result = sendCrosschainSupply(inChain, inAddress, amount);
 			require (result, "Transfer failure");
+
+			// burn in this chain
+			_balances[msg.sender] -= amount;
+			_totalSupply -= amount;
+
+			// burn from chain
+			supplies[CHAIN_ID] -= amount;
+			supplies[inChain] += amount;
+
+			// run OUT extensions
+			for(uint i=0; i<_extTrnOutLog.length; i++){
+				bytes memory encodedData = abi.encodeWithSignature( "extTransportOUTX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
+				_staticCall(_extTrnOutLog[i], encodedData);
+			}
+
+			return true;
 		}
 
-		// burn in this chain
-		_balances[msg.sender] -= amount;
-		_totalSupply -= amount;
+		// if transferring from no master to no master send to master, then update
+		else {
+			bool result2 = sendCrosschainSupply(_masterChain, _masterAddress, amount);
+			require (result2, "Transfer failure");
 
-		// update supplies in this chain
-		supplies[CHAIN_ID] -= amount;
-		supplies[toTokenChain] += amount;
-
-		// run OUT extensions
-		for(uint i=0; i<_extTrnOutLog.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "extTransportOUTX(uint256 from, address to, uint256 amount)", toTokenChain, toAccountAddress, amount );
-			_staticCall(_extTrnOutLog[i], encodedData);
-    }
+			// burn in this chain
+			_balances[msg.sender] -= amount;
+			_totalSupply -= amount;
+		}
 
 		return true;
 	}
@@ -445,8 +457,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 */
 	struct FungibleSupplyPayload {
 		bytes op; 								// Type of operation
-		uint256 toChain;
-		address toAddress;
 
 		uint256 outChain;
 		address outAddress;
@@ -457,17 +467,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes32 checksum;					// checksum
 	}
 
-	function sendCrosschainSupplyToMaster(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
+	function sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
     // Build your application's data package
     FungibleSupplyPayload memory payload = FungibleSupplyPayload({
 			op: "SUP",
-			toChain: _masterChain,
-			toAddress: _masterAddress,
 
 			outChain: CHAIN_ID,
-			outAddress: msg.sender,
+			outAddress: address(this),
 			inChain: toChain,
 			inAddress: toAddress,
 			amount: amount,
@@ -491,26 +499,47 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
-
 		uint256 outChain = payloadData.outChain;
-		//address outAddress = payloadData.outAddress;
+		address outAddress = payloadData.outAddress;
 		uint256 inChain = payloadData.inChain;
 		address inAddress = payloadData.inAddress;
 		uint256 amount = payloadData.amount;
 
-		// mint if this is the inChain
-		if (CHAIN_ID == inChain) {
+
+		// is not master just update
+		if (CHAIN_ID != _masterChain) {
 			_totalSupply += amount;
 			_balances[inAddress] += amount;
 		}
 
-		// update 
-		supplies[inChain] += amount;
-		supplies[outChain] -= amount;
+		// is master and supply sent to master
+		else if (CHAIN_ID == _masterChain && inChain == CHAIN_ID) {
+			_totalSupply += amount;
+			_balances[inAddress] += amount;
+			supplies[inChain] += amount;
+			supplies[outChain] -= amount;
+		}
 
-		// verify checsum
-		bytes32 checksum = payloadData.checksum;
-		require(checksum == getSuppliesChecksum(), "SupplySyncer: checksums are not matching. Reverted");
+		// is master and supply not sent to master
+		else if (CHAIN_ID == _masterChain && inChain != CHAIN_ID) {
+
+			// forward to inChain
+			bool result2 = sendCrosschainSupply(inChain, inAddress, amount);
+			if (result2) {
+				supplies[inChain] += amount;
+				supplies[outChain] -= amount;
+			}
+
+			// rollback outChain
+			else {
+				bool result3 = sendCrosschainSupply(outChain, outAddress, /*-1 **/ amount);
+				if (!result3) {
+					// problem here
+					// manual retry
+				}
+			}
+
+		}
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySyncSupply.length; i++){
