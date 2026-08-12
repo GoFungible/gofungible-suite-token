@@ -18,7 +18,6 @@ import "./erc-20/IExtTransferOUTLog.sol";
 // gateway (relayers)
 import "./erc-7786/IERC7786GatewaySource.sol";
 import "./erc-7786/IERC7786Recipient.sol";
-//import "./erc-7786/LibERC7786ToEthAdapter.sol";
 import "./erc-7786/IExtRelayerMessage.sol";
 import "./erc-7786/IExtRelayerSupply.sol";
 import {LibERC7786ToEthAdapter} from "./erc-7786/LibERC7786ToEthAdapter.sol";
@@ -356,7 +355,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		string name;
 		string symbol;
 		uint8 decimals;
-		//uint256 globalSupply;
 		uint256[] chains;
 		uint256[] supplies;       				// The total amount of tokens being moved
 
@@ -378,7 +376,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			name: _name,
 			symbol: _symbol,
 			decimals: _decimals,
-			//globalSupply: _globalSupply,
 			chains: knownChains,
 			supplies: suppliesList,
 
@@ -402,9 +399,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_name = payloadData.name;
 		_symbol = payloadData.symbol;
 		_decimals = payloadData.decimals;
-
-		// global supply
-		//_globalSupply = payloadData.globalSupply;
 
 		// create knownChains
 		knownChains = payloadData.chains;
@@ -447,14 +441,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function getChainSupply(uint256 chainId) external view returns (uint256) {
 		return supplies[chainId];
 	}
-
-	/*function getChainSupplies() external view returns (uint256[] memory _supplies) {
-		_supplies = new uint256[](knownChains.length);
-		
-		for (uint i = 0; i < knownChains.length; i++) {
-			_supplies[i] = supplies[knownChains[i]];
-		}
-	}*/
 
 	function getSuppliesChecksum() public view returns (bytes32) {
 		bytes32 checksum;
