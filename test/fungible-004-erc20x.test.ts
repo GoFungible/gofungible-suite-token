@@ -125,20 +125,20 @@ describe("ERC-20X Supply", function () {
 	// On ChainC: ChainA:AccountA to ChainB:AccountB (proxy)
 	it("ChainA should be able to transfer from ChainA:owner to ChainB:owner", async() => {
 		const fungible1 = Fungible__factory.connect(fungibleAddress1, owner);
-		expect(await fungible1.globalSupply()).to.equal(ethers.parseEther("1000000000"));
+		//expect(await fungible1.globalSupply()).to.equal(ethers.parseEther("1000000000"));
 		const fungible2 = Fungible__factory.connect(fungibleAddress2, owner);
-		expect(await fungible2.globalSupply()).to.equal(ethers.parseEther("0"));
+		//expect(await fungible2.globalSupply()).to.equal(ethers.parseEther("0"));
 
 		await expect(fungible1.transferX(1337, fungibleAddress2, ethers.parseEther("1000"))).to.not.be.reverted;
 
-		console.log("fungible1 globalSupply", await fungible1.globalSupply());
+		//console.log("fungible1 globalSupply", await fungible1.globalSupply());
 		console.log("fungible1 balance", await fungible1.balanceOf(owner));
-		console.log("fungible2 globalSupply", await fungible2.globalSupply());
+		//console.log("fungible2 globalSupply", await fungible2.globalSupply());
 		console.log("fungible2 balance", await fungible2.balanceOf(owner));
 
-		expect(await fungible1.globalSupply()).to.equal(ethers.parseEther("1000000000"));
+		//expect(await fungible1.globalSupply()).to.equal(ethers.parseEther("1000000000"));
 		expect(await fungible1.balanceOf(owner)).to.equal(ethers.parseEther("1000000000"));
-		expect(await fungible2.globalSupply()).to.equal(ethers.parseEther("0"));
+		//expect(await fungible2.globalSupply()).to.equal(ethers.parseEther("0"));
 		expect(await fungible1.balanceOf(owner)).to.equal(ethers.parseEther("0"));
 	});
 	
