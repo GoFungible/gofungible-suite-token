@@ -287,13 +287,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// process payload
 		if (false) {
-			onCrosschainSupply(payload);
+			_onCrosschainSupply(payload);
 
 		} else if (false) {
-			onCrosschainMessage(payload);
+			_onCrosschainMessage(payload);
 
 		} else if (false) {
-			onCloneState(payload);
+			_onCloneState(payload);
 		}
 		console.log("Message Processed. Returning");
 
@@ -305,7 +305,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function onCrosschainMessage(bytes memory payload) internal {
+	function _onCrosschainMessage(bytes memory payload) internal {
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySendMessage.length; i++){
@@ -317,7 +317,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// ************************************************************************************************
 	// *********************************** ERC-20X: 1. Master Chain ***********************************
-	// ************************************************************************************************  
+	// ************************************************************************************************
+	/*
+	** All need to know which one is the master chain to forward to it to provide many of the services
+	*/
 	// master chain
 	uint256 _masterChain;
 
@@ -329,14 +332,16 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function setMasterChain(uint256 _newMasterChain_, address _newMasterAddress) external override {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(_masterChain == CHAIN_ID, "MasterChain: only masterchain can do this operation");
 		require(_newMasterChain_ > 0, "MasterChain: must be chainid");
 		require(_newMasterAddress != address(0), "MasterAddress: cannot be zero address");
 
 		// transfer state to new master
-		bool result = cloneState(_newMasterChain_, _newMasterAddress);
+		bool result = _cloneState(_newMasterChain_, _newMasterAddress);
 		require (result, "MasterChain: state transfer failed");
 
 		// broadcast to all other chains
+		// we cannot claim from every chain because this could leave temporary inconsistent state
 		// ????????
 
 		// change master to this chain
@@ -362,7 +367,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes32 checksum;									// checksum
 	}
 
-	function cloneState(uint256 toChain, address toAddress) internal returns (bool) {
+	function _cloneState(uint256 toChain, address toAddress) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
 		uint256[] memory suppliesList = new uint256[](knownChains.length);
@@ -390,7 +395,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_sendMessage(toChain, toAddress, packedPayload);
 	}
 
-	function onCloneState(bytes memory payload) internal {
+	function _onCloneState(bytes memory payload) internal {
 		require(knownChains.length == 0, "Clone: can only be done once");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -426,13 +431,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return addresses[chainId];
 	}
 
-	/*function addChain(uint32 chainId, address chainAddress) external {
+	function addChain(uint32 chainId, address chainAddress) external {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(addresses[chainId] == address(0), "Network: thi chainId already has a contract");
+		require(_masterChain == CHAIN_ID, "MasterChain: only masterchain can do this operation");
+		require(addresses[chainId] == address(0), "Network: this chainId already has a contract");
 
 		knownChains.push(chainId);
 		addresses[chainId] = chainAddress;
-	}*/
+	}
 
 
 	// ************************************************************************************************
@@ -493,7 +499,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// if transferring from master update remote before, then update master
 		if (CHAIN_ID == _masterChain) {
 
-			bool result = sendCrosschainSupply(inChain, inAddress, amount);
+			bool result = _sendCrosschainSupply(inChain, inAddress, amount);
 			require (result, "Transfer failure");
 
 			// burn in this chain
@@ -515,7 +521,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// if transferring from no master to no master send to master, then update
 		else {
-			bool result2 = sendCrosschainSupply(_masterChain, _masterAddress, amount);
+			bool result2 = _sendCrosschainSupply(_masterChain, _masterAddress, amount);
 			require (result2, "Transfer failure");
 
 			// burn in this chain
@@ -542,7 +548,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes32 checksum;					// checksum
 	}
 
-	function sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
+	function _sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 
     // Build your application's data package
@@ -569,7 +575,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// Receives supply transfer
-	function onCrosschainSupply(bytes memory payload) internal {
+	function _onCrosschainSupply(bytes memory payload) internal {
 		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -599,7 +605,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		else if (CHAIN_ID == _masterChain && inChain != CHAIN_ID) {
 
 			// forward to inChain
-			bool result2 = sendCrosschainSupply(inChain, inAddress, amount);
+			bool result2 = _sendCrosschainSupply(inChain, inAddress, amount);
 			if (result2) {
 				supplies[inChain] += amount;
 				supplies[outChain] -= amount;
@@ -607,7 +613,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 			// rollback outChain
 			else {
-				bool result3 = sendCrosschainSupply(outChain, outAddress, /*-1 **/ amount);
+				bool result3 = _sendCrosschainSupply(outChain, outAddress, /*-1 **/ amount);
 				if (!result3) {
 					// problem here
 					// manual retry
