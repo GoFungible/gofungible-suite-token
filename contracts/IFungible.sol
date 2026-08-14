@@ -7,6 +7,9 @@ abstract contract IFungible {
 	// *************************************** Slots - Variables **************************************
 	// ************************************************************************************************
   address constant ZERO_ADDRESS = address(0);
+	bytes32 constant MSG_BND = "BND";
+	bytes32 constant MSG_CLO = "CLO";
+	bytes32 constant MSG_SUP = "SUP";
 
 
 

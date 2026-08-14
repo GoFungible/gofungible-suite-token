@@ -292,13 +292,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		address sourceSender = address(bytes20(sender[0:20]));
 
 		// process payload
-		if (header.op == 'SUP') {
+		if (header.op == MSG_SUP) {
 			_onCrosschainSupply(payload);
 
-		} else if (header.op == 'CLO') {
+		} else if (header.op == MSG_CLO) {
 			_onCrosschainCloneState(payload);
 
-		} else if (header.op == 'BND') {
+		} else if (header.op == MSG_BND) {
 			_onCrosschainBindStatus(payload);
 
 		} else {
@@ -380,7 +380,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     });
     bytes memory packedPayload = abi.encode(payload);
 
-		bool response = _sendMessage("BND",toChain, toAddres, packedPayload);
+		bool response = _sendMessage(MSG_BND, toChain, toAddres, packedPayload);
 		return response;
 	}
 
@@ -470,7 +470,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		console.log("_send Message");
     bytes memory packedPayload = abi.encode(payload);
 
-		bool response = _sendMessage("CLO", toChain, toAddress, packedPayload);
+		bool response = _sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
 		return response;
 	}
 
@@ -633,7 +633,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     });
     bytes memory packedPayload = abi.encode(payload);
 
-		bool response = _sendMessage("SUP",_masterChain, _masterAddress, packedPayload);
+		bool response = _sendMessage(MSG_SUP, _masterChain, _masterAddress, packedPayload);
 		return response;
 
 	}
