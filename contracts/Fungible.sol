@@ -296,9 +296,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			_onCrosschainSupply(payload);
 
 		} else if (header.op == 'CLO') {
-			_onCloneState(payload);
+			_onCrosschainCloneState(payload);
 
-		} else if (false) {
+		} else if (header.op == 'BND') {
+			_onCrosschainBindStatus(payload);
+
+		} else {
 			_onCrosschainMessage(payload);
 		}
 		console.log("Message Processed. Returning");
@@ -471,7 +474,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return response;
 	}
 
-	function _onCloneState(bytes memory payload) internal {
+	function _onCrosschainCloneState(bytes memory payload) internal {
 		require(knownChains.length == 0, "Clone: can only be done once");
 
 		// Unpack the byte envelope straight back into the struct format
