@@ -335,7 +335,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		addresses[chainId] = chainAddress;
 	}
 
-	function unbindChain(uint32 chainId, address chainAddress) external {
+	function unbindChain(uint32 chainId) view external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(_masterChain == CHAIN_ID, "MasterChain: only masterchain can do this operation");
+		require(addresses[chainId] != address(0), "Network: this chain has not a contract");
+		require(supplies[chainId] == 0, "Network: this chain already has supply");
+
+		// TODO: remove from knownChains
 	}
 
 	// ************************************************************************************************
@@ -395,8 +401,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint8 decimals;
 		uint256[] chains;
 		uint256[] supplies;       				// The total amount of tokens being moved
-
-		bytes32 checksum;									// checksum
 	}
 
 	function _cloneState(uint256 toChain, address toAddress) internal returns (bool) {
@@ -415,9 +419,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			symbol: _symbol,
 			decimals: _decimals,
 			chains: knownChains,
-			supplies: suppliesList,
-
-			checksum: getSuppliesChecksum()
+			supplies: suppliesList
     });
 
 
@@ -448,6 +450,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
+	// https://github.com/ZeframLou/token-migrator
+	// https://forum.openzeppelin.com/t/how-to-migrate-a-non-upgradeable-erc20-token-to-a-new-version/3406/8
+	// https://johnjvester.medium.com/bridging-the-gap-better-token-standards-for-cross-chain-assets-6a5793a215c3
+	/*function migratetoken(address newToken) external {
+
+	}*/
+
 	// ************************************************************************************************
 	// ********************************** ERC-20X: 4. Supply by Chain *********************************
 	// ************************************************************************************************
@@ -457,13 +466,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return supplies[chainId];
 	}
 
-	function getSuppliesChecksum() public view returns (bytes32) {
+	/*function getSuppliesChecksum() public view returns (bytes32) {
 		bytes32 checksum;
 		for (uint256 i = 0; i < knownChains.length; i++) {
 			checksum = keccak256(abi.encodePacked(checksum, knownChains[i], supplies[knownChains[i]]));
 		}
 		return checksum;
-	}
+	}*/
 
 	// ************************************************************************************************
 	// ************************************* ERC-20X: 5. Bridge ***************************************
@@ -566,8 +575,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint256 inChain;
 		address inAddress;
 		uint256 amount;          	// The total amount of tokens being moved
-
-		bytes32 checksum;					// checksum
 	}
 
 	function _sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
@@ -581,10 +588,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			outAddress: address(this),
 			inChain: toChain,
 			inAddress: toAddress,
-			amount: amount,
+			amount: amount
 
 			//minOutputAmount: amount
-			checksum: getSuppliesChecksum()
     });
     bytes memory packedPayload = abi.encode(payload);
 
@@ -778,13 +784,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return size > 0;
 	}
 
-	// https://github.com/ZeframLou/token-migrator
-	// https://forum.openzeppelin.com/t/how-to-migrate-a-non-upgradeable-erc20-token-to-a-new-version/3406/8
-	// https://johnjvester.medium.com/bridging-the-gap-better-token-standards-for-cross-chain-assets-6a5793a215c3
-	function migratetoken(address newToken) external {
-
-	}
-
 	// ************************************************************************************************
 	// ************************************ Extensions: 2. Proxy **************************************
 	// ************************************************************************************************
@@ -842,10 +841,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
   mapping(bytes32 => bytes32) private configStore;
 
 	function writeConfig(bytes32 key, bytes32 value) external override {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		configStore[key] = value;
 	}
 
 	function readConfig(bytes32 key) external view override returns (bytes32) {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		return configStore[key];
 	}
 

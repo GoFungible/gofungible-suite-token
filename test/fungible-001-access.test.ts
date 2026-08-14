@@ -88,15 +88,17 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.connect(addr1).transferFrom(owner.address, addr1.address, ethers.parseUnits("10", 18))).to.not.be.reverted;
 
 		// erc-7866 functions
-		//await expect(() => fungibleContract.gateway()).to.not.throw();
+		await expect(() => fungibleContract.gateway()).to.not.throw();
 		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWith("Gateway: only gateway allowed");
 
 		// erc-20n functions
-		//await expect(fungibleContract.addChain(0, addr1)).to.not.be.reverted;
+		await expect(fungibleContract.getChains()).to.not.be.reverted;
+		await expect(fungibleContract.bindChain(0, addr1)).to.not.be.reverted;
+		await expect(fungibleContract.unbindChain(0)).to.not.be.reverted;
+		await expect(() => fungibleContract.getChainAddress(0)).to.not.throw();
 		await expect(() => fungibleContract.getMasterChain()).to.not.throw();
-		//await expect(fungibleContract.setMasterChain(1, addr3)).to.not.be.reverted;
-		//await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
-		await expect(() => fungibleContract.getSuppliesChecksum()).to.not.throw();
+		await expect(fungibleContract.setMasterChain(1, addr3)).to.be.revertedWith("Gateway: must be defined");
+		await expect(() => fungibleContract.getChainSupply(0)).to.not.throw();
 		await expect(fungibleContract.bridge(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Gateway: must be defined");
 		await expect(fungibleContract.pay(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Gateway: must be defined");
 
@@ -104,7 +106,9 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.addResource(45, 1, fungibleAddress, 0, 10, 10)).to.not.be.reverted;
 		await expect(() => fungibleContract.getPendingResourcesIds()).to.not.throw();
 		await expect(fungibleContract.releaseResource(45, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
-		await expect(fungibleContract.migratetoken(addr1)).to.not.be.reverted;
+		await expect(fungibleContract.writeConfig(ethers.encodeBytes32String("admin_role"), ethers.encodeBytes32String("super_user"))).to.not.be.reverted;
+		await expect(() => fungibleContract.readConfig(ethers.encodeBytes32String("admin_role"))).to.not.throw();
+		await expect(fungibleContract.updateConfiguration(addr3, ethers.hexlify(ethers.toUtf8Bytes("Arbitrary configuration data here")))).to.not.be.reverted;
 
 	});
 
@@ -132,9 +136,6 @@ describe("Deploy Token", function () {
 		
 	});
 
-	/********************************************************************************************************/
-	/************************************* Extensions Access to Fungible ************************************/
-	/********************************************************************************************************/
 	it("Only Gateway functions are ok for gateway", async() => {
 		const fungibleContract = Fungible__factory.connect(fungibleAddress, addr1);
 		//const gatewayContract = MockedGateway__factory.connect(gatewayAddress, addr1);
