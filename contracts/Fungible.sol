@@ -78,7 +78,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		address oldOwner = _owner;
 
-		if (_extOwnershipProvider == address(0)) {
+		if (_extOwnershipProvider == ZERO_ADDRESS) {
 			_owner = _newOwner;
 		} else {
 			bytes memory encodedData = abi.encodeWithSignature( "transferOwnership(address _owner)", _owner);
@@ -156,8 +156,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 	
 	function _transfer(address from, address to, uint256 amount) internal returns (bool) {
-		require(from != address(0), NonZeroAddress(from));
-		require(to != address(0), NonZeroAddress(to));
+		require(from != ZERO_ADDRESS, NonZeroAddress(from));
+		require(to != ZERO_ADDRESS, NonZeroAddress(to));
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
 
 		// run INBLOCK extensions
@@ -211,8 +211,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _approve(address owner_, address spender, uint256 amount) internal {
-		require(owner_ != address(0), NonZeroAddress(owner_));
-		require(spender != address(0), NonZeroAddress(spender));
+		require(owner_ != ZERO_ADDRESS, NonZeroAddress(owner_));
+		require(spender != ZERO_ADDRESS, NonZeroAddress(spender));
 		
 		_allowances[owner_][spender] = amount;
 		emit Approval(owner_, spender, amount);
@@ -242,7 +242,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bool) {
-		require(_extGateway != address(0), NonZeroAddress(msg.sender));
+		require(_extGateway != ZERO_ADDRESS, NonZeroAddress(msg.sender));
 		console.log("toChain", toChain);
 
 		// By doing this, this contract only interacts with the based networks. Be aware.
@@ -330,22 +330,64 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return knownChains;
 	}
 
-	function bindChain(uint32 chainId, address chainAddress) external {
+	function bindChain(uint256 chainId, address chainAddress) external {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
-		require(addresses[chainId] == address(0), NonZeroAddress(msg.sender));
+		require(chainAddress != ZERO_ADDRESS, NonZeroAddress(msg.sender));
+		require(addresses[chainId] == ZERO_ADDRESS, NonZeroAddress(msg.sender));
+
+		bool response = _sendCrosschainBindStatus(chainId, chainAddress, true);
+		require (response, ErrorInCrossChainBind());
 
 		knownChains.push(chainId);
 		addresses[chainId] = chainAddress;
 	}
 
-	function unbindChain(uint32 chainId) view external {
+	function unbindChain(uint256 chainId) external {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(chainId));
-		require(addresses[chainId] != address(0), NonZeroAddress(msg.sender));
+		require(addresses[chainId] != ZERO_ADDRESS, NonZeroAddress(msg.sender));
 		require(supplies[chainId] == 0, "Network: this chain already has supply");
 
-		// TODO: remove from knownChains
+		bool response = _sendCrosschainBindStatus(chainId, ZERO_ADDRESS, false);
+		require (response, ErrorInCrossChainBind());
+
+		removeValueFromArray(knownChains, chainId);
+		addresses[chainId] = ZERO_ADDRESS;
+	}
+	
+	/**
+	 * @title FungibleBindPayload
+	 * @notice Message blueprint struct for cross-chain execution.
+	 */
+	struct FungibleBindPayload {
+		bool flag;
+		uint256 masterChain;
+		address masterAddress;
+	}
+
+	function _sendCrosschainBindStatus(uint256 toChain, address toAddres, bool isBound) internal returns (bool) {
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+
+    // Build your application's data package
+    FungibleBindPayload memory payload = FungibleBindPayload({
+			flag: isBound,
+			masterChain: _masterChain,
+			masterAddress: _masterAddress
+    });
+    bytes memory packedPayload = abi.encode(payload);
+
+		bool response = _sendMessage("BND",toChain, toAddres, packedPayload);
+		return response;
+	}
+
+	function _onCrosschainBindStatus(bytes memory payload) internal {
+		require(msg.sender == _extGateway,  OnlyGateway(msg.sender));
+
+		// Unpack the byte envelope straight back into the struct format
+		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
+		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
+		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
 	}
 
 	// ************************************************************************************************
@@ -376,7 +418,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
 		require(_newMasterChain_ > 0, "MasterChain: must be chainid");
-		require(_newMasterAddress != address(0), NonZeroAddress(msg.sender));
+		require(_newMasterAddress != ZERO_ADDRESS, NonZeroAddress(msg.sender));
 
 		// transfer state to new master
 		bool result = _cloneState(_newMasterChain_, _newMasterAddress);
@@ -425,7 +467,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		console.log("_send Message");
     bytes memory packedPayload = abi.encode(payload);
 
-		_sendMessage("CLO", toChain, toAddress, packedPayload);
+		bool response = _sendMessage("CLO", toChain, toAddress, packedPayload);
+		return response;
 	}
 
 	function _onCloneState(bytes memory payload) internal {
@@ -584,16 +627,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			inChain: toChain,
 			inAddress: toAddress,
 			amount: amount
-
-			//minOutputAmount: amount
     });
     bytes memory packedPayload = abi.encode(payload);
 
-		console.log("syncing1");
-
-		// notify master
-		bool result = _sendMessage("SUP",_masterChain, _masterAddress, packedPayload);
-		return result;
+		bool response = _sendMessage("SUP",_masterChain, _masterAddress, packedPayload);
+		return response;
 
 	}
 
@@ -694,7 +732,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function addResource(uint16 _resourceId, uint16 _resourceType, address _newResourceAddress, uint256 releaseDate, uint256 requiredVotes, uint256 numVotes) external {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		require(_newResourceAddress != address(0), NonZeroAddress(msg.sender));
+		require(_newResourceAddress != ZERO_ADDRESS, NonZeroAddress(msg.sender));
 		require(_isContract(_newResourceAddress), "Address must be a contract");
 
 		pendingResources[_resourceId] = PendingResource(_resourceType, _newResourceAddress, releaseDate, requiredVotes, numVotes, 0);

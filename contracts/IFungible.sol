@@ -6,6 +6,7 @@ abstract contract IFungible {
 	// ************************************************************************************************
 	// *************************************** Slots - Variables **************************************
 	// ************************************************************************************************
+  address constant ZERO_ADDRESS = address(0);
 
 
 
@@ -16,6 +17,8 @@ abstract contract IFungible {
   error OnlyOwner(address sender);
   error OnlyGateway(address sender);
   error OnlyMasterChain(uint256 chain);
+
+	error ErrorInCrossChainBind();
 
 
 
@@ -83,8 +86,36 @@ abstract contract IFungible {
 
 	function setMasterChain(uint256 masterChain_, address newMasterAddress) external virtual;
 
+	// ************************************************************************************************
+	// ********************************************* Helpers ******************************************
+	// ************************************************************************************************
+		/**
+	 * @notice Removes a specific number from a target array by value.
+	 * @param _array The dynamic storage array you want to modify.
+	 * @param _value The actual uint256 number you want to remove.
+	 */
+	// TODO: make a mapping with order
+	function removeValueFromArray(uint256[] storage _array, uint256 _value) internal {
+		uint256 length = _array.length;
+		bool found = false;
+		uint256 indexToDelete;
 
+		// 1. Search for the number's position in the passed array
+		for (uint256 i = 0; i < length; i++) {
+			if (_array[i] == _value) {
+				indexToDelete = i;
+				found = true;
+				break; 
+			}
+		}
 
+		// 2. Revert if the number does not exist
+		require(found, "Value not found in target array");
+
+		// 3. Swap-and-Pop: Replace item with the last element and shrink array
+		_array[indexToDelete] = _array[length - 1];
+		_array.pop();
+	}
 
 
 }
