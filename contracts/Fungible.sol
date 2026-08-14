@@ -74,7 +74,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function transferOwnership(address _newOwner) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
 		address oldOwner = _owner;
 
@@ -156,8 +156,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 	
 	function _transfer(address from, address to, uint256 amount) internal returns (bool) {
-		require(from != address(0), "ERC20: transfer from zero address");
-		require(to != address(0), "ERC20: transfer to zero address");
+		require(from != address(0), NonZeroAddress(from));
+		require(to != address(0), NonZeroAddress(to));
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
 
 		// run INBLOCK extensions
@@ -211,8 +211,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _approve(address owner_, address spender, uint256 amount) internal {
-		require(owner_ != address(0), "ERC20: approve from zero address");
-		require(spender != address(0), "ERC20: approve to zero address");
+		require(owner_ != address(0), NonZeroAddress(owner_));
+		require(spender != address(0), NonZeroAddress(spender));
 		
 		_allowances[owner_][spender] = amount;
 		emit Approval(owner_, spender, amount);
@@ -242,7 +242,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bool) {
-		require(_extGateway != address(0), "Gateway: must be defined");
+		require(_extGateway != address(0), NonZeroAddress(msg.sender));
 		console.log("toChain", toChain);
 
 		// By doing this, this contract only interacts with the based networks. Be aware.
@@ -274,7 +274,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata messageBytes) external override returns (bytes4) {
-		require(msg.sender == _extGateway, "Gateway: only gateway allowed");
+		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 		console.log("MessageReceived");
 
 		Message memory message = abi.decode(messageBytes, (Message));
@@ -331,18 +331,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function bindChain(uint32 chainId, address chainAddress) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(_masterChain == CHAIN_ID, "MasterChain: only masterchain can do this operation");
-		require(addresses[chainId] == address(0), "Network: this chainId already has a contract");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
+		require(addresses[chainId] == address(0), NonZeroAddress(msg.sender));
 
 		knownChains.push(chainId);
 		addresses[chainId] = chainAddress;
 	}
 
 	function unbindChain(uint32 chainId) view external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(_masterChain == CHAIN_ID, "MasterChain: only masterchain can do this operation");
-		require(addresses[chainId] != address(0), "Network: this chain has not a contract");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+		require(_masterChain == CHAIN_ID, OnlyMasterChain(chainId));
+		require(addresses[chainId] != address(0), NonZeroAddress(msg.sender));
 		require(supplies[chainId] == 0, "Network: this chain already has supply");
 
 		// TODO: remove from knownChains
@@ -373,10 +373,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function setMasterChain(uint256 _newMasterChain_, address _newMasterAddress) external override {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(_masterChain == CHAIN_ID, "MasterChain: only masterchain can do this operation");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
 		require(_newMasterChain_ > 0, "MasterChain: must be chainid");
-		require(_newMasterAddress != address(0), "MasterAddress: cannot be zero address");
+		require(_newMasterAddress != address(0), NonZeroAddress(msg.sender));
 
 		// transfer state to new master
 		bool result = _cloneState(_newMasterChain_, _newMasterAddress);
@@ -406,7 +406,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _cloneState(uint256 toChain, address toAddress) internal returns (bool) {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
 		uint256[] memory suppliesList = new uint256[](knownChains.length);
 		for(uint i=0; i<knownChains.length; i++) {
@@ -502,7 +502,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// Performs supply transfer to an account of another chain
 	function _transferX(uint256 inChain, address inAddress, uint256 amount) internal returns (bool) {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		console.log("transferX");
 
 		// run INBLOCK extensions
@@ -575,7 +575,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
     // Build your application's data package
     FungibleSupplyPayload memory payload = FungibleSupplyPayload({
@@ -599,7 +599,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// Receives supply transfer
 	function _onCrosschainSupply(bytes memory payload) internal {
-		require(msg.sender == _extGateway, "Gateway: caller is not gateway");
+		require(msg.sender == _extGateway,  OnlyGateway(msg.sender));
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
@@ -693,8 +693,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	event ResourceUpdated(address indexed oldImplementation, address indexed newImplementation);
 
 	function addResource(uint16 _resourceId, uint16 _resourceType, address _newResourceAddress, uint256 releaseDate, uint256 requiredVotes, uint256 numVotes) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(_newResourceAddress != address(0), "Invalid address");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+		require(_newResourceAddress != address(0), NonZeroAddress(msg.sender));
 		require(_isContract(_newResourceAddress), "Address must be a contract");
 
 		pendingResources[_resourceId] = PendingResource(_resourceType, _newResourceAddress, releaseDate, requiredVotes, numVotes, 0);
@@ -708,7 +708,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function releaseResource(uint16 _resourceId, uint16 _position) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(pendingResourceIds.length > 0, "Resource: no resources to release");
 		console.log(_resourceId);
 		console.log(pendingResourceIds[_position]);
@@ -836,18 +836,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
   mapping(bytes32 => bytes32) private configStore;
 
 	function writeConfig(bytes32 key, bytes32 value) external override {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		configStore[key] = value;
 	}
 
 	function readConfig(bytes32 key) external view override returns (bytes32) {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		return configStore[key];
 	}
 
 	// update the configuration
 	function updateConfiguration(address extension, bytes calldata payload) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
 					
     bytes32 result;
 

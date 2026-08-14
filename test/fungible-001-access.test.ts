@@ -89,7 +89,7 @@ describe("Deploy Token", function () {
 
 		// erc-7866 functions
 		await expect(() => fungibleContract.gateway()).to.not.throw();
-		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWith("Gateway: only gateway allowed");
+		await expect(fungibleContract.receiveMessage(ethers.encodeBytes32String("msg-001"), addr1.address, ethers.toUtf8Bytes("Hello from chain"))).to.be.revertedWithCustomError(fungibleContract, "OnlyGateway");
 
 		// erc-20n functions
 		await expect(fungibleContract.getChains()).to.not.be.reverted;
@@ -97,10 +97,10 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.unbindChain(0)).to.not.be.reverted;
 		await expect(() => fungibleContract.getChainAddress(0)).to.not.throw();
 		await expect(() => fungibleContract.getMasterChain()).to.not.throw();
-		await expect(fungibleContract.setMasterChain(1, addr3)).to.be.revertedWith("Gateway: must be defined");
+		await expect(fungibleContract.setMasterChain(1, addr3)).to.be.revertedWithCustomError(fungibleContract, "NonZeroAddress");
 		await expect(() => fungibleContract.getChainSupply(0)).to.not.throw();
-		await expect(fungibleContract.bridge(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Gateway: must be defined");
-		await expect(fungibleContract.pay(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Gateway: must be defined");
+		await expect(fungibleContract.bridge(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWithCustomError(fungibleContract, "NonZeroAddress");
+		await expect(fungibleContract.pay(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWithCustomError(fungibleContract, "NonZeroAddress");
 
 		// extensions functions
 		await expect(fungibleContract.addResource(45, 1, fungibleAddress, 0, 10, 10)).to.not.be.reverted;
