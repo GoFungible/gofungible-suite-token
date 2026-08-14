@@ -1,6 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
+/// @title Message type
+/// @notice A cross-chain message
+struct Message {
+    /// @notice The message metadata 
+    Metadata metadata;
+    /// @notice The message header 
+		/// extended from ERC-7841 to include custom metadata
+    Header header;
+    /// @notice Message payload 
+    /// @dev It may be ABI-encoded function calls, info about bridged assets, 
+    ///     or arbitrary message data
+    bytes payload;
+}
+
 /// @title Metadata type
 /// @notice Metadata for a cross-chain message
 struct Metadata {
@@ -30,11 +44,9 @@ struct Metadata {
 
 /// @title Message type
 /// @notice A cross-chain message
-struct Message {
-    /// @notice The message metadata 
-    Metadata metadata;
+struct Header {
     /// @notice Message payload 
     /// @dev It may be ABI-encoded function calls, info about bridged assets, 
     ///     or arbitrary message data
-    bytes payload;
+    bytes32 op;
 }

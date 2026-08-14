@@ -241,7 +241,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _extGateway;
 	}
 
-  function _sendMessage(uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bool) {
+  function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bool) {
 		require(_extGateway != address(0), "Gateway: must be defined");
 		console.log("toChain", toChain);
 
@@ -249,16 +249,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes memory recipient = LibERC7786ToEthAdapter.generateERC7930Record(toChain, toAddress);
 
 		// message content
-		Metadata memory metadata = Metadata({
-			srcChainId: uint32(CHAIN_ID),
-			destChainId: uint32(toChain),
-			srcAddress: bytes32(uint256(uint160(address(this)))),
-			destAddress: bytes32(uint256(uint160(addresses[toChain]))),
-			sessionId: 0,
-			nonce: 0
-		});
 		Message memory message = Message({
-			metadata: metadata,
+			metadata: Metadata({
+				srcChainId: uint32(CHAIN_ID),
+				destChainId: uint32(toChain),
+				srcAddress: bytes32(uint256(uint160(address(this)))),
+				destAddress: bytes32(uint256(uint160(addresses[toChain]))),
+				sessionId: 0,
+				nonce: 0
+			}),
+			header: Header({
+				op: operation
+			}),
 			payload: packedPayload
 		});
 		bytes memory packedMessage = abi.encode(message);
@@ -276,8 +278,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		console.log("MessageReceived");
 
 		Message memory message = abi.decode(messageBytes, (Message));
+
 		bytes memory payload = message.payload;
 
+		Header memory header = message.header;
 
 		Metadata memory mefadata = message.metadata;
 		uint32 srcChainId = mefadata.srcChainId;
@@ -288,14 +292,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		address sourceSender = address(bytes20(sender[0:20]));
 
 		// process payload
-		if (false) {
+		if (header.op == 'SUP') {
 			_onCrosschainSupply(payload);
+
+		} else if (header.op == 'CLO') {
+			_onCloneState(payload);
 
 		} else if (false) {
 			_onCrosschainMessage(payload);
-
-		} else if (false) {
-			_onCloneState(payload);
 		}
 		console.log("Message Processed. Returning");
 
@@ -394,8 +398,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 * @notice Message blueprint struct for cross-chain execution.
 	 */
 	struct FungibleStatePayload {
-		bytes op; 								// Type of operation
-
 		string name;
 		string symbol;
 		uint8 decimals;
@@ -413,8 +415,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
     // Build your application's data package
     FungibleStatePayload memory payload = FungibleStatePayload({
-			op: "CLO",
-
 			name: _name,
 			symbol: _symbol,
 			decimals: _decimals,
@@ -422,11 +422,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			supplies: suppliesList
     });
 
-
 		console.log("_send Message");
     bytes memory packedPayload = abi.encode(payload);
 
-		_sendMessage(toChain, toAddress, packedPayload);
+		_sendMessage("CLO", toChain, toAddress, packedPayload);
 	}
 
 	function _onCloneState(bytes memory payload) internal {
@@ -568,8 +567,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 * @notice Message blueprint struct for cross-chain execution.
 	 */
 	struct FungibleSupplyPayload {
-		bytes op; 								// Type of operation
-
 		uint256 outChain;
 		address outAddress;
 		uint256 inChain;
@@ -582,8 +579,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
     // Build your application's data package
     FungibleSupplyPayload memory payload = FungibleSupplyPayload({
-			op: "SUP",
-
 			outChain: CHAIN_ID,
 			outAddress: address(this),
 			inChain: toChain,
@@ -597,7 +592,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		console.log("syncing1");
 
 		// notify master
-		bool result = _sendMessage(_masterChain, _masterAddress, packedPayload);
+		bool result = _sendMessage("SUP",_masterChain, _masterAddress, packedPayload);
 		return result;
 
 	}
