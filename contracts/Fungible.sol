@@ -316,6 +316,36 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
+	// ********************************* ERC-20X: 3. Token Perimeter **********************************
+	// ************************************************************************************************  
+	uint256[] knownChains;
+
+	function getChains() external view returns (uint256[] memory) {
+		return knownChains;
+	}
+
+	function bindChain(uint32 chainId, address chainAddress) external {
+		require(msg.sender == _owner, "Ownable: caller is not the owner");
+		require(_masterChain == CHAIN_ID, "MasterChain: only masterchain can do this operation");
+		require(addresses[chainId] == address(0), "Network: this chainId already has a contract");
+
+		knownChains.push(chainId);
+		addresses[chainId] = chainAddress;
+	}
+
+	function unbindChain(uint32 chainId, address chainAddress) external {
+	}
+
+	// ************************************************************************************************
+	// ********************************** ERC-20X: 4. Address by Chain ********************************
+	// ************************************************************************************************
+	mapping(uint256 => address) public addresses;
+
+	function getChainAddress(uint256 chainId) external view returns (address) {
+		return addresses[chainId];
+	}
+
+	// ************************************************************************************************
 	// *********************************** ERC-20X: 1. Master Chain ***********************************
 	// ************************************************************************************************
 	/*
@@ -417,31 +447,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ********************************* ERC-20X: 3. Token Perimeter **********************************
-	// ************************************************************************************************  
-	uint256[] knownChains;
-
-	function getChains() external view returns (uint256[] memory) {
-		return knownChains;
-	}
-
-	mapping(uint256 => address) public addresses;
-
-	function getChainAddress(uint256 chainId) external view returns (address) {
-		return addresses[chainId];
-	}
-
-	function addChain(uint32 chainId, address chainAddress) external {
-		require(msg.sender == _owner, "Ownable: caller is not the owner");
-		require(_masterChain == CHAIN_ID, "MasterChain: only masterchain can do this operation");
-		require(addresses[chainId] == address(0), "Network: this chainId already has a contract");
-
-		knownChains.push(chainId);
-		addresses[chainId] = chainAddress;
-	}
-
-
-	// ************************************************************************************************
 	// ********************************** ERC-20X: 4. Supply by Chain *********************************
 	// ************************************************************************************************
 	mapping(uint256 => uint256) public supplies;
@@ -459,7 +464,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************* ERC-20X: 5. TransferX ************************************
+	// ************************************* ERC-20X: 5. Bridge ***************************************
 	// ************************************************************************************************
 	// ERC-20X Extensions
 	address[] public _extTrnInBlock;
@@ -471,6 +476,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	address[] public _extTrnOutLog;
 
 	// Performs supply transfer
+	// A multichain token must be able to bridge itself without external support
+	// bridge()
+	// pay()
+	// trnasferX()
 	function transferX(uint256 inChain, address inAddress, uint256 amount) external returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		console.log("transferX");

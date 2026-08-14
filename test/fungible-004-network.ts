@@ -64,6 +64,12 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/******************************************** Create Tokens *********************************************/
 	/********************************************************************************************************/
+
+	it("Should be able to create first chain", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		//fungible1.setMasterChain(1337);
+	});
+	
 	it("Should be able to bind a new chain", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);

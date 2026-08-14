@@ -51,54 +51,7 @@ describe("Deploy Resources", function () {
 		console.log('--------- Ending Tests --------');
 	});
 
-	/********************************************************************************************************/
-	/*********************************************** Resources **********************************************/
-	/********************************************************************************************************/
-	it("Should be able to add resources", async() => {
 
-	});
-
-	it("Should be able to list resources", async() => {
-
-	});
-
-	/********************************************************************************************************/
-	/*************************************** Release Resources **********************************************/
-	/********************************************************************************************************/
-	it("Should be able to release resources by Timelock Protection", async() => {
-
-	});
-
-	it("Should be able to release resources by Votation Protection", async() => {
-
-	});
-
-	it("Should be able to release resources by Timelock and Votation Protection", async() => {
-
-	});
-
-	/********************************************************************************************************/
-	/***************************************** Run Resources ************************************************/
-	/********************************************************************************************************/
-	it("Should be able to run Relayer", async() => {
-
-	});
-
-	it("Should be able to run extTransportINBlock", async() => {
-
-	});
-
-	it("Should be able to run extTransportINUpdate", async() => {
-
-	});
-
-	it("Should be able to run extTransportINLog", async() => {
-
-	});
-
-	it("Should be able to run extTransportOUT", async() => {
-
-	});
 
 
 });

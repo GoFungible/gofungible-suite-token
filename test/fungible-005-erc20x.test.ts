@@ -80,31 +80,11 @@ describe("ERC-20X Supply", function () {
 	});
 
 	/********************************************************************************************************/
-	/******************************************** Create Tokens *********************************************/
+	/************************************************ Addresses *********************************************/
 	/********************************************************************************************************/
-	it("Should be able to create first chain", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		//fungible1.setMasterChain(1337);
-	});
-
-	it("Should be able to add a new chain", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		//fungible1.setMasterChain(1337);
-	});
-
-	/********************************************************************************************************/
-	/******************************************** Global Supply *********************************************/
-	/********************************************************************************************************/
-	it("ChainA should be able to transfer from ChainA:AccountA to ChainA:AccountB", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-	});
-
-	/********************************************************************************************************/
-	/******************************************** Master Chain **********************************************/
-	/********************************************************************************************************/
-	it("Should be able to configure master chain", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		//fungible1.setMasterChain(1337);
+	it("Should be able to get cross addresses", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
+		//fungible1.getAllRemoteSupplies();
 	});
 
 	/********************************************************************************************************/
@@ -118,6 +98,16 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************ TransferX *********************************************/
 	/********************************************************************************************************/
+
+	it("Should be able to bridge", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
+		//fungible1.getAllRemoteSupplies();
+	});
+
+	it("Should be able to transferX", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
+		//fungible1.getAllRemoteSupplies();
+	});
 
 	// On ChainA: ChainA:AccountA to ChainA:AccountB (transfer)
 	// On ChainA: ChainA:AccountA to ChainB:AccountB (transferX) <-------------
