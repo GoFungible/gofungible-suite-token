@@ -155,7 +155,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return true;
 	}
 	
-	function _transfer(address from, address to, uint256 amount) internal {
+	function _transfer(address from, address to, uint256 amount) internal returns (bool) {
 		require(from != address(0), "ERC20: transfer from zero address");
 		require(to != address(0), "ERC20: transfer to zero address");
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
@@ -191,6 +191,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     }
 
 		emit Transfer(from, to, amount);
+
+		return true;
 	}
 
 	// ************************************************************************************************
@@ -475,12 +477,23 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	address[] public _extTrnOutLog;
 
-	// Performs supply transfer
+	// transfer supply to another account, either in this chain, or in other chain
+	function pay(uint256 inChain, address inAddress, uint256 amount) external returns (bool) {
+		if (inChain == CHAIN_ID) {
+			return _transfer(msg.sender, inAddress, amount);
+		} else {
+			return _transferX(inChain, inAddress, amount);
+		}
+	}
+
+	// transfer supply to another account in other chain for the same user
 	// A multichain token must be able to bridge itself without external support
-	// bridge()
-	// pay()
-	// trnasferX()
-	function transferX(uint256 inChain, address inAddress, uint256 amount) external returns (bool) {
+	function bridge(uint256 inChain, address inAddress, uint256 amount) external returns (bool) {
+		return _transferX(inChain, inAddress, amount);
+	}
+
+	// Performs supply transfer to an account of another chain
+	function _transferX(uint256 inChain, address inAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, "Ownable: caller is not the owner");
 		console.log("transferX");
 

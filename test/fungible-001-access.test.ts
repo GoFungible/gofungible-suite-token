@@ -97,7 +97,8 @@ describe("Deploy Token", function () {
 		//await expect(fungibleContract.setMasterChain(1, addr3)).to.not.be.reverted;
 		//await expect(fungibleContract.getAllRemoteSupplies()).to.not.be.reverted;
 		await expect(() => fungibleContract.getSuppliesChecksum()).to.not.throw();
-		await expect(fungibleContract.transferX(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Gateway: must be defined");
+		await expect(fungibleContract.bridge(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Gateway: must be defined");
+		await expect(fungibleContract.pay(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWith("Gateway: must be defined");
 
 		// extensions functions
 		await expect(fungibleContract.addResource(45, 1, fungibleAddress, 0, 10, 10)).to.not.be.reverted;
