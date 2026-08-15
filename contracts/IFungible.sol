@@ -87,7 +87,9 @@ abstract contract IFungible {
 
 	function getMasterChain() external view virtual returns (uint256);
 
-	function setMasterChain(uint256 newMasterChain) external virtual;
+	function setAsMasterChain() external virtual;
+
+	function transferMasterChain(uint256 chainId) external virtual;
 
 	// ************************************************************************************************
 	// ********************************************* Helpers ******************************************

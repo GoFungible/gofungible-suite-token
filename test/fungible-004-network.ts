@@ -48,12 +48,14 @@ describe("ERC-20X Supply", function () {
 		let fungible1 = await Fungible1.deploy("FungiTest", "FGT", 1000_000_000);
 		await fungible1.waitForDeployment();
 		fungibleAddress1 = await fungible1.getAddress();
+		const chainId = await fungible1.chainId();
+		console.log(`Fungible ${chainId} deployed at ${fungibleAddress1}`);
 
 		// set first chain as master chain
-		const chainId = await fungible1.chainId();
-		await expect(fungible1.setMasterChain(chainId)).to.not.be.reverted;
+		expect(await fungible1.getMasterChain()).to.equal(0);
+		await expect(fungible1.setAsMasterChain()).to.not.be.reverted;
 		expect(await fungible1.getMasterChain()).to.equal(chainId);
-		console.log(`Fungible ${chainId} deployed at ${fungibleAddress1} as MasterChain`);
+		console.log(`Fungible ${chainId} set as MasterChain`);
 	});
 
 	afterEach(async() => {
@@ -69,7 +71,24 @@ describe("ERC-20X Supply", function () {
 	/************************************************ Use Cases *********************************************/
 	/********************************************************************************************************/
 	
-	it("Should be able to bind a new chain", async() => {
+	it("Should be able to bind a 2nd chain", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		//fungible1.setMasterChain(1337);
+
+		// deploy second chain
+		const Fungible2 = await ethers.getContractFactory("Fungible");
+		let fungible2 = await Fungible2.deploy("FungiTest", "FGT", 0);
+		await fungible2.waitForDeployment();
+		fungibleAddress1 = await fungible2.getAddress();
+		
+	});
+
+	it("Should be able to bind a 3rd chain", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		//fungible1.setMasterChain(1337);
+	});
+
+	it("Should be able to bind a 4th chain", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});
@@ -79,7 +98,7 @@ describe("ERC-20X Supply", function () {
 		//fungible1.setMasterChain(1337);
 	});
 
-	it("Should be able to update master chain", async() => {
+	it("Should be able to transfer master chain status", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});

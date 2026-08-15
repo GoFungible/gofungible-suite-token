@@ -43,7 +43,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	constructor(string memory name_, string memory symbol_, uint256 totalSupply_) {
 		// chains
 		CHAIN_ID = block.chainid;
-		_masterChain = CHAIN_ID;
 
 		// owner
 		_owner = msg.sender;
@@ -421,7 +420,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _masterChain;
 	}
 
-	function setMasterChain(uint256 _newMasterChain) external override {
+	function setAsMasterChain() external override {
+		_masterChain = CHAIN_ID;
+		_masterAddress = address(this);
+	}
+
+	function transferMasterChain(uint256 _newMasterChain) external override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
 		require(_newMasterChain > 0, "MasterChain: must be chainid");
