@@ -72,6 +72,9 @@ describe("Deploy Token", function () {
 	it("Only Owner functions are ok for owner", async() => {
 		const fungibleContract = Fungible__factory.connect(fungibleAddress, owner);
 
+		// EIP-155 / EIP-1344
+		await expect(() => fungibleContract.chainId()).to.not.throw();
+
 		// erc-173 functions
 		await expect(() => fungibleContract.owner()).to.not.throw();
 		await expect(fungibleContract.transferOwnership(owner.address)).to.not.be.reverted;
@@ -97,7 +100,7 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.unbindChain(0)).to.be.revertedWithCustomError(fungibleContract, "NonZeroAddress");
 		await expect(() => fungibleContract.getChainAddress(0)).to.not.throw();
 		await expect(() => fungibleContract.getMasterChain()).to.not.throw();
-		await expect(fungibleContract.setMasterChain(1, addr3)).to.be.revertedWithCustomError(fungibleContract, "NonZeroAddress");
+		await expect(fungibleContract.setMasterChain(1)).to.be.revertedWithCustomError(fungibleContract, "NonZeroAddress");
 		await expect(() => fungibleContract.getChainSupply(0)).to.not.throw();
 		await expect(fungibleContract.bridge(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWithCustomError(fungibleContract, "NonZeroAddress");
 		await expect(fungibleContract.pay(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWithCustomError(fungibleContract, "NonZeroAddress");

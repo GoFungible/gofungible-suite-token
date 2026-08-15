@@ -43,13 +43,17 @@ describe("ERC-20X Supply", function () {
 		mockedERC7786GatewayAddress = await mockedERC7786Gateway.getAddress();
 		console.log("MockedERC7786Gateway deployed to:", mockedERC7786GatewayAddress);
 
-		// deploy Fungible1
+		// deploy first chain
 		const Fungible1 = await ethers.getContractFactory("Fungible");
 		let fungible1 = await Fungible1.deploy("FungiTest", "FGT", 1000_000_000);
 		await fungible1.waitForDeployment();
 		fungibleAddress1 = await fungible1.getAddress();
-		console.log("Fungible1 deployed to:", fungibleAddress1);
 
+		// set first chain as master chain
+		const chainId = await fungible1.chainId();
+		await expect(fungible1.setMasterChain(chainId)).to.not.be.reverted;
+		expect(await fungible1.getMasterChain()).to.equal(chainId);
+		console.log(`Fungible ${chainId} deployed at ${fungibleAddress1} as MasterChain`);
 	});
 
 	afterEach(async() => {
@@ -62,13 +66,8 @@ describe("ERC-20X Supply", function () {
 	});
 
 	/********************************************************************************************************/
-	/******************************************** Create Tokens *********************************************/
+	/************************************************ Use Cases *********************************************/
 	/********************************************************************************************************/
-
-	it("Should be able to deploy first chain", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		//fungible1.setMasterChain(1337);
-	});
 	
 	it("Should be able to bind a new chain", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)

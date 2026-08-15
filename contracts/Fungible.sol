@@ -37,7 +37,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ******************************************** Token *********************************************
 	// ************************************************************************************************   
-	uint256 public immutable CHAIN_ID;
+	uint256 private immutable CHAIN_ID;
 	
 	// slaves can only be initialized after creation to prevent issuer creating fakes
 	constructor(string memory name_, string memory symbol_, uint256 totalSupply_) {
@@ -60,6 +60,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// mint all to owner
 		_totalSupply = _totalSupply;
 		_balances[_owner] = _totalSupply;
+	}
+
+  function chainId() view external returns(uint256) {
+		return CHAIN_ID;
 	}
 
 	// ************************************************************************************************
@@ -417,25 +421,29 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _masterChain;
 	}
 
-	function setMasterChain(uint256 _newMasterChain_, address _newMasterAddress) external override {
+	function setMasterChain(uint256 _newMasterChain) external override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
-		require(_newMasterChain_ > 0, "MasterChain: must be chainid");
+		require(_newMasterChain > 0, "MasterChain: must be chainid");
+
+		// chain must be already in the network so _newMasterAddress must be already known
+		address _newMasterAddress = _newMasterChain == CHAIN_ID ? address(this) : addresses[_newMasterChain];
 		require(_newMasterAddress != ZERO_ADDRESS, NonZeroAddress(msg.sender));
 
 		// transfer state to new master
-		bool result = _cloneState(_newMasterChain_, _newMasterAddress);
-		require (result, "MasterChain: state transfer failed");
+		if (_newMasterChain != CHAIN_ID) {
+			bool result = _cloneState(_newMasterChain, _newMasterAddress);
+			require (result, "MasterChain: state transfer failed");
+		}
 
 		// broadcast to all other chains
 		// we cannot claim from every chain because this could leave temporary inconsistent state
 		// ????????
 
 		// change master to this chain
-		_masterChain = _newMasterChain_;
+		_masterChain = _newMasterChain;
 
-		emit MasterChainUpdated(_masterChain, _masterAddress, _newMasterChain_, _newMasterAddress);
-
+		emit MasterChainUpdated(_masterChain, _masterAddress, _newMasterChain, _newMasterAddress);
 	}
 
 	/**
