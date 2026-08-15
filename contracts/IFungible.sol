@@ -16,7 +16,10 @@ abstract contract IFungible {
 	// ************************************************************************************************
 	// ******************************************** Errors ********************************************
 	// ************************************************************************************************
-  error NonZeroAddress(address sender);
+  error ZeroAddressRequired(address nonZeroAddress);
+  error ZeroRequired(uint256 nonZeroVaue);
+  error NonZeroAddressRequired();
+  error NonZeroRequired();
 
   error OnlyOwner(address sender);
   error OnlyGateway(address sender);

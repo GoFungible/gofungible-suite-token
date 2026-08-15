@@ -159,8 +159,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 	
 	function _transfer(address from, address to, uint256 amount) internal returns (bool) {
-		require(from != ZERO_ADDRESS, NonZeroAddress(from));
-		require(to != ZERO_ADDRESS, NonZeroAddress(to));
+		require(from != ZERO_ADDRESS, NonZeroAddressRequired());
+		require(to != ZERO_ADDRESS, NonZeroAddressRequired());
 		require(_balances[from] >= amount, "ERC20: insufficient balance");
 
 		// run INBLOCK extensions
@@ -214,8 +214,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _approve(address owner_, address spender, uint256 amount) internal {
-		require(owner_ != ZERO_ADDRESS, NonZeroAddress(owner_));
-		require(spender != ZERO_ADDRESS, NonZeroAddress(spender));
+		require(owner_ != ZERO_ADDRESS, NonZeroAddressRequired());
+		require(spender != ZERO_ADDRESS, NonZeroAddressRequired());
 		
 		_allowances[owner_][spender] = amount;
 		emit Approval(owner_, spender, amount);
@@ -350,8 +350,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function bindChain(uint256 _chainId, address chainAddress) external {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
-		require(chainAddress != ZERO_ADDRESS, NonZeroAddress(msg.sender));
-		//require(addresses[chainId] == ZERO_ADDRESS, NonZeroAddress(msg.sender));
+		require(chainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
+		//require(supplies[_chainId] == 0, ZeroRequired(supplies[_chainId]));
+		//require(addresses[chainId] == ZERO_ADDRESS, ZeroAddressRequired(msg.sender));
 		console.log("valid1");
 
 		bool response = _sendCrosschainBind(_chainId, chainAddress, true);
@@ -364,8 +365,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function unbindChain(uint256 chainId) external {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(chainId));
-		require(addresses[chainId] != ZERO_ADDRESS, NonZeroAddress(msg.sender));
-		require(supplies[chainId] == 0, "Network: this chain already has supply");
+		require(addresses[chainId] != ZERO_ADDRESS, NonZeroAddressRequired());
+		require(_totalSupply == 0, ZeroRequired(_totalSupply));
 
 		bool response = _sendCrosschainBind(chainId, ZERO_ADDRESS, false);
 		require (response, ErrorInCrossChainBind());
@@ -450,7 +451,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// chain must be already in the network so _newMasterAddress must be already known
 		address _newMasterAddress = _newMasterChain == CHAIN_ID ? address(this) : addresses[_newMasterChain];
-		require(_newMasterAddress != ZERO_ADDRESS, NonZeroAddress(msg.sender));
+		require(_newMasterAddress != ZERO_ADDRESS, NonZeroAddressRequired());
 
 		// transfer state to new master
 		if (_newMasterChain != CHAIN_ID) {
@@ -765,7 +766,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function addResource(uint16 _resourceId, uint16 _resourceType, address _newResourceAddress, uint256 releaseDate, uint256 requiredVotes, uint256 numVotes) external {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		require(_newResourceAddress != ZERO_ADDRESS, NonZeroAddress(msg.sender));
+		require(_newResourceAddress != ZERO_ADDRESS, NonZeroAddressRequired());
 		require(_isContract(_newResourceAddress), "Address must be a contract");
 
 		pendingResources[_resourceId] = PendingResource(_resourceType, _newResourceAddress, releaseDate, requiredVotes, numVotes, 0);

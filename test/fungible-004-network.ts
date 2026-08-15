@@ -105,7 +105,12 @@ describe("ERC-20X Supply", function () {
 	});
 
 	it("Should not be able to bind chains to no master chain", async() => {
-		
+
+	});
+
+	it("Should be able to unbind a chain", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		//fungible1.setMasterChain(1337);
 	});
 
 	it("Should be able to use chain address", async() => {
@@ -118,9 +123,6 @@ describe("ERC-20X Supply", function () {
 		//fungible1.setMasterChain(1337);
 	});
 
-	it("Should be able to unbind a chain", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		//fungible1.setMasterChain(1337);
-	});
+
 
 });
