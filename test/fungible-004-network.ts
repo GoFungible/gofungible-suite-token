@@ -8,6 +8,9 @@ describe("ERC-20X Supply", function () {
 	let addr1: SignerWithAddress, addr2: SignerWithAddress, addr3: SignerWithAddress, addrs;
 	let fungibleAddress1: string;
 	let fungibleAddress2: string;
+	let fungibleAddress3: string;
+	let fungibleAddress4: string;
+	let fungibleAddress9: string;
 	let mockedERC7786GatewayAddress: string;
 
 	/********************************************************************************************************/
@@ -39,33 +42,47 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		// ********************************************************* Install Versionable Facets and register in factory **********************************************
 		// ***********************************************************************************************************************************************************
-		// deploy mocked relayer
+		// deploy MockedERC7786Gateway
 		const MockedERC7786Gateway = await ethers.getContractFactory("MockedERC7786Gateway");
 		let mockedERC7786Gateway = await MockedERC7786Gateway.deploy();
 		expect(await mockedERC7786Gateway.waitForDeployment()).to.not.be.reverted;
 		mockedERC7786GatewayAddress = await mockedERC7786Gateway.getAddress();
 		console.log("MockedERC7786Gateway deployed to:", mockedERC7786GatewayAddress);
 
-		// deploy first chain
+		// deploy Fungible1
 		const Fungible1 = await ethers.getContractFactory("Fungible");
 		let fungible1 = await Fungible1.deploy("FungiTest", "FGT", 1000_000_000);
 		expect(await fungible1.waitForDeployment()).to.not.be.reverted;
 		fungibleAddress1 = await fungible1.getAddress();
-		const chainId = await fungible1.chainId();
-		console.log(`Fungible1 ${chainId} deployed at ${fungibleAddress1}`);
+		console.log(`Fungible1 ${await fungible1.chainId()} deployed at ${fungibleAddress1}`);
 
-		// set first chain as master chain
-		expect(await fungible1.getMasterChain()).to.equal(0);
-		await expect(fungible1.setAsMasterChain()).to.not.be.reverted;
-		expect(await fungible1.getMasterChain()).to.equal(chainId);
-		console.log(`Fungible1 ${chainId} set as MasterChain`);
+		// deploy Fungible2
+		const Fungible2 = await ethers.getContractFactory("Fungible");
+		let fungible2 = await Fungible2.deploy("FungiTest", "FGT", 0);
+		expect(await fungible2.waitForDeployment()).to.not.be.reverted;
+		fungibleAddress2 = await fungible2.getAddress();
+		console.log(`Fungible2 ${await fungible2.chainId()} deployed at ${fungibleAddress2}`);
 
-		// set gateway to Fungible1
-		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
+		// deploy Fungible3
+		const Fungible3 = await ethers.getContractFactory("Fungible");
+		let fungible3 = await Fungible3.deploy("FungiTest", "FGT", 0);
+		expect(await fungible3.waitForDeployment()).to.not.be.reverted;
+		fungibleAddress3 = await fungible3.getAddress();
+		console.log(`Fungible3 ${await fungible3.chainId()} deployed at ${fungibleAddress3}`);
 
+		// deploy Fungible4
+		const Fungible4 = await ethers.getContractFactory("Fungible");
+		let fungible4 = await Fungible4.deploy("FungiTest", "FGT", 0);
+		expect(await fungible4.waitForDeployment()).to.not.be.reverted;
+		fungibleAddress4 = await fungible4.getAddress();
+		console.log(`Fungible4 ${await fungible4.chainId()} deployed at ${fungibleAddress4}`);
+
+		// deploy Fungible4
+		const Fungible9 = await ethers.getContractFactory("Fungible");
+		let fungible9 = await Fungible9.deploy("FungiTest", "FGT", 0);
+		expect(await fungible9.waitForDeployment()).to.not.be.reverted;
+		fungibleAddress9 = await fungible9.getAddress();
+		console.log(`Fungible9 ${await fungible9.chainId()} deployed at ${fungibleAddress9}`);		
 	});
 
 	afterEach(async() => {
@@ -81,31 +98,57 @@ describe("ERC-20X Supply", function () {
 	/************************************************ Use Cases *********************************************/
 	/********************************************************************************************************/
 	
-	it("Should be able to bind a more chains to master chain", async() => {
-		// deploy second chain
-		const Fungible2 = await ethers.getContractFactory("Fungible");
-		let fungible2 = await Fungible2.deploy("FungiTest", "FGT", 0);
-		expect(await fungible2.waitForDeployment()).to.not.be.reverted;
-		fungibleAddress2 = await fungible2.getAddress();
-		const chainId = await fungible2.chainId();
-		expect(await fungible2.getMasterChain()).to.equal(0);
-		console.log(`fungible2 ${chainId} deployed at ${fungibleAddress1}`);
+	it("Should be able to bind more chains to MasterChain", async() => {
+		// set Fungible1 as MasterChain
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		expect(await fungible1.getMasterChain()).to.equal(0);
+		await expect(fungible1.setAsMasterChain()).to.not.be.reverted;
+		expect(await fungible1.getMasterChain()).to.equal(await fungible1.chainId());
+		console.log(`Fungible1 ${await fungible1.chainId()} set as MasterChain`);
+
+		// set gateway to Fungible1
+		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
+		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
+		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
+		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
 
 		// set gateway to Fungible2
+		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
 		await expect(fungible2.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
 		await expect(fungible2.releaseResource(0, 0)).to.not.be.reverted;
 		expect(await fungible2.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible2.gateway()) + " attached to Fungible1.");
+		console.log("Gateway " + (await fungible2.gateway()) + " attached to Fungible2.");
 
-		// bind the second chain
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		// bind Fungible2 to Fungible1
 		expect(await fungible1.bindChain(1337, fungibleAddress2)).to.not.be.reverted;
 		expect(await fungible2.getMasterChain()).to.equal(1337);
 		expect(await fungible2.getMasterAddress()).to.equal(fungibleAddress1);
 	});
 
 	it("Should not be able to bind chains to no master chain", async() => {
+		// set Fungible1 no MasterChain
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		expect(await fungible1.getMasterChain()).to.equal(0);
 
+		// set gateway to Fungible1
+		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
+		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
+		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
+		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
+
+		// set gateway to Fungible2
+		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
+		await expect(fungible2.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
+		await expect(fungible2.releaseResource(0, 0)).to.not.be.reverted;
+		expect(await fungible2.gateway()).to.equal(mockedERC7786GatewayAddress);
+		console.log("Gateway " + (await fungible2.gateway()) + " attached to Fungible2.");
+
+		// bind Fungible2 to Fungible1
+		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "OnlyMasterChain");
+		expect(await fungible1.getMasterChain()).to.equal(0);
+		expect(await fungible1.getMasterAddress()).to.equal(ethers.ZeroAddress);
+		expect(await fungible2.getMasterChain()).to.equal(0);
+		expect(await fungible2.getMasterAddress()).to.equal(ethers.ZeroAddress);
 	});
 
 	it("Should be able to unbind a chain", async() => {
