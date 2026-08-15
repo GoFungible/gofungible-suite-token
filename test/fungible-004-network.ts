@@ -79,7 +79,7 @@ describe("ERC-20X Supply", function () {
 
 		// deploy Fungible4
 		const Fungible9 = await ethers.getContractFactory("Fungible");
-		let fungible9 = await Fungible9.deploy("FungiTest", "FGT", 0);
+		let fungible9 = await Fungible9.deploy("FungiTest", "FGT", 1000_000_000);
 		expect(await fungible9.waitForDeployment()).to.not.be.reverted;
 		fungibleAddress9 = await fungible9.getAddress();
 		console.log(`Fungible9 ${await fungible9.chainId()} deployed at ${fungibleAddress9}`);		
@@ -97,7 +97,67 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************ Use Cases *********************************************/
 	/********************************************************************************************************/
-	
+	it("Only owner can bind.", async() => {
+
+	});
+
+	it("Bind to valid chain and address.", async() => {
+
+	});
+
+	it("Cannot bind 2 tokens in same chain.", async() => {
+
+	});
+
+	it("Can only bind to empty tokens.", async() => {
+
+	});
+
+	it("Gateway is required to bind.", async() => {
+		// Tokens
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
+
+		// set Fungible1 as MasterChain
+		expect(await fungible1.getMasterChain()).to.equal(0);
+		await expect(fungible1.setAsMasterChain()).to.not.be.reverted;
+		expect(await fungible1.getMasterChain()).to.equal(await fungible1.chainId());
+		console.log(`Fungible1 ${await fungible1.chainId()} set as MasterChain`);
+
+		// cannot bind if no gateway on Fungible1
+		expect(await fungible1.gateway()).to.equal(ethers.ZeroAddress);
+		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "GatewayRequired");
+		console.log("OK. Cannot bind if not gateway on Fungible1.");
+
+		// set gateway to Fungible1
+		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
+		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
+		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
+		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
+
+		// cannot bind if no gateway on Fungible2
+		expect(await fungible2.gateway()).to.equal(ethers.ZeroAddress);
+		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "GatewayRequired");
+		console.log("OK. Cannot bind if not gateway on Fungible1.");
+	});
+
+	it("Can only bind MasterChain to no MasterChain.", async() => {
+		// Tokens
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
+
+		// set gateway to Fungible1
+		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
+		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
+		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
+		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
+
+		// cannot bind if no MasterChain on Fungible1
+		expect(await fungible1.getMasterChain()).to.equal(0);
+		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "OnlyMasterChain");
+		console.log("OK. Cannot bind if not gateway on Fungible1.");
+	});
+
 	it("Should be able to bind more chains to MasterChain", async() => {
 		// set Fungible1 as MasterChain
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
@@ -123,32 +183,6 @@ describe("ERC-20X Supply", function () {
 		expect(await fungible1.bindChain(1337, fungibleAddress2)).to.not.be.reverted;
 		expect(await fungible2.getMasterChain()).to.equal(1337);
 		expect(await fungible2.getMasterAddress()).to.equal(fungibleAddress1);
-	});
-
-	it("Should not be able to bind chains to no master chain", async() => {
-		// set Fungible1 no MasterChain
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		expect(await fungible1.getMasterChain()).to.equal(0);
-
-		// set gateway to Fungible1
-		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
-
-		// set gateway to Fungible2
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
-		await expect(fungible2.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible2.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible2.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible2.gateway()) + " attached to Fungible2.");
-
-		// bind Fungible2 to Fungible1
-		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "OnlyMasterChain");
-		expect(await fungible1.getMasterChain()).to.equal(0);
-		expect(await fungible1.getMasterAddress()).to.equal(ethers.ZeroAddress);
-		expect(await fungible2.getMasterChain()).to.equal(0);
-		expect(await fungible2.getMasterAddress()).to.equal(ethers.ZeroAddress);
 	});
 
 	it("Should be able to unbind a chain", async() => {

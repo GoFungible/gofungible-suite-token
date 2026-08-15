@@ -278,8 +278,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// TODO: Use EIP-712
 	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata messageBytes) external override returns (bytes4) {
-		console.log("_extGateffffway");
-		console.log("_extGateway", _extGateway);
+		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 		console.log("MessageReceived");
 
@@ -366,7 +365,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(chainId));
 		require(addresses[chainId] != ZERO_ADDRESS, NonZeroAddressRequired());
-		require(_totalSupply == 0, ZeroRequired(_totalSupply));
 
 		bool response = _sendCrosschainBind(chainId, ZERO_ADDRESS, false);
 		require (response, ErrorInCrossChainBind());
@@ -401,7 +399,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _onCrosschainBind(bytes memory payload) internal {
-		require(msg.sender == _extGateway,  OnlyGateway(msg.sender));
+		require(_totalSupply == 0, ZeroRequired(_totalSupply));
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
@@ -671,7 +669,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// Receives supply transfer
 	function _onCrosschainSupply(bytes memory payload) internal {
-		require(msg.sender == _extGateway,  OnlyGateway(msg.sender));
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
