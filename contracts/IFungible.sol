@@ -17,9 +17,14 @@ abstract contract IFungible {
 	// ******************************************** Errors ********************************************
 	// ************************************************************************************************
   error NonZeroAddress(address sender);
+
   error OnlyOwner(address sender);
   error OnlyGateway(address sender);
-  error OnlyMasterChain(uint256 chain);
+  error OnlyMasterChain(uint256 chain);					//  _masterChain matches CHAIN_ID
+  error OnlySlaveChain(uint256 chain);					//  _masterChain no matches CHAIN_ID
+  error OnlySingletonChain(uint256 chain);			//  _masterChain is unassigned
+
+  error GatewayRequired(address sender);
 
 	error ErrorInCrossChainBind();
 
@@ -81,11 +86,11 @@ abstract contract IFungible {
 	// * On creation:
 	// 			- cannot create a fake token because a timestamp is stored in both sides. synchronizationKey in master and slave
 
-
-
 	event MasterChainUpdated(uint256 fromMasterChain, address fromMasterAddress, uint256 toMasterChain, address toMasterAddress);
 
 	function getMasterChain() external view virtual returns (uint256);
+
+	function getMasterAddress() external view virtual returns (address);
 
 	function setAsMasterChain() external virtual;
 

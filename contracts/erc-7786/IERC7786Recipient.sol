@@ -13,6 +13,6 @@ interface IERC7786Recipient {
 			bytes calldata payload
 	) external returns (bytes4);
 
-  event MessageReceived(bytes32 indexed sendId, address indexed sender, bytes payload);
+  event MessageReceived(bytes32 indexed sendId, uint256 srcChainId, address indexed sender, bytes payload);
 
 }

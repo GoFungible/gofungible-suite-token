@@ -245,7 +245,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bool) {
-		require(_extGateway != ZERO_ADDRESS, NonZeroAddress(msg.sender));
+		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		console.log("toChain", toChain);
 
 		// By doing this, this contract only interacts with the based networks. Be aware.
@@ -276,45 +276,56 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return true;
 	}
 
+	// TODO: Use EIP-712
 	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata messageBytes) external override returns (bytes4) {
+		console.log("_extGateffffway");
+		console.log("_extGateway", _extGateway);
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 		console.log("MessageReceived");
 
 		Message memory message = abi.decode(messageBytes, (Message));
 
-		bytes memory payload = message.payload;
-
-		Header memory header = message.header;
-
+		// verify sender
 		Metadata memory mefadata = message.metadata;
 		uint32 srcChainId = mefadata.srcChainId;
-		bytes32 srcAddress = mefadata.srcAddress;
-		address fromAddress = address(uint160(uint256(srcAddress)));
+		bytes32 srcAddressBytes = mefadata.srcAddress;
+		address srcAddress = address(uint160(uint256(srcAddressBytes)));
 
-		// Address Recovery: Convert the binary sender back into a standard EVM address
-		address sourceSender = address(bytes20(sender[0:20]));
+		// Execution Simulation (Emit event for test verification)
+		emit MessageReceived(sendId, srcChainId, srcAddress, messageBytes);
 
-		// process payload
+		console.log("srcChainId", srcChainId);
+		console.log("srcAddress", srcAddress);
+
+		// get message info
+		bytes memory payload = message.payload;
+		Header memory header = message.header;
+
+		// process message
+		if (header.op == MSG_BND) {
+			_onCrosschainBind(payload);
+			return IERC7786Recipient.receiveMessage.selector;
+		}
+		
+		// verify sender is valid.
+		require(srcChainId == _masterChain, OnlyMasterChain(srcChainId));
+		require(srcAddress == _masterAddress, OnlyMasterChain(srcChainId));
+		console.log("TODO: verify also sender parameter");
+		console.logBytes(sender);
+
 		if (header.op == MSG_SUP) {
 			_onCrosschainSupply(payload);
 
 		} else if (header.op == MSG_CLO) {
 			_onCrosschainCloneState(payload);
 
-		} else if (header.op == MSG_BND) {
-			_onCrosschainBindStatus(payload);
-
 		} else {
 			_onCrosschainMessage(payload);
 		}
 		console.log("Message Processed. Returning");
 
-		// Execution Simulation (Emit event for test verification)
-		emit MessageReceived(sendId, sourceSender, messageBytes);
-
 		// Compliance Return: Return the exact function selector (0x3ca22197)
 		return IERC7786Recipient.receiveMessage.selector;
-
 	}
 
 	function _onCrosschainMessage(bytes memory payload) internal {
@@ -336,17 +347,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return knownChains;
 	}
 
-	function bindChain(uint256 chainId, address chainAddress) external {
+	function bindChain(uint256 _chainId, address chainAddress) external {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
 		require(chainAddress != ZERO_ADDRESS, NonZeroAddress(msg.sender));
-		require(addresses[chainId] == ZERO_ADDRESS, NonZeroAddress(msg.sender));
+		//require(addresses[chainId] == ZERO_ADDRESS, NonZeroAddress(msg.sender));
+		console.log("valid1");
 
-		bool response = _sendCrosschainBindStatus(chainId, chainAddress, true);
+		bool response = _sendCrosschainBind(_chainId, chainAddress, true);
 		require (response, ErrorInCrossChainBind());
 
-		knownChains.push(chainId);
-		addresses[chainId] = chainAddress;
+		knownChains.push(_chainId);
+		addresses[_chainId] = chainAddress;
 	}
 
 	function unbindChain(uint256 chainId) external {
@@ -355,7 +367,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(addresses[chainId] != ZERO_ADDRESS, NonZeroAddress(msg.sender));
 		require(supplies[chainId] == 0, "Network: this chain already has supply");
 
-		bool response = _sendCrosschainBindStatus(chainId, ZERO_ADDRESS, false);
+		bool response = _sendCrosschainBind(chainId, ZERO_ADDRESS, false);
 		require (response, ErrorInCrossChainBind());
 
 		removeValueFromArray(knownChains, chainId);
@@ -372,7 +384,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		address masterAddress;
 	}
 
-	function _sendCrosschainBindStatus(uint256 toChain, address toAddres, bool isBound) internal returns (bool) {
+	function _sendCrosschainBind(uint256 toChain, address toAddres, bool isBound) internal returns (bool) {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
     // Build your application's data package
@@ -387,7 +399,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return response;
 	}
 
-	function _onCrosschainBindStatus(bytes memory payload) internal {
+	function _onCrosschainBind(bytes memory payload) internal {
 		require(msg.sender == _extGateway,  OnlyGateway(msg.sender));
 
 		// Unpack the byte envelope straight back into the struct format
@@ -420,7 +432,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _masterChain;
 	}
 
+	function getMasterAddress() external view override returns (address) {
+		return _masterAddress;
+	}
+
 	function setAsMasterChain() external override {
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+		require(_masterChain == 0, OnlySingletonChain(CHAIN_ID));
 		_masterChain = CHAIN_ID;
 		_masterAddress = address(this);
 	}
