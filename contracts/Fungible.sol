@@ -303,14 +303,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
-		// As bound token, we have to validate:
-		// - not master chain
-		// - not master address
-		// - not supply yet
 		if (header.op == MSG_BND) {
-			require(_masterChain == 0, OnlySingletonChain(srcChainId));
-			require(_masterAddress == ZERO_ADDRESS, OnlySingletonChain(srcChainId));
-			require(_totalSupply == 0, ZeroRequired(_totalSupply));
+			require(_masterChain == 0, OnlySingletonChain(srcChainId));								// not master chain
+			require(_masterAddress == ZERO_ADDRESS, OnlySingletonChain(srcChainId));	// not master address
+			require(_totalSupply == 0, ZeroRequired(_totalSupply));										// not supply yet
 			_onCrosschainBind(payload);
 			return IERC7786Recipient.receiveMessage.selector;
 		}
