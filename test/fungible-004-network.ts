@@ -14,8 +14,9 @@ describe("ERC-20X Supply", function () {
 	/************************************************** hooks ***********************************************/
 	/********************************************************************************************************/
 	before(async() => {
+		
 		console.log('*******************************');
-		console.log('******** Starting Tests *******');
+		console.log(`\nTest Suite: ${this.title}`);
 		console.log('*******************************');
 		
 		// get accounts for hardhat chain
@@ -38,20 +39,19 @@ describe("ERC-20X Supply", function () {
 
 	});
 
-	beforeEach(async() => {
-		//console.log('--------------------');
+	beforeEach(async function (this: Mocha.Context) {
+
 		await hre.network.provider.send("hardhat_reset");
-		console.log('*******************************');
-		console.log('******** Starting Test ********');
-		console.log('*******************************');
+		console.log(`\nTest: ${this.currentTest?.title}`);
+		console.log('***************************************************************************');
 
 		// ***********************************************************************************************************************************************************
 		// ************************************************************************** Log Signers ********************************************************************
 		// ***********************************************************************************************************************************************************
-		// get accounts for hardhat chain
+		// reset accounts for hardhat chain
 		[owner1, addr11, addr12, addr13, ...addrs1] = await ethers.getSigners();
 
-		// get accounts for hardhat2 chain
+		// reset accounts for hardhat2 chain
 		const privateKeys: any = hre.config.networks.hardhat2.accounts as string[];
 		const hardhat2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
 		[owner2, addr21, addr22, addr23, ...addrs2] =  privateKeys.map((privateKey: string) => 
@@ -110,7 +110,7 @@ describe("ERC-20X Supply", function () {
 	});
 	
 	after(async() => {
-		console.log('--------- Ending Tests --------');
+		console.log(`--------- End Test Suite ${this.title}  --------`);
 	});
 
 	/********************************************************************************************************/
