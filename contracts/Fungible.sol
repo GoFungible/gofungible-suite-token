@@ -336,8 +336,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySendMessage.length; i++){
-			//bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(uint256 toChain, address toAddress, string calldata message)", fromChain, srcAddress, message );
-			//_staticCall(_extGatewaySendMessage[i], encodedData);
+			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(bytes memory payload)", payload );
+			_staticCall(_extGatewaySendMessage[i], encodedData);
     }
 
 	}
@@ -366,16 +366,16 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		addresses[_chainId] = chainAddress;
 	}
 
-	function unbindChain(uint256 chainId) external {
+	function unbindChain(uint256 _chainId) external {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		require(_masterChain == CHAIN_ID, OnlyMasterChain(chainId));
-		require(addresses[chainId] != ZERO_ADDRESS, NonZeroAddressRequired());
+		require(_masterChain == CHAIN_ID, OnlyMasterChain(_chainId));
+		require(addresses[_chainId] != ZERO_ADDRESS, NonZeroAddressRequired());
 
-		bool response = _sendCrosschainBind(chainId, ZERO_ADDRESS, false);
+		bool response = _sendCrosschainBind(_chainId, ZERO_ADDRESS, false);
 		require (response, ErrorInCrossChainBind());
 
-		removeValueFromArray(knownChains, chainId);
-		addresses[chainId] = ZERO_ADDRESS;
+		removeValueFromArray(knownChains, _chainId);
+		addresses[_chainId] = ZERO_ADDRESS;
 	}
 	
 	/**
@@ -415,8 +415,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	mapping(uint256 => address) public addresses;
 
-	function getChainAddress(uint256 chainId) external view returns (address) {
-		return addresses[chainId];
+	function getChainAddress(uint256 _chainId) external view returns (address) {
+		return addresses[_chainId];
 	}
 
 	// ************************************************************************************************
@@ -539,8 +539,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	mapping(uint256 => uint256) public supplies;
 
-	function getChainSupply(uint256 chainId) external view returns (uint256) {
-		return supplies[chainId];
+	function getChainSupply(uint256 _chainId) external view returns (uint256) {
+		return supplies[_chainId];
 	}
 
 	/*function getSuppliesChecksum() public view returns (bytes32) {

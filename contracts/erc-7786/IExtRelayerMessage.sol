@@ -5,10 +5,8 @@ interface IExtRelayerMessage {
 
 	/**
 	 * @dev Hook that is called before any token transfer
-	 * @param toChain Chain sending tokens to
-	 * @param toAddress Address receiving tokens (address(0) for burns)
-	 * @param message Message being transferred (ERC20)
+	 * @param payload payload
 	 */
-	function _afterMessageReceived(uint256 toChain, address toAddress, string calldata message) external;
+	function _afterMessageReceived(bytes memory payload) external;
 		
 }
