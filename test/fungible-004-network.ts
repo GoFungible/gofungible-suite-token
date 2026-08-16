@@ -95,7 +95,7 @@ describe("ERC-20X Supply", function () {
 	});
 
 	/********************************************************************************************************/
-	/************************************************ Test Cases ********************************************/
+	/************************************************** Bind ************************************************/
 	/********************************************************************************************************/
 	it("WHO. Only owner can bind.", async() => {
 		// Tokens
@@ -110,12 +110,6 @@ describe("ERC-20X Supply", function () {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
-
-		// set gateway to Fungible1
-		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
 
 		// TEST CASE: cannot bind if no MasterChain on Fungible1
 		expect(await fungible1.getMasterChain()).to.equal(0);
@@ -256,16 +250,59 @@ describe("ERC-20X Supply", function () {
 		//await expect(fungible1.bindChain(1337, fungibleAddress3)).to.be.revertedWithCustomError(fungible1, "OnlySingletonChain");
 	});
 
-	it("Should be able to unbind a chain", async() => {
+	/********************************************************************************************************/
+	/************************************************** Bind ************************************************/
+	/********************************************************************************************************/
+	it("WHO. Only owner can unbind.", async() => {
+		// Tokens
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
+
+		// TEST CASE: can not unbind if not owner
+		await expect(fungible1.connect(addr3).unbindChain(1337)).to.be.revertedWithCustomError(fungible1, "OnlyOwner");
+	});
+
+	it("FROM. Should only unbind from MasterChain token.", async() => {
+		// Tokens
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
+
+		// TEST CASE: cannot unbind if no MasterChain on Fungible1
+		expect(await fungible1.getMasterChain()).to.equal(0);
+		await expect(fungible1.unbindChain(1337)).to.be.revertedWithCustomError(fungible1, "OnlyMasterChain");
+		console.log("OK. Cannot bind if not gateway on Fungible1.");
+	});
+
+	it("HOW. Gateway is required to unbind.", async() => {
+
+	});
+
+	it("TO. Should only unbind to Singleton empty token.", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});
 
+	it("OK. Should be able to unbind if conditions met.", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		//fungible1.setMasterChain(1337);
+	});
+
+	it("OK. Should be able to unbind if conditions met.", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		//fungible1.setMasterChain(1337);
+	});
+
+	/********************************************************************************************************/
+	/************************************************ Addresses *********************************************/
+	/********************************************************************************************************/
 	it("Should be able to read chain addresses", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});
 
+	/********************************************************************************************************/
+	/******************************************** Transfer MasterChain **************************************/
+	/********************************************************************************************************/
 	it("Should be able to transfer master chain status", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
