@@ -261,7 +261,7 @@ describe("ERC-20X Supply", function () {
 		//fungible1.setMasterChain(1337);
 	});
 
-	it("Should be able to use chain address", async() => {
+	it("Should be able to read chain addresses", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});

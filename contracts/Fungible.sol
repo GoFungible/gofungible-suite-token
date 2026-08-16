@@ -304,9 +304,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
 		if (header.op == MSG_BND) {
-			require(_masterChain == 0, OnlySingletonChain(srcChainId));								// not master chain
+			require(_masterChain == ZERO_VALUE, OnlySingletonChain(srcChainId));								// not master chain
 			require(_masterAddress == ZERO_ADDRESS, OnlySingletonChain(srcChainId));	// not master address
-			require(_totalSupply == 0, ZeroRequired(_totalSupply));										// not supply yet
+			require(_totalSupply == ZERO_VALUE, ZeroRequired(_totalSupply));										// not supply yet
 			_onCrosschainBind(payload);
 			return IERC7786Recipient.receiveMessage.selector;
 		}
@@ -355,7 +355,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
 		require(chainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
-		//require(supplies[_chainId] == 0, ZeroRequired(supplies[_chainId]));
+		//require(supplies[_chainId] == ZERO_VALUE, ZeroRequired(supplies[_chainId]));
 		//require(addresses[chainId] == ZERO_ADDRESS, ZeroAddressRequired(msg.sender));
 		console.log("valid1");
 
@@ -440,7 +440,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function setAsMasterChain() external override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		require(_masterChain == 0, OnlySingletonChain(CHAIN_ID));
+		require(_masterChain == ZERO_VALUE, OnlySingletonChain(CHAIN_ID));
 		_masterChain = CHAIN_ID;
 		_masterAddress = address(this);
 	}
@@ -448,7 +448,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function transferMasterChain(uint256 _newMasterChain) external override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
-		require(_newMasterChain > 0, "MasterChain: must be chainid");
+		require(_newMasterChain > ZERO_VALUE, "MasterChain: must be chainid");
 
 		// chain must be already in the network so _newMasterAddress must be already known
 		address _newMasterAddress = _newMasterChain == CHAIN_ID ? address(this) : addresses[_newMasterChain];
@@ -507,7 +507,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _onCrosschainCloneState(bytes memory payload) internal {
-		require(knownChains.length == 0, "Clone: can only be done once");
+		require(knownChains.length == ZERO_VALUE, "Clone: can only be done once");
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleStatePayload memory payloadData = abi.decode(payload, (FungibleStatePayload));
@@ -790,7 +790,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// check if the resource can be released by time
 		uint256 releaseDate = pendingResource.releaseDate;
-		require(releaseDate > 0, "Resource: releaseDate is not valid.");
+		require(releaseDate > ZERO_VALUE, "Resource: releaseDate is not valid.");
 		require(block.timestamp >= releaseDate, "Resource: cannot be released yet.");
 
 		// check if the resource can be released by votes
