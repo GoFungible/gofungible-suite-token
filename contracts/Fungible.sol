@@ -389,8 +389,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _sendCrosschainBind(uint256 toChain, address toAddres, bool isBound) internal returns (bool) {
-		require(msg.sender == _owner, OnlyOwner(msg.sender));
-
     // Build your application's data package
     FungibleBindPayload memory payload = FungibleBindPayload({
 			flag: isBound,
@@ -653,8 +651,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
-		require(msg.sender == _owner, OnlyOwner(msg.sender));
-
     // Build your application's data package
     FungibleSupplyPayload memory payload = FungibleSupplyPayload({
 			outChain: CHAIN_ID,
@@ -667,7 +663,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		bool response = _sendMessage(MSG_SUP, _masterChain, _masterAddress, packedPayload);
 		return response;
-
 	}
 
 	// Receives supply transfer
