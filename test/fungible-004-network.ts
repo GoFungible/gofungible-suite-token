@@ -95,25 +95,34 @@ describe("ERC-20X Supply", function () {
 	});
 
 	/********************************************************************************************************/
-	/************************************************ Use Cases *********************************************/
+	/************************************************ Test Cases ********************************************/
 	/********************************************************************************************************/
-	it("Only owner can bind.", async() => {
+	it("WHO. Only owner can bind.", async() => {
+		// Tokens
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
 
+		await expect(fungible1.connect(addr3).bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "OnlyOwner");
 	});
 
-	it("Bind to valid chain and address.", async() => {
+	it("FROM. Can only bind from MasterChain token.", async() => {
+		// Tokens
+		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
 
+		// set gateway to Fungible1
+		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
+		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
+		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
+		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
+
+		// cannot bind if no MasterChain on Fungible1
+		expect(await fungible1.getMasterChain()).to.equal(0);
+		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "OnlyMasterChain");
+		console.log("OK. Cannot bind if not gateway on Fungible1.");
 	});
 
-	it("Cannot bind 2 tokens in same chain.", async() => {
-
-	});
-
-	it("Can only bind to empty tokens.", async() => {
-
-	});
-
-	it("Gateway is required to bind.", async() => {
+	it("HOW. Gateway is required to bind.", async() => {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
@@ -141,24 +150,18 @@ describe("ERC-20X Supply", function () {
 		console.log("OK. Cannot bind if not gateway on Fungible1.");
 	});
 
-	it("Can only bind MasterChain to no MasterChain.", async() => {
-		// Tokens
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
+	it("TO. Can only bind to Singleton token.", async() => {
+		// not master chain
 
-		// set gateway to Fungible1
-		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
+		// not master address
 
-		// cannot bind if no MasterChain on Fungible1
-		expect(await fungible1.getMasterChain()).to.equal(0);
-		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "OnlyMasterChain");
-		console.log("OK. Cannot bind if not gateway on Fungible1.");
+		// not supply
+
+		// not 2 tokens in the same chain
+
 	});
 
-	it("Should be able to bind more chains to MasterChain", async() => {
+	it("Should be able to bind if conditions met.", async() => {
 		// set Fungible1 as MasterChain
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		expect(await fungible1.getMasterChain()).to.equal(0);
@@ -199,7 +202,5 @@ describe("ERC-20X Supply", function () {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});
-
-
 
 });

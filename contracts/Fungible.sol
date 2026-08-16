@@ -289,19 +289,28 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint32 srcChainId = mefadata.srcChainId;
 		bytes32 srcAddressBytes = mefadata.srcAddress;
 		address srcAddress = address(uint160(uint256(srcAddressBytes)));
+		console.log("srcChainId", srcChainId);
+		console.log("srcAddress", srcAddress);
 
 		// Execution Simulation (Emit event for test verification)
 		emit MessageReceived(sendId, srcChainId, srcAddress, messageBytes);
-
-		console.log("srcChainId", srcChainId);
-		console.log("srcAddress", srcAddress);
 
 		// get message info
 		bytes memory payload = message.payload;
 		Header memory header = message.header;
 
-		// process message
+		// We cannot validate message comes from MasterChain because token is unbound:
+		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
+		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
+		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
+		// As bound token, we have to validate:
+		// - not master chain
+		// - not master address
+		// - not supply yet
 		if (header.op == MSG_BND) {
+			require(_masterChain == 0, OnlySingletonChain(srcChainId));
+			require(_masterAddress == ZERO_ADDRESS, OnlySingletonChain(srcChainId));
+			require(_totalSupply == 0, ZeroRequired(_totalSupply));
 			_onCrosschainBind(payload);
 			return IERC7786Recipient.receiveMessage.selector;
 		}
@@ -309,7 +318,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// verify sender is valid.
 		require(srcChainId == _masterChain, OnlyMasterChain(srcChainId));
 		require(srcAddress == _masterAddress, OnlyMasterChain(srcChainId));
-		console.log("TODO: verify also sender parameter");
+		console.log("TODO: verify also sender parameter passed by gateway");
 		console.logBytes(sender);
 
 		if (header.op == MSG_SUP) {
@@ -399,8 +408,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _onCrosschainBind(bytes memory payload) internal {
-		require(_totalSupply == 0, ZeroRequired(_totalSupply));
-
 		// Unpack the byte envelope straight back into the struct format
 		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
 		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
