@@ -18,7 +18,7 @@ abstract contract IFungible {
 	// ******************************************** Errors ********************************************
 	// ************************************************************************************************
   error ZeroAddressRequired(address nonZeroAddress);
-  error ZeroRequired(uint256 nonZeroVaue);
+  error ZeroValueRequired(uint256 nonZeroVaue);
   error NonZeroAddressRequired();
   error NonZeroRequired();
 

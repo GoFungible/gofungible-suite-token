@@ -306,7 +306,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		if (header.op == MSG_BND) {
 			require(_masterChain == ZERO_VALUE, OnlySingletonChain(srcChainId));								// not master chain
 			require(_masterAddress == ZERO_ADDRESS, OnlySingletonChain(srcChainId));	// not master address
-			require(_totalSupply == ZERO_VALUE, ZeroRequired(_totalSupply));										// not supply yet
+			require(_totalSupply == ZERO_VALUE, ZeroValueRequired(_totalSupply));										// not supply yet
 			_onCrosschainBind(payload);
 			return IERC7786Recipient.receiveMessage.selector;
 		}
@@ -355,7 +355,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
 		require(chainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
-		//require(supplies[_chainId] == ZERO_VALUE, ZeroRequired(supplies[_chainId]));
+		//require(supplies[_chainId] == ZERO_VALUE, ZeroRequired(supplies[_chainId]));		
 		//require(addresses[chainId] == ZERO_ADDRESS, ZeroAddressRequired(msg.sender));
 		console.log("valid1");
 
@@ -370,6 +370,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(_chainId));
 		require(addresses[_chainId] != ZERO_ADDRESS, NonZeroAddressRequired());
+		require(supplies[_chainId] == ZERO_VALUE, ZeroValueRequired(supplies[_chainId]));
 
 		bool response = _sendCrosschainBind(_chainId, ZERO_ADDRESS, false);
 		require (response, ErrorInCrossChainBind());
