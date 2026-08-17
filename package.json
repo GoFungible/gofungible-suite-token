@@ -6,13 +6,24 @@
     "build": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts",
     "interact": "hardhat run scripts/interact.ts",
+    "node": "hardhat node",
     "test": "hardhat test",
-    "node": "hardhat node"
+
+    "a": "npm run open:anvils && sleep 3 && npm run test",
+    "open:anvils": "gnome-terminal -- bash -c 'npm run anvil:node1; exec bash' & gnome-terminal -- bash -c 'npm run anvil:node2; exec bash'",
+		"anvil:node1": "node_modules/@foundry-rs/anvil-linux-amd64/bin/anvil --port 8545 --chain-id 1111",
+    "anvil:node2": "node_modules/@foundry-rs/anvil-linux-amd64/bin/anvil --port 8546 --chain-id 2222",
+
+    "h": "npm run open:hardhats && sleep 3 && npm run test",
+    "open:hardhats": "gnome-terminal -- bash -c 'npm run hardhat:node1; exec bash' & gnome-terminal -- bash -c 'npm run hardhat:node2; exec bash'",
+    "hardhat:node1": "npx hardhat node --port 8545",
+    "hardhat:node2": "npx hardhat node --port 8546"
   },
   "dependencies": {
     "gofungible-erc-20-multichain-supply-extension": "github:GoFungible/gofungible-erc-20-multichain-supply-extension"
   },
   "devDependencies": {
+    "@foundry-rs/anvil": "^1.7.2-nightly.20260518.0d3c40e",
     "@nomicfoundation/hardhat-ethers": "^3.0.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox": "^6.0.0",
