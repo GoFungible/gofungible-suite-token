@@ -352,12 +352,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function bindChain(uint256 _chainId, address chainAddress) external {
+		console.log("valid1");
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
 		require(chainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
 		require(supplies[_chainId] == ZERO_VALUE, ZeroValueRequired(supplies[_chainId]));		
 		require(addresses[_chainId] == ZERO_ADDRESS, ZeroAddressRequired(msg.sender));
-		console.log("valid1");
+		console.log("valid2");
 
 		bool response = _sendCrosschainBind(_chainId, chainAddress, true);
 		require (response, ErrorInCrossChainBind());
@@ -397,6 +398,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			masterAddress: _masterAddress
     });
     bytes memory packedPayload = abi.encode(payload);
+		console.log("bind1");
 
 		bool response = _sendMessage(MSG_BND, toChain, toAddres, packedPayload);
 		return response;
