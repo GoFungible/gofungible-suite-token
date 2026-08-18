@@ -1,13 +1,11 @@
 import { expect } from "chai";
-import hre, { ethers, network } from "hardhat";
-import { JsonRpcProvider, Wallet } from "ethers";
-import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { spawn } from "child_process";
-import path from "path";
+import { ethers } from "hardhat";
+import { JsonRpcSigner } from "ethers";
+import { Fungible__factory } from "../typechain-types";
 
 describe("ERC-20X Supply", function () {
-	let owner1: SignerWithAddress, addr11: SignerWithAddress, addr12: SignerWithAddress, addr13: SignerWithAddress, addrs1;
-	let owner2: Wallet, addr21: Wallet, addr22: Wallet, addr23: Wallet, addrs2;
+	let owner1: JsonRpcSigner, addr11: JsonRpcSigner, addr12: JsonRpcSigner, addr13: JsonRpcSigner, addrs1: JsonRpcSigner[];
+	let owner2: JsonRpcSigner, addr21: JsonRpcSigner, addr22: JsonRpcSigner, addr23: JsonRpcSigner, addrs2: JsonRpcSigner[];
 	let fungibleMasterAddress1: string, fungibleSlaveAddress1: string, fungibleSingletonAddress1: string, mockedERC7786GatewayAddress1: string;
 	let fungibleMasterAddress2: string, fungibleSlaveAddress2: string, fungibleSingletonAddress2: string, mockedERC7786GatewayAddress2: string;
 
@@ -18,6 +16,12 @@ describe("ERC-20X Supply", function () {
 		console.log('*******************************');
 		console.log(`\nTest Suite: ${this.title}`);
 		console.log('*******************************');
+
+    const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+		[owner1, addr11, addr12, addr13, ...addrs1] = await node1Provider.listAccounts();
+
+    const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
+		[owner2, addr21, addr22, addr23, ...addrs2] = await node2Provider.listAccounts();
 	});
 
 	beforeEach(async function (this: Mocha.Context) {
@@ -27,9 +31,9 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		// ************************************************************************** Reset Nodes ********************************************************************
 		// ***********************************************************************************************************************************************************
+
     const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
 		await node1Provider.send("anvil_reset", []);
-		const [owner1, addr11, addr12, addr13, ...addrs1] = await node1Provider.listAccounts(); 
 		[owner1, addr11, addr12, addr13, ...addrs1].map(async (signer, index) => {
 			const bal = await node1Provider.getBalance(signer.address);
 			console.log(`Node1 Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
@@ -37,7 +41,6 @@ describe("ERC-20X Supply", function () {
 
     const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
 		await node2Provider.send("anvil_reset", []);
-		const [owner2, addr21, addr22, addr23, ...addrs2] = await node2Provider.listAccounts();
 		[owner2, addr21, addr22, addr23, ...addrs2].map(async (signer, index) => {
 			const bal = await node2Provider.getBalance(signer.address);
 			console.log(`Node2 Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
@@ -129,14 +132,14 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************** Bind ************************************************/
 	/********************************************************************************************************/
-	/*it("WHO. Only owner can bind.", async() => {
+	it("WHO. Only owner can bind.", async() => {
 		// Tokens
-		const fungibleMaster1 = await ethers.getContractAt('Fungible', fungibleMasterAddress1)
-		const fungibleSlave2 = await ethers.getContractAt('Fungible', fungibleSlaveAddress2)
+		const fungibleMaster1 = Fungible__factory.connect(fungibleMasterAddress1, owner1);
+		const fungibleSlave2 = Fungible__factory.connect(fungibleSlaveAddress2, owner2);
 
 		// TEST CASE: can not bind if not owner
 		await expect(fungibleMaster1.connect(addr13).bindChain(1337, fungibleSlaveAddress2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyOwner");
-	});*/
+	});
 
 	/*it.skip("FROM. Should only bind from MasterChain token.", async() => {
 		// Tokens
