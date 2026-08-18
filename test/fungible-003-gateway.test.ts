@@ -14,11 +14,31 @@ describe("Deploy Resources", function () {
 		console.log('*******************************');
 		console.log('******** Starting Tests *******');
 		console.log('*******************************');
+
+		// get accounts for hardhat chain
+		/*[owner1, addr11, addr12, addr13, ...addrs1] = await ethers.getSigners();
+		[owner1, addr11, addr12, addr13, ...addrs1].forEach(async(account, i) => {
+			let balance = await ethers.provider.getBalance(account.address);
+			console.log('Hardhat: Account %d - address: %s ; balance: %s', ++i, account.address, balance);
+		});*/
 	});
 
 	beforeEach(async() => {
 		//console.log('--------------------');
 		await hre.network.provider.send("hardhat_reset");
+
+		// ***********************************************************************************************************************************************************
+		// ************************************************************************** Log Signers ********************************************************************
+		// ***********************************************************************************************************************************************************
+		// reset accounts for hardhat chain
+		//[owner1, addr11, addr12, addr13, ...addrs1] = await ethers.getSigners();
+
+		// reset accounts for hardhat2 chain
+		/*const privateKeys: any = hre.config.networks.hardhat2.accounts as string[];
+		const hardhat2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
+		[owner2, addr21, addr22, addr23, ...addrs2] =  privateKeys.map((privateKey: string) => 
+      new ethers.Wallet(privateKey, hardhat2Provider)
+    );*/
 
 		// ***********************************************************************************************************************************************************
 		// ************************************************************************** Log Signers ********************************************************************

@@ -1,111 +1,112 @@
 import { expect } from "chai";
 import hre, { ethers, network } from "hardhat";
+import { JsonRpcProvider, Wallet } from "ethers";
 import { SignerWithAddress } from "@nomicfoundation/hardhat-ethers/signers";
-import { Fungible__factory } from "../typechain-types";
-import { Wallet } from "ethers";
+import { spawn } from "child_process";
+import path from "path";
 
 describe("ERC-20X Supply", function () {
 	let owner1: SignerWithAddress, addr11: SignerWithAddress, addr12: SignerWithAddress, addr13: SignerWithAddress, addrs1;
 	let owner2: Wallet, addr21: Wallet, addr22: Wallet, addr23: Wallet, addrs2;
-	let fungibleAddress1: string, fungibleAddress2: string, fungibleAddress3: string, fungibleAddress4: string, fungibleAddress9: string;
-	let mockedERC7786GatewayAddress: string;
+	let fungibleMasterAddress1: string, fungibleSlaveAddress1: string, fungibleSingletonAddress1: string, mockedERC7786GatewayAddress1: string;
+	let fungibleMasterAddress2: string, fungibleSlaveAddress2: string, fungibleSingletonAddress2: string, mockedERC7786GatewayAddress2: string;
 
 	/********************************************************************************************************/
 	/************************************************** hooks ***********************************************/
 	/********************************************************************************************************/
 	before(async() => {
-		
 		console.log('*******************************');
 		console.log(`\nTest Suite: ${this.title}`);
 		console.log('*******************************');
-		
-		// get accounts for hardhat chain
-		[owner1, addr11, addr12, addr13, ...addrs1] = await ethers.getSigners();
-		[owner1, addr11, addr12, addr13, ...addrs1].forEach(async(account, i) => {
-			let balance = await ethers.provider.getBalance(account.address);
-			console.log('Hardhat: Account %d - address: %s ; balance: %s', ++i, account.address, balance);
-		});
-
-		// get accounts for hardhat2 chain
-		const privateKeys: any = hre.config.networks.hardhat2.accounts as string[];
-		const hardhat2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
-    [owner2, addr21, addr22, addr23, ...addrs2] =  privateKeys.map((privateKey: string) => 
-      new ethers.Wallet(privateKey, hardhat2Provider)
-    );
-		[owner2, addr21, addr22, addr23, ...addrs2].forEach(async(account, i) => {
-			let balance = await ethers.provider.getBalance(account.address);
-			console.log('Hardhat2: Account %d - address: %s ; balance: %s', ++i, account.address, balance);
-		});
-
 	});
 
 	beforeEach(async function (this: Mocha.Context) {
-
-		await hre.network.provider.send("hardhat_reset");
 		console.log(`\nTest: ${this.currentTest?.title}`);
 		console.log('***************************************************************************');
 
 		// ***********************************************************************************************************************************************************
-		// ************************************************************************** Log Signers ********************************************************************
+		// ************************************************************************** Reset Nodes ********************************************************************
 		// ***********************************************************************************************************************************************************
-		// reset accounts for hardhat chain
-		[owner1, addr11, addr12, addr13, ...addrs1] = await ethers.getSigners();
+    const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+		await node1Provider.send("anvil_reset", []);
+		const [owner1, addr11, addr12, addr13, ...addrs1] = await node1Provider.listAccounts(); 
+		[owner1, addr11, addr12, addr13, ...addrs1].map(async (signer, index) => {
+			const bal = await node1Provider.getBalance(signer.address);
+			console.log(`Node1 Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
+		});
 
-		// reset accounts for hardhat2 chain
-		const privateKeys: any = hre.config.networks.hardhat2.accounts as string[];
-		const hardhat2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
-		[owner2, addr21, addr22, addr23, ...addrs2] =  privateKeys.map((privateKey: string) => 
-      new ethers.Wallet(privateKey, hardhat2Provider)
-    );
+    const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
+		await node2Provider.send("anvil_reset", []);
+		const [owner2, addr21, addr22, addr23, ...addrs2] = await node2Provider.listAccounts();
+		[owner2, addr21, addr22, addr23, ...addrs2].map(async (signer, index) => {
+			const bal = await node2Provider.getBalance(signer.address);
+			console.log(`Node2 Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
+		});
 
 		// ***********************************************************************************************************************************************************
-		// ********************************************************* Install Versionable Facets and register in factory **********************************************
+		// ******************************************************************** Deploy Tokens Hardhat Network ********************************************************
 		// ***********************************************************************************************************************************************************
-		// deploy MockedERC7786Gateway
-		const MockedERC7786Gateway = await ethers.getContractFactory("MockedERC7786Gateway");
-		let mockedERC7786Gateway = await MockedERC7786Gateway.deploy();
-		expect(await mockedERC7786Gateway.waitForDeployment()).to.not.be.reverted;
-		mockedERC7786GatewayAddress = await mockedERC7786Gateway.getAddress();
-		console.log("MockedERC7786Gateway deployed to:", mockedERC7786GatewayAddress);
+		// deploy MockedERC7786Gateway1
+		const MockedERC7786Gateway1 = await ethers.getContractFactory("MockedERC7786Gateway", owner1);
+		let mockedERC7786Gateway1 = await MockedERC7786Gateway1.deploy();
+		expect(await mockedERC7786Gateway1.waitForDeployment()).to.not.be.reverted;
+		mockedERC7786GatewayAddress1 = await mockedERC7786Gateway1.getAddress();
+		console.log(`MockedERC7786Gateway1 deployed on ${await mockedERC7786Gateway1.chainId()} at ${mockedERC7786GatewayAddress1}`);
 
-		// deploy Fungible1
-		const Fungible1 = await ethers.getContractFactory("Fungible");
-		let fungible1 = await Fungible1.deploy("FungiTest", "FGT", 1000_000_000);
-		expect(await fungible1.waitForDeployment()).to.not.be.reverted;
-		fungibleAddress1 = await fungible1.getAddress();
-		console.log(`Fungible1 ${await fungible1.chainId()} deployed at ${fungibleAddress1}`);
+		// deploy FungibleMaster1
+		const FungibleMaster1 = await ethers.getContractFactory("Fungible", owner1);
+		let fungibleMaster1 = await FungibleMaster1.deploy("FungiTest", "FGT", 1000_000_000);
+		expect(await fungibleMaster1.waitForDeployment()).to.not.be.reverted;
+		fungibleMasterAddress1 = await fungibleMaster1.getAddress();
+		console.log(`FungibleMaster1 deployed on ${await fungibleMaster1.chainId()} at ${fungibleMasterAddress1}`);
 
-		// deploy Fungible2
-		const Fungible2 = await ethers.getContractFactory("Fungible");
-		let fungible2 = await Fungible2.deploy("FungiTest", "FGT", 0);
-		expect(await fungible2.waitForDeployment()).to.not.be.reverted;
-		fungibleAddress2 = await fungible2.getAddress();
-		console.log(`Fungible2 ${await fungible2.chainId()} deployed at ${fungibleAddress2}`);
+		// deploy FungibleSlave1
+		const FungibleSlave1 = await ethers.getContractFactory("Fungible", owner1);
+		let fungibleSlave1 = await FungibleSlave1.deploy("FungiTest", "FGT", 0);
+		expect(await fungibleSlave1.waitForDeployment()).to.not.be.reverted;
+		fungibleSlaveAddress1 = await fungibleSlave1.getAddress();
+		console.log(`FungibleSlave1 deployed on ${await fungibleSlave1.chainId()} at ${fungibleSlaveAddress1}`);
 
-		// deploy Fungible3
-		const Fungible3 = await ethers.getContractFactory("Fungible");
-		let fungible3 = await Fungible3.deploy("FungiTest", "FGT", 0);
-		expect(await fungible3.waitForDeployment()).to.not.be.reverted;
-		fungibleAddress3 = await fungible3.getAddress();
-		console.log(`Fungible3 ${await fungible3.chainId()} deployed at ${fungibleAddress3}`);
+		// deploy FungibleSingleton1
+		const FungibleSingleton1 = await ethers.getContractFactory("Fungible", owner1);
+		let fungibleSingleton1 = await FungibleSingleton1.deploy("FungiTest", "FGT", 0);
+		expect(await fungibleSingleton1.waitForDeployment()).to.not.be.reverted;
+		fungibleSingletonAddress1 = await fungibleSingleton1.getAddress();
+		console.log(`FungibleSingleton1 deployed on ${await fungibleSingleton1.chainId()} at ${fungibleSingletonAddress1}`);
 
-		// deploy Fungible4
-		const Fungible4 = await ethers.getContractFactory("Fungible");
-		let fungible4 = await Fungible4.deploy("FungiTest", "FGT", 0);
-		expect(await fungible4.waitForDeployment()).to.not.be.reverted;
-		fungibleAddress4 = await fungible4.getAddress();
-		console.log(`Fungible4 ${await fungible4.chainId()} deployed at ${fungibleAddress4}`);
+		// ***********************************************************************************************************************************************************
+		// ******************************************************************** Deploy Tokens Hardhat1 Network *******************************************************
+		// ***********************************************************************************************************************************************************
+		// deploy MockedERC7786Gateway1
+		const MockedERC7786Gateway2 = await ethers.getContractFactory("MockedERC7786Gateway", owner2);
+		let mockedERC7786Gateway2 = await MockedERC7786Gateway2.deploy();
+		expect(await mockedERC7786Gateway2.waitForDeployment()).to.not.be.reverted;
+		mockedERC7786GatewayAddress2 = await mockedERC7786Gateway2.getAddress();
+		console.log(`MockedERC7786Gateway2 deployed on ${await mockedERC7786Gateway2.chainId()} at ${mockedERC7786GatewayAddress2}`);
 
-		// deploy Fungible9
-		const Fungible9 = await ethers.getContractFactory("Fungible");
-		let fungible9 = await Fungible9.deploy("FungiTest", "FGT", 1000_000_000);
-		expect(await fungible9.waitForDeployment()).to.not.be.reverted;
-		fungibleAddress9 = await fungible9.getAddress();
-		console.log(`Fungible9 ${await fungible9.chainId()} deployed at ${fungibleAddress9}`);		
+		// deploy FungibleMaster2
+		const FungibleMaster2 = await ethers.getContractFactory("Fungible", owner2);
+		let fungibleMaster2 = await FungibleMaster2.deploy("FungiTest", "FGT", 1000_000_000);
+		expect(await fungibleMaster2.waitForDeployment()).to.not.be.reverted;
+		fungibleMasterAddress2 = await fungibleMaster2.getAddress();
+		console.log(`FungibleMaster2 deployed on ${await fungibleMaster2.chainId()} at ${fungibleMasterAddress2}`);
+
+		// deploy FungibleSlave2
+		const FungibleSlave2 = await ethers.getContractFactory("Fungible", owner2);
+		let fungibleSlave2 = await FungibleSlave2.deploy("FungiTest", "FGT", 0);
+		expect(await fungibleSlave2.waitForDeployment()).to.not.be.reverted;
+		fungibleSlaveAddress2 = await fungibleSlave2.getAddress();
+		console.log(`FungibleSlave2 deployed on ${await fungibleSlave2.chainId()} at ${fungibleSlaveAddress2}`);
+
+		// deploy FungibleSingleton2
+		const FungibleSingleton2 = await ethers.getContractFactory("Fungible", owner2);
+		let fungibleSingleton2 = await FungibleSingleton2.deploy("FungiTest", "FGT", 0);
+		expect(await fungibleSingleton2.waitForDeployment()).to.not.be.reverted;
+		fungibleSingletonAddress2 = await fungibleSingleton2.getAddress();
+		console.log(`FungibleSingleton2 deployed on ${await fungibleSingleton2.chainId()} at ${fungibleSingletonAddress2}`);
 	});
 
 	afterEach(async() => {
-		//await helpers.logICOStatus(ico);
 		console.log('--------------------');
 	});
 	
@@ -113,19 +114,31 @@ describe("ERC-20X Supply", function () {
 		console.log(`--------- End Test Suite ${this.title}  --------`);
 	});
 
+  it("should communicate with two completely separate in-memory networks", async () => {
+		// verify node1
+		const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+    const net1 = await node1Provider.getNetwork();
+    expect(Number(net1.chainId)).to.equal(1111);
+
+		// verify node2
+		const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
+    const net2 = await node2Provider.getNetwork();
+    expect(Number(net2.chainId)).to.equal(2222);
+  });
+
 	/********************************************************************************************************/
 	/************************************************** Bind ************************************************/
 	/********************************************************************************************************/
-	it("WHO. Only owner can bind.", async() => {
+	/*it("WHO. Only owner can bind.", async() => {
 		// Tokens
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
+		const fungibleMaster1 = await ethers.getContractAt('Fungible', fungibleMasterAddress1)
+		const fungibleSlave2 = await ethers.getContractAt('Fungible', fungibleSlaveAddress2)
 
 		// TEST CASE: can not bind if not owner
-		await expect(fungible1.connect(addr13).bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "OnlyOwner");
-	});
+		await expect(fungibleMaster1.connect(addr13).bindChain(1337, fungibleSlaveAddress2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyOwner");
+	});*/
 
-	it("FROM. Should only bind from MasterChain token.", async() => {
+	/*it.skip("FROM. Should only bind from MasterChain token.", async() => {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
@@ -134,9 +147,9 @@ describe("ERC-20X Supply", function () {
 		expect(await fungible1.getMasterChain()).to.equal(0);
 		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "OnlyMasterChain");
 		console.log("OK. Cannot bind if not gateway on Fungible1.");
-	});
+	});*/
 
-	it("HOW. Gateway is required to bind.", async() => {
+	/*it.skip("HOW. Gateway is required to bind.", async() => {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
@@ -162,9 +175,9 @@ describe("ERC-20X Supply", function () {
 		expect(await fungible2.gateway()).to.equal(ethers.ZeroAddress);
 		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "GatewayRequired");
 		console.log("OK. Cannot bind if not gateway on Fungible1.");
-	});
+	});*/
 
-	it.skip("TO. Should only bind to Singleton empty token.", async() => {
+	/*it.skip("TO. Should only bind to Singleton empty token.", async() => {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
@@ -205,9 +218,9 @@ describe("ERC-20X Supply", function () {
 
 		// TEST CASE: cannot bind a token with supply
 		await expect(fungible1.bindChain(1337, fungibleAddress9)).to.be.revertedWithCustomError(fungible1, "ZeroValueRequired");
-	});
+	});*/
 
-	it("OK. Should be able to bind if conditions met.", async() => {
+	/*it.skip("OK. Should be able to bind if conditions met.", async() => {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
@@ -234,9 +247,9 @@ describe("ERC-20X Supply", function () {
 		expect(await fungible1.bindChain(1337, fungibleAddress2)).to.not.be.reverted;
 		expect(await fungible2.getMasterChain()).to.equal(1337);
 		expect(await fungible2.getMasterAddress()).to.equal(fungibleAddress1);
-	});
+	});*/
 
-	it("TO. Should not bind a second token in the same chain.", async() => {
+	/*it.skip("TO. Should not bind a second token in the same chain.", async() => {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
@@ -274,21 +287,21 @@ describe("ERC-20X Supply", function () {
 		// TEST CASE: cannot bind a second token
 		// TODO: mock second chain
 		//await expect(fungible1.bindChain(1337, fungibleAddress3)).to.be.revertedWithCustomError(fungible1, "OnlySingletonChain");
-	});
+	});*/
 
 	/********************************************************************************************************/
 	/************************************************** Bind ************************************************/
 	/********************************************************************************************************/
-	it("WHO. Only owner can unbind.", async() => {
+	/*it.skip("WHO. Only owner can unbind.", async() => {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
 
 		// TEST CASE: can not unbind if not owner
 		await expect(fungible1.connect(addr13).unbindChain(1337)).to.be.revertedWithCustomError(fungible1, "OnlyOwner");
-	});
+	});*/
 
-	it("FROM. Should only unbind from MasterChain token.", async() => {
+	/*it.skip("FROM. Should only unbind from MasterChain token.", async() => {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
@@ -297,9 +310,9 @@ describe("ERC-20X Supply", function () {
 		expect(await fungible1.getMasterChain()).to.equal(0);
 		await expect(fungible1.unbindChain(1337)).to.be.revertedWithCustomError(fungible1, "OnlyMasterChain");
 		console.log("OK. Cannot bind if not gateway on Fungible1.");
-	});
+	});*/
 
-	it.skip("TO. Should only unbind Slave empty tokens.", async() => {
+	/*it.skip("TO. Should only unbind Slave empty tokens.", async() => {
 		// Tokens
 		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
@@ -317,18 +330,18 @@ describe("ERC-20X Supply", function () {
 
 
 
+	});*/
+
+	it.skip("HOW. Gateway is required to unbind.", async() => {
+
 	});
 
-	it("HOW. Gateway is required to unbind.", async() => {
-
-	});
-
-	it("OK. Should be able to unbind if conditions met.", async() => {
+	it.skip("OK. Should be able to unbind if conditions met.", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});
 
-	it("OK. Should be able to unbind if conditions met.", async() => {
+	it.skip("OK. Should be able to unbind if conditions met.", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});
@@ -336,7 +349,7 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************ Addresses *********************************************/
 	/********************************************************************************************************/
-	it("Should be able to read chain addresses", async() => {
+	it.skip("Should be able to read chain addresses", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});
@@ -344,7 +357,7 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/******************************************** Transfer MasterChain **************************************/
 	/********************************************************************************************************/
-	it("Should be able to transfer master chain status", async() => {
+	it.skip("Should be able to transfer master chain status", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});

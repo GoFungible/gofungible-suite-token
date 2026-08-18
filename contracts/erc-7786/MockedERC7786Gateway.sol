@@ -33,6 +33,10 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 
 	uint256 private _nonce;
 
+  function chainId() view external returns(uint256) {
+		return block.chainid;
+	}
+
 	// ************************************************************************************************
 	// ******************************************* ERC-7786 *******************************************
 	// ************************************************************************************************  
@@ -48,8 +52,8 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 		outboxId = keccak256(abi.encodePacked(block.timestamp, msg.sender, _nonce));
 
 		// TODO: HERE IS A CAIP-350.
-		(uint256 chainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipient);
-		console.log("sending Message 2 chainId", chainId);
+		(uint256 _chainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipient);
+		console.log("sending Message 2 chainId", _chainId);
 		console.log("sending Message 2 receiverAddress", receiverAddress);
 		
 		bytes memory senderBytes = abi.encodePacked(msg.sender);

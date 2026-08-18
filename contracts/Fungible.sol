@@ -355,8 +355,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
 		require(chainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
-		//require(supplies[_chainId] == ZERO_VALUE, ZeroRequired(supplies[_chainId]));		
-		//require(addresses[chainId] == ZERO_ADDRESS, ZeroAddressRequired(msg.sender));
+		require(supplies[_chainId] == ZERO_VALUE, ZeroValueRequired(supplies[_chainId]));		
+		require(addresses[_chainId] == ZERO_ADDRESS, ZeroAddressRequired(msg.sender));
 		console.log("valid1");
 
 		bool response = _sendCrosschainBind(_chainId, chainAddress, true);
