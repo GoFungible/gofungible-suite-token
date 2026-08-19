@@ -3,6 +3,7 @@ import { ethers } from "hardhat";
 import { JsonRpcSigner, ZeroAddress } from "ethers";
 import { MockedERC7786Gateway } from "../typechain-types";
 import { Fungible} from "../typechain-types/contracts/Fungible";
+import { ERC7786MockGatewayRelayer } from "./relayer/ERC7786MockGatewayRelayer";
 
 describe("ERC-20X Supply", function () {
 	let owner1: JsonRpcSigner, addr11: JsonRpcSigner, addr12: JsonRpcSigner, addr13: JsonRpcSigner, addrs1: JsonRpcSigner[];
@@ -17,12 +18,34 @@ describe("ERC-20X Supply", function () {
 		console.log('*******************************');
 		console.log(`\nTest Suite: ${this.title}`);
 		console.log('*******************************');
+		console.log(`Initializing network`);
 
     const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
 		[owner1, addr11, addr12, addr13, ...addrs1] = await node1Provider.listAccounts();
 
     const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
 		[owner2, addr21, addr22, addr23, ...addrs2] = await node2Provider.listAccounts();
+
+		// deploy MockedERC7786Gateway1
+		const MockedERC7786Gateway1 = await ethers.getContractFactory("MockedERC7786Gateway", owner1);
+		mockedERC7786Gateway1 = await MockedERC7786Gateway1.deploy();
+		expect(await mockedERC7786Gateway1.waitForDeployment()).to.not.be.reverted;
+		expect(await mockedERC7786Gateway1.chainId()).to.equal(1111);
+		const mockedERC7786GatewayAddress1 = await mockedERC7786Gateway1.getAddress();
+		console.log(`MockedERC7786Gateway1 deployed on ${await mockedERC7786Gateway1.chainId()} at ${mockedERC7786GatewayAddress1}`);
+
+		// deploy MockedERC7786Gateway1
+		const MockedERC7786Gateway2 = await ethers.getContractFactory("MockedERC7786Gateway", owner2);
+		mockedERC7786Gateway2 = await MockedERC7786Gateway2.deploy();
+		expect(await mockedERC7786Gateway2.waitForDeployment()).to.not.be.reverted;
+		expect(await mockedERC7786Gateway2.chainId()).to.equal(2222);
+		const mockedERC7786GatewayAddress2 = await mockedERC7786Gateway2.getAddress();
+		console.log(`MockedERC7786Gateway2 deployed on ${await mockedERC7786Gateway2.chainId()} at ${mockedERC7786GatewayAddress2}`);
+
+		// launch relayer
+		await new ERC7786MockGatewayRelayer("http://127.0.0.1:8545", "http://127.0.0.1:8546", mockedERC7786GatewayAddress1, mockedERC7786GatewayAddress2).init();
+
+		console.log(`Initialized network`);
 	});
 
 	beforeEach(async function (this: Mocha.Context) {
@@ -52,14 +75,6 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		// ******************************************************************** Deploy Tokens Hardhat Network ********************************************************
 		// ***********************************************************************************************************************************************************
-		// deploy MockedERC7786Gateway1
-		const MockedERC7786Gateway1 = await ethers.getContractFactory("MockedERC7786Gateway", owner1);
-		mockedERC7786Gateway1 = await MockedERC7786Gateway1.deploy();
-		expect(await mockedERC7786Gateway1.waitForDeployment()).to.not.be.reverted;
-		expect(await mockedERC7786Gateway1.chainId()).to.equal(1111);
-		const mockedERC7786GatewayAddress1 = await mockedERC7786Gateway1.getAddress();
-		console.log(`MockedERC7786Gateway1 deployed on ${await mockedERC7786Gateway1.chainId()} at ${mockedERC7786GatewayAddress1}`);
-
 		// deploy FungibleMaster1
 		const FungibleMaster1 = await ethers.getContractFactory("Fungible", owner1);
 		fungibleMaster1 = await FungibleMaster1.deploy("FungiTest", "FGT", 1000_000_000);
@@ -105,14 +120,6 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		// ******************************************************************** Deploy Tokens Hardhat1 Network *******************************************************
 		// ***********************************************************************************************************************************************************
-		// deploy MockedERC7786Gateway1
-		const MockedERC7786Gateway2 = await ethers.getContractFactory("MockedERC7786Gateway", owner2);
-		mockedERC7786Gateway2 = await MockedERC7786Gateway2.deploy();
-		expect(await mockedERC7786Gateway2.waitForDeployment()).to.not.be.reverted;
-		expect(await mockedERC7786Gateway2.chainId()).to.equal(2222);
-		const mockedERC7786GatewayAddress2 = await mockedERC7786Gateway2.getAddress();
-		console.log(`MockedERC7786Gateway2 deployed on ${await mockedERC7786Gateway2.chainId()} at ${mockedERC7786GatewayAddress2}`);
-
 		// deploy FungibleMaster2
 		const FungibleMaster2 = await ethers.getContractFactory("Fungible", owner2);
 		fungibleMaster2 = await FungibleMaster2.deploy("FungiTest", "FGT", 1000_000_000);
@@ -199,9 +206,7 @@ describe("ERC-20X Supply", function () {
 	});
 
 	/*it.skip("FROM. Should only bind from MasterChain token to Slave token.", async() => {
-		// TEST CASE: cannot bind from SlaveToken to SlaveToken
 		await expect(fungibleSlave1.bindChain(2222, fungibleSlave2)).to.be.revertedWithCustomError(fungibleSlave1, "OnlyMasterChain");
-		console.log("OK. cannot bind from SlaveToken to SlaveToken.");
 	});*/
 
 	/*it.skip("HOW. Gateway is required to bind.", async() => {
@@ -345,7 +350,7 @@ describe("ERC-20X Supply", function () {
 	});*/
 
 	/********************************************************************************************************/
-	/************************************************** Bind ************************************************/
+	/************************************************** Unbind **********************************************/
 	/********************************************************************************************************/
 	/*it.skip("WHO. Only owner can unbind.", async() => {
 		// Tokens
