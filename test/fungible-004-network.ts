@@ -72,6 +72,9 @@ describe("ERC-20X Supply", function () {
 			console.log(`Node2 ChainId ${net2.chainId} Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
 		});
 
+		const mockedERC7786GatewayAddress1 = await mockedERC7786Gateway1.getAddress();
+		const mockedERC7786GatewayAddress2 = await mockedERC7786Gateway2.getAddress();
+
 		// ***********************************************************************************************************************************************************
 		// ******************************************************************** Deploy Tokens Hardhat Network ********************************************************
 		// ***********************************************************************************************************************************************************
@@ -79,42 +82,54 @@ describe("ERC-20X Supply", function () {
 		const FungibleMaster1 = await ethers.getContractFactory("Fungible", owner1);
 		fungibleMaster1 = await FungibleMaster1.deploy("FungiTest", "FGT", 1000_000_000);
 		expect(await fungibleMaster1.waitForDeployment()).to.not.be.reverted;
-		expect(await fungibleMaster1.setAsMasterChain()).to.not.be.reverted;
 		const fungibleMasterAddress1 = await fungibleMaster1.getAddress();
 		expect(await fungibleMaster1.chainId()).to.equal(1111);
+		expect(await fungibleMaster1.setAsMasterChain()).to.not.be.reverted;
 		expect(await fungibleMaster1.getMasterChain()).to.equal(1111);
 		expect(await fungibleMaster1.getMasterAddress()).to.equal(fungibleMasterAddress1);
+		expect(await fungibleMaster1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleMaster1.releaseResource(0, 0)).to.not.be.reverted;
+		expect(await fungibleMaster1.gateway()).to.equal(mockedERC7786GatewayAddress1);		
 		console.log(`FungibleMaster1 deployed on ${await fungibleMaster1.chainId()} at ${fungibleMasterAddress1}`);
 
 		// deploy FungibleSingleton1
 		const FungibleSingleton1 = await ethers.getContractFactory("Fungible", owner1);
 		fungibleSingleton1 = await FungibleSingleton1.deploy("FungiTest", "FGT", 0);
 		expect(await fungibleSingleton1.waitForDeployment()).to.not.be.reverted;
-		expect(await fungibleSingleton1.chainId()).to.equal(1111);
 		const fungibleSingletonAddress1 = await fungibleSingleton1.getAddress();
+		expect(await fungibleSingleton1.chainId()).to.equal(1111);
 		expect(await fungibleSingleton1.getMasterChain()).to.equal(0);
 		expect(await fungibleSingleton1.getMasterAddress()).to.equal(ZeroAddress);
+		expect(await fungibleSingleton1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleSingleton1.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await fungibleSingleton1.gateway()).to.equal(mockedERC7786GatewayAddress1);
 		console.log(`FungibleSingleton1 deployed on ${await fungibleSingleton1.chainId()} at ${fungibleSingletonAddress1}`);
 
 		// deploy OtherMaster1
 		const OtherMaster1 = await ethers.getContractFactory("Fungible", owner1);
 		otherMaster1 = await OtherMaster1.deploy("FungiTest", "FGT", 1000_000_000);
 		expect(await otherMaster1.waitForDeployment()).to.not.be.reverted;
+		const otherMasterAddress1 = await otherMaster1.getAddress();
 		expect(await otherMaster1.chainId()).to.equal(1111);
 		expect(await otherMaster1.setAsMasterChain()).to.not.be.reverted;
-		const otherMasterAddress1 = await otherMaster1.getAddress();
 		expect(await otherMaster1.getMasterChain()).to.equal(1111);
 		expect(await otherMaster1.getMasterAddress()).to.equal(otherMasterAddress1);
+		expect(await otherMaster1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
+		expect(await otherMaster1.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await otherMaster1.gateway()).to.equal(mockedERC7786GatewayAddress1);
 		console.log(`OtherMaster1 deployed on ${await otherMaster1.chainId()} at ${otherMasterAddress1}`);
 
 		// deploy OtherSlave1
 		const OtherSlave1 = await ethers.getContractFactory("Fungible", owner1);
 		otherSlave1 = await OtherSlave1.deploy("FungiTest", "FGT", 0);
 		expect(await otherSlave1.waitForDeployment()).to.not.be.reverted;
-		expect(await otherSlave1.chainId()).to.equal(1111);
 		const otherSlaveAddress1 = await otherSlave1.getAddress();
+		expect(await otherSlave1.chainId()).to.equal(1111);
 		expect(await otherSlave1.getMasterChain()).to.equal(0);
 		expect(await otherSlave1.getMasterAddress()).to.equal(ZeroAddress);
+		expect(await otherSlave1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
+		expect(await otherSlave1.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await otherSlave1.gateway()).to.equal(mockedERC7786GatewayAddress1);
 		console.log(`OtherSlave1 deployed on ${await otherSlave1.chainId()} at ${otherSlaveAddress1}`);
 
 		// ***********************************************************************************************************************************************************
@@ -124,51 +139,63 @@ describe("ERC-20X Supply", function () {
 		const FungibleMaster2 = await ethers.getContractFactory("Fungible", owner2);
 		fungibleMaster2 = await FungibleMaster2.deploy("FungiTest", "FGT", 1000_000_000);
 		expect(await fungibleMaster2.waitForDeployment()).to.not.be.reverted;
+		const fungibleMasterAddress2 = await fungibleMaster2.getAddress();
 		expect(await fungibleMaster2.chainId()).to.equal(2222);
 		expect(await fungibleMaster2.setAsMasterChain()).to.not.be.reverted;
-		const fungibleMasterAddress2 = await fungibleMaster2.getAddress();
 		expect(await fungibleMaster2.getMasterChain()).to.equal(2222);
 		expect(await fungibleMaster2.getMasterAddress()).to.equal(fungibleMasterAddress2);
+		expect(await fungibleMaster2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleMaster2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await fungibleMaster2.gateway()).to.equal(mockedERC7786GatewayAddress2);
 		console.log(`FungibleMaster2 deployed on ${await fungibleMaster2.chainId()} at ${fungibleMasterAddress2}`);
 
 		// deploy FungibleSingleton2
 		const FungibleSingleton2 = await ethers.getContractFactory("Fungible", owner2);
 		fungibleSingleton2 = await FungibleSingleton2.deploy("FungiTest", "FGT", 0);
 		expect(await fungibleSingleton2.waitForDeployment()).to.not.be.reverted;
-		expect(await fungibleSingleton2.chainId()).to.equal(2222);
 		const fungibleSingletonAddress2 = await fungibleSingleton2.getAddress();
+		expect(await fungibleSingleton2.chainId()).to.equal(2222);
 		expect(await fungibleSingleton2.getMasterChain()).to.equal(0);
 		expect(await fungibleSingleton2.getMasterAddress()).to.equal(ZeroAddress);
+		expect(await fungibleSingleton2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleSingleton2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await fungibleSingleton2.gateway()).to.equal(mockedERC7786GatewayAddress2);
 		console.log(`FungibleSingleton2 deployed on ${await fungibleSingleton2.chainId()} at ${fungibleSingletonAddress2}`);
 
 		// deploy OtherMaster2
 		const OtherMaster2 = await ethers.getContractFactory("Fungible", owner2);
 		otherMaster2 = await OtherMaster2.deploy("FungiTest", "FGT", 1000_000_000);
 		expect(await otherMaster2.waitForDeployment()).to.not.be.reverted;
+		const otherMasterAddress2 = await otherMaster2.getAddress();
 		expect(await otherMaster2.chainId()).to.equal(2222);
 		expect(await otherMaster2.setAsMasterChain()).to.not.be.reverted;
-		const otherMasterAddress2 = await otherMaster2.getAddress();
 		expect(await otherMaster2.getMasterChain()).to.equal(2222);
 		expect(await otherMaster2.getMasterAddress()).to.equal(otherMasterAddress2);
+		expect(await otherMaster2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
+		expect(await otherMaster2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await otherMaster2.gateway()).to.equal(mockedERC7786GatewayAddress2);
 		console.log(`OtherMaster2 deployed on ${await otherMaster2.chainId()} at ${otherMasterAddress2}`);
 
 		// deploy FungibleSlave2
 		const OtherSlave2 = await ethers.getContractFactory("Fungible", owner2);
 		otherSlave2 = await OtherSlave2.deploy("FungiTest", "FGT", 0);
 		expect(await otherSlave2.waitForDeployment()).to.not.be.reverted;
-		expect(await otherSlave2.chainId()).to.equal(2222);
 		const otherSlaveAddress2 = await otherSlave2.getAddress();
+		expect(await otherSlave2.chainId()).to.equal(2222);
 		expect(await otherSlave2.getMasterChain()).to.equal(0);
 		expect(await otherSlave2.getMasterAddress()).to.equal(ZeroAddress);
+		expect(await otherSlave2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
+		expect(await otherSlave2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await otherSlave2.gateway()).to.equal(mockedERC7786GatewayAddress2);
 		console.log(`OtherSlave2 deployed on ${await otherSlave2.chainId()} at ${otherSlaveAddress2}`);
 
 		// ***********************************************************************************************************************************************************
 		// *************************************************************** Mock OtherSlave2 and OtherSlave1 **********************************************************
 		// ***********************************************************************************************************************************************************
 		// bind OtherMaster1 and OtherSlave2
-		/*expect(await otherMaster1.bindChain(2222, otherSlaveAddress2)).to.not.be.reverted;
-		expect(await otherSlave2.getMasterChain()).to.equal(1111);
-		expect(await otherSlave2.getMasterAddress()).to.equal(otherMasterAddress1);*/
+		//expect(await otherMaster1.bindChain(2222, otherSlaveAddress2)).to.not.be.reverted;
+		//expect(await otherSlave2.getMasterChain()).to.equal(1111);
+		//expect(await otherSlave2.getMasterAddress()).to.equal(otherMasterAddress1);
 
 		// bind OtherMaster2 and OtherSlave1
 		/*expect(await otherMaster2.bindChain(1111, otherSlaveAddress1).to.not.be.reverted;
