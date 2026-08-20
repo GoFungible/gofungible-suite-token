@@ -764,13 +764,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	event ResourceUpdated(address indexed oldImplementation, address indexed newImplementation);
 
 	function addResource(uint16 _resourceId, uint16 _resourceType, address _newResourceAddress, uint256 releaseDate, uint256 requiredVotes, uint256 numVotes) external {
-		console.log("pApi1");
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		console.log("pApi2");
 		require(_newResourceAddress != ZERO_ADDRESS, NonZeroAddressRequired());
-		console.log("pApi3");
 		require(_isContract(_newResourceAddress), "Address must be a contract");
-		console.log("pApi4");
 
 		pendingResources[_resourceId] = PendingResource(_resourceType, _newResourceAddress, releaseDate, requiredVotes, numVotes, 0);
 		pendingResourceIds.push(_resourceId);
@@ -783,11 +779,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function releaseResource(uint16 _resourceId, uint16 _position) external {
-		console.log("pipi1");
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		console.log("pipi2");
 		require(pendingResourceIds.length > 0, "Resource: no resources to release");
-		console.log("pipi3");
 		console.log(_resourceId);
 		console.log(pendingResourceIds[_position]);
 		require(_resourceId == pendingResourceIds[_position], "Position: position does not match resource");
@@ -815,7 +808,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// gateway
 		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY)) {
 			_extGateway = address(resourceAddress);
-			console.log("released gateway");
 		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_MESSAGE)) {
 			_extGatewaySendMessage.push(resourceAddress);
 		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_SUPPLY)) {
