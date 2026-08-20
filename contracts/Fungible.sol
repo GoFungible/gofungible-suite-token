@@ -271,7 +271,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes[] memory attributes = new bytes[](0);
 
 		console.log("sendCrosschainSupply4", _extGateway);
-    IERC7786GatewaySource(_extGateway).sendMessage{value: msg.value}(recipient, packedMessage, attributes);
+    bytes32 response = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
+		require(response != bytes32(0), ErrorInCrossChainBind());
 
 		return true;
 	}
@@ -351,7 +352,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return knownChains;
 	}
 
-	function bindChain(uint256 _chainId, address chainAddress) external {
+	function bindChain(uint256 _chainId, address chainAddress) external payable {
 		console.log("valid1");
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
@@ -367,7 +368,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		addresses[_chainId] = chainAddress;
 	}
 
-	function unbindChain(uint256 _chainId) external {
+	function unbindChain(uint256 _chainId) external payable{
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(_chainId));
 		require(addresses[_chainId] != ZERO_ADDRESS, NonZeroAddressRequired());

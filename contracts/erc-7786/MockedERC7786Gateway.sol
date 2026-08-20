@@ -43,7 +43,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 	/**
 	 * @notice Synchronously forwards messages protected by the custom nonReentrant modifier.
 	 */
-	function sendMessage(bytes calldata recipient, bytes calldata payload, bytes[] calldata attributes) external payable override nonReentrant returns (bytes32 outboxId) {
+	function sendMessage(bytes calldata recipient, bytes calldata payload, bytes[] calldata attributes) external payable override /*nonReentrant*/ returns (bytes32 outboxId) {
 		//require(recipient.length == 20, "MockERC7786: Invalid recipient address length");
 		console.log("sending Message 1");
 
@@ -73,6 +73,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 
 		console.log("sending Message 5");
 
+		return outboxId;
 	}
 
 	function supportsAttribute(bytes4 /* selector */) external pure override returns (bool) {
