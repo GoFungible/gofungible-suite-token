@@ -10,6 +10,11 @@ import "hardhat/console.sol";
 // Look at how ERC-7985 handles EVM gas limits and execution timeouts within the gateway. 
 contract MockedERC7786Gateway is IERC7786GatewaySource {
 
+	constructor() {
+		console.log("deployed gateway on ", block.chainid);
+		console.log("deployed gateway at ", address(this));
+	}
+
 	// ************************************************************************************************
 	// *************************************** Reentrancy Guard ***************************************
 	// ************************************************************************************************  
