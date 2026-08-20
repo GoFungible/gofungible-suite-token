@@ -18,13 +18,43 @@ describe("ERC-20X Supply", function () {
 		console.log('*******************************');
 		console.log(`\nTest Suite: ${this.title}`);
 		console.log('*******************************');
-		console.log(`Initializing network`);
 
     const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
 		[owner1, addr11, addr12, addr13, ...addrs1] = await node1Provider.listAccounts();
 
     const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
 		[owner2, addr21, addr22, addr23, ...addrs2] = await node2Provider.listAccounts();
+
+	});
+
+	beforeEach(async function (this: Mocha.Context) {
+		console.log(`\nTest: ${this.currentTest?.title}`);
+		console.log('***************************************************************************');
+
+		// ***********************************************************************************************************************************************************
+		// ************************************************************************** Reset Nodes ********************************************************************
+		// ***********************************************************************************************************************************************************
+
+    const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+		await node1Provider.send("anvil_reset", []);
+		[owner1, addr11, addr12, addr13, ...addrs1].map(async (signer, index) => {
+			const bal = await node1Provider.getBalance(signer.address);
+			const net1 = await node1Provider.getNetwork();
+			console.log(`Node1 ChainId ${net1.chainId} Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
+		});
+	
+		const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
+		await node2Provider.send("anvil_reset", []);
+		[owner2, addr21, addr22, addr23, ...addrs2].map(async (signer, index) => {
+			const bal = await node2Provider.getBalance(signer.address);
+			const net2 = await node2Provider.getNetwork();
+			console.log(`Node2 ChainId ${net2.chainId} Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
+		});
+
+		// ***********************************************************************************************************************************************************
+		// ************************************************************************** Deploy Network *****************************************************************
+		// ***********************************************************************************************************************************************************
+		console.log(`Initializing network`);
 
 		// deploy MockedERC7786Gateway1
 		const MockedERC7786Gateway1 = await ethers.getContractFactory("MockedERC7786Gateway", owner1);
@@ -46,37 +76,9 @@ describe("ERC-20X Supply", function () {
 		await new ERC7786MockGatewayRelayer("http://127.0.0.1:8545", "http://127.0.0.1:8546", mockedERC7786GatewayAddress1, mockedERC7786GatewayAddress2).init();
 
 		console.log(`Initialized network`);
-	});
-
-	beforeEach(async function (this: Mocha.Context) {
-		console.log(`\nTest: ${this.currentTest?.title}`);
-		console.log('***************************************************************************');
 
 		// ***********************************************************************************************************************************************************
-		// ************************************************************************** Reset Nodes ********************************************************************
-		// ***********************************************************************************************************************************************************
-
-    const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
-		await node1Provider.send("anvil_reset", []);
-		[owner1, addr11, addr12, addr13, ...addrs1].map(async (signer, index) => {
-			const bal = await node1Provider.getBalance(signer.address);
-			const net1 = await node1Provider.getNetwork();
-			console.log(`Node1 ChainId ${net1.chainId} Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
-		});
-
-    const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
-		await node2Provider.send("anvil_reset", []);
-		[owner2, addr21, addr22, addr23, ...addrs2].map(async (signer, index) => {
-			const bal = await node2Provider.getBalance(signer.address);
-			const net2 = await node2Provider.getNetwork();
-			console.log(`Node2 ChainId ${net2.chainId} Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
-		});
-
-		const mockedERC7786GatewayAddress1 = await mockedERC7786Gateway1.getAddress();
-		const mockedERC7786GatewayAddress2 = await mockedERC7786Gateway2.getAddress();
-
-		// ***********************************************************************************************************************************************************
-		// ******************************************************************** Deploy Tokens Hardhat Network ********************************************************
+		// ****************************************************************************** Deploy Tokens  *************************************************************
 		// ***********************************************************************************************************************************************************
 		// deploy FungibleMaster1
 		const FungibleMaster1 = await ethers.getContractFactory("Fungible", owner1);
@@ -193,7 +195,7 @@ describe("ERC-20X Supply", function () {
 		// *************************************************************** Mock OtherSlave2 and OtherSlave1 **********************************************************
 		// ***********************************************************************************************************************************************************
 		// bind OtherMaster1 and OtherSlave2
-		//expect(await otherMaster1.bindChain(2222, otherSlaveAddress2)).to.not.be.reverted;
+		expect(await otherMaster1.bindChain(2222, otherSlaveAddress1)).to.not.be.reverted;
 		//expect(await otherSlave2.getMasterChain()).to.equal(1111);
 		//expect(await otherSlave2.getMasterAddress()).to.equal(otherMasterAddress1);
 
