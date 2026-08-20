@@ -43,6 +43,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	constructor(string memory name_, string memory symbol_, uint256 totalSupply_) {
 		// chains
 		CHAIN_ID = block.chainid;
+		console.log(CHAIN_ID);
 
 		// owner
 		_owner = msg.sender;
@@ -246,7 +247,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bool) {
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(_extGateway));
-		console.log("toChain", toChain);
 
 		// By doing this, this contract only interacts with the based networks. Be aware.
 		bytes memory recipient = LibERC7786ToEthAdapter.generateERC7930Record(toChain, toAddress);
@@ -270,7 +270,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		bytes[] memory attributes = new bytes[](0);
 
-		console.log("sendCrosschainSupply4", _extGateway);
     bytes32 response = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
 		require(response != bytes32(0), ErrorInCrossChainBind());
 
@@ -281,7 +280,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata messageBytes) external override returns (bytes4) {
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
-		console.log("MessageReceived");
 
 		Message memory message = abi.decode(messageBytes, (Message));
 
@@ -290,8 +288,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint32 srcChainId = mefadata.srcChainId;
 		bytes32 srcAddressBytes = mefadata.srcAddress;
 		address srcAddress = address(uint160(uint256(srcAddressBytes)));
-		console.log("srcChainId", srcChainId);
-		console.log("srcAddress", srcAddress);
 
 		// Execution Simulation (Emit event for test verification)
 		emit MessageReceived(sendId, srcChainId, srcAddress, messageBytes);
@@ -315,8 +311,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// verify sender is valid.
 		require(srcChainId == _masterChain, OnlyMasterChain(srcChainId));
 		require(srcAddress == _masterAddress, OnlyMasterChain(srcChainId));
-		console.log("TODO: verify also sender parameter passed by gateway");
-		console.logBytes(sender);
 
 		if (header.op == MSG_SUP) {
 			_onCrosschainSupply(payload);
@@ -327,7 +321,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		} else {
 			_onCrosschainMessage(payload);
 		}
-		console.log("Message Processed. Returning");
 
 		// Compliance Return: Return the exact function selector (0x3ca22197)
 		return IERC7786Recipient.receiveMessage.selector;
@@ -353,13 +346,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function bindChain(uint256 _chainId, address chainAddress) external payable {
-		console.log("valid1");
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
 		require(chainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
 		require(supplies[_chainId] == ZERO_VALUE, ZeroValueRequired(supplies[_chainId]));		
 		require(addresses[_chainId] == ZERO_ADDRESS, ZeroAddressRequired(msg.sender));
-		console.log("valid2");
 
 		bool response = _sendCrosschainBind(_chainId, chainAddress, true);
 		require (response, ErrorInCrossChainBind());
@@ -399,7 +390,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			masterAddress: _masterAddress
     });
     bytes memory packedPayload = abi.encode(payload);
-		console.log("bind1");
 
 		bool response = _sendMessage(MSG_BND, toChain, toAddres, packedPayload);
 		return response;
@@ -501,7 +491,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			supplies: suppliesList
     });
 
-		console.log("_send Message");
     bytes memory packedPayload = abi.encode(payload);
 
 		bool response = _sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
@@ -583,7 +572,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// Performs supply transfer to an account of another chain
 	function _transferX(uint256 inChain, address inAddress, uint256 amount) internal returns (bool) {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		console.log("transferX");
 
 		// run INBLOCK extensions
 		for(uint i=0; i<_extTrnInBlock.length; i++){
@@ -781,8 +769,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function releaseResource(uint16 _resourceId, uint16 _position) external {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(pendingResourceIds.length > 0, "Resource: no resources to release");
-		console.log(_resourceId);
-		console.log(pendingResourceIds[_position]);
 		require(_resourceId == pendingResourceIds[_position], "Position: position does not match resource");
 
 		PendingResource memory pendingResource = pendingResources[_resourceId];
