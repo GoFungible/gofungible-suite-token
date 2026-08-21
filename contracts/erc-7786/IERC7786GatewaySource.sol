@@ -7,12 +7,17 @@ pragma solidity 0.8.30;
  */
 interface IERC7786GatewaySource {
     event MessageSent(
-        bytes32 indexed sendId,
-        bytes sender,    // Binary Interoperable Address
-        bytes recipient, // Binary Interoperable Address
-        bytes payload,
-        uint256 value,
-        bytes[] attributes
+			bytes32 indexed sendId,
+			bytes sender,    // Binary Interoperable Address
+			bytes recipient, // Binary Interoperable Address
+			bytes payload,
+			uint256 value,
+			bytes[] attributes
+    );
+
+    event Message2Sent(
+      string param,
+      string value
     );
 
     error UnsupportedAttribute(bytes4 selector);
