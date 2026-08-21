@@ -1,21 +1,22 @@
-import { ethers, JsonRpcProvider, JsonRpcSigner, toBeHex, zeroPadValue } from "ethers";
+import { ethers, JsonRpcProvider, JsonRpcSigner, toBeHex, WebSocketProvider, zeroPadValue } from "ethers";
 import { IERC7786GatewaySource__factory } from "../../typechain-types";
 
 export class ERC7786MockGatewayRelayer {
-  private provider1: JsonRpcProvider;
-  private provider2: JsonRpcProvider;  
+  private provider1: WebSocketProvider;			// needs WebSocketProvider to listen event continuously. JsonRpcProvider just polls
+  private provider2: WebSocketProvider;			// needs WebSocketProvider to listen event continuously. JsonRpcProvider just polls
   private sourceGatewayAddress: string;
   private destGatewayAddress: string;
 
   constructor(node1Url: string, node2Url: string, sourceGateway: string, destGateway: string) {
-    this.provider1 = new ethers.JsonRpcProvider(node1Url);
-    this.provider2 = new ethers.JsonRpcProvider(node2Url);
+    this.provider1 = new ethers.WebSocketProvider(node1Url);
+    this.provider2 = new ethers.WebSocketProvider(node2Url);
     this.sourceGatewayAddress = sourceGateway;
     this.destGatewayAddress = destGateway;
   }
 
   async init() {
 		console.log(`Initialized ERC7786MockGatewayRelayer`);
+		return this;
 	}
 
   listenAndRelay() {

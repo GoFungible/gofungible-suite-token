@@ -73,7 +73,8 @@ describe("ERC-20X Supply", function () {
 		console.log(`MockedERC7786Gateway2 deployed on ${await mockedERC7786Gateway2.chainId()} at ${mockedERC7786GatewayAddress2}`);
 
 		// launch relayer
-		await new ERC7786MockGatewayRelayer("http://127.0.0.1:8545", "http://127.0.0.1:8546", mockedERC7786GatewayAddress1, mockedERC7786GatewayAddress2).init();
+		const relayer = await new ERC7786MockGatewayRelayer("http://127.0.0.1:8545", "http://127.0.0.1:8546", mockedERC7786GatewayAddress1, mockedERC7786GatewayAddress2).init();
+		relayer.listenAndRelay();
 
 		console.log(`Initialized network`);
 
@@ -195,6 +196,7 @@ describe("ERC-20X Supply", function () {
 		// *************************************************************** Mock OtherSlave2 and OtherSlave1 **********************************************************
 		// ***********************************************************************************************************************************************************
 		// bind OtherMaster1 and OtherSlave2
+		console.log(`Bind will fire event`);
 		expect(await otherMaster1.bindChain(2222, otherSlaveAddress1)).to.not.be.reverted;
 		//expect(await otherSlave2.getMasterChain()).to.equal(1111);
 		//expect(await otherSlave2.getMasterAddress()).to.equal(otherMasterAddress1);
