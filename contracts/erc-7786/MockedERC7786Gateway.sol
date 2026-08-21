@@ -79,7 +79,8 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		else {
 
 			// Emitting log safely at the end of the call execution sequence
-			console.log("sending Message 4");
+			console.log("sending Message 4 to", receiverChainId);
+			console.log("sending Message 4 to", receiverAddress);
 			emit MessageSent(outboxId, senderBOA, recipientBOA, payload, msg.value, attributes);
 			console.log("MessageSent fired!!!");
 		}

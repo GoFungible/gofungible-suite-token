@@ -203,10 +203,10 @@ describe("ERC-20X Supply", function () {
 		expect(await otherSlave2.getMasterAddress()).to.equal(otherMasterAddress1);
 
 		// bind OtherMaster2 and OtherSlave1
-		//expect(await otherMaster2.bindChain(1111, otherSlaveAddress1)).to.not.be.reverted;
-		//await new Promise(resolve => setTimeout(resolve, 6000)); // 3 sec
-		//expect(await otherSlave1.getMasterChain()).to.equal(2222);
-		//expect(await otherSlave1.getMasterAddress()).to.equal(otherMasterAddress2);
+		expect(await otherMaster2.bindChain(1111, otherSlaveAddress1)).to.not.be.reverted;
+		await new Promise(resolve => setTimeout(resolve, 3000)); // 3 sec
+		expect(await otherSlave1.getMasterChain()).to.equal(2222);
+		expect(await otherSlave1.getMasterAddress()).to.equal(otherMasterAddress2);
 
 	});
 

@@ -61,22 +61,35 @@ export class ERC7786MockGatewayRelayer {
       }
     );
 
-		const gateway2 = IERC7786GatewaySource__factory.connect(this.destGatewayAddress, this.provider2)
+		const gateway2 = IERC7786GatewaySource__factory.connect(this.sourceGatewayAddress, this.provider2)
     gateway2.on(
       gateway2.filters.MessageSent(),
 			async (event: any) => {
 
-        console.log(`\n📨 Intercepted ERC-7786 message! Id`);
-        /*try {
-          
-					// Execute on destination gateway
-          const tx = await gateway1.sendMessage(destinationChain, payload, attributes);
-          const receipt = await tx.wait();
-          console.log(`✅ ERC-7786 Message delivered to destination node! Tx: ${receipt?.hash}`);
+				// Destructure event payload
+				const [sendId, senderBOA,  recipientBOA, payload, value, attributes] = event.args; 
 
-        } catch (error) {
-          console.error("❌ ERC-7786 Execution failed:", error);
-        }*/
+        console.log(`\n📨 Intercepted ERC-7786 message! Id: ${sendId}`);
+        console.log(`🌍 senderBOA: ${senderBOA}`);
+        console.log(`🌍 recipientBOA: ${recipientBOA}`);
+        console.log(`🌍 payload: ${payload}`);
+        console.log(`🌍 value: ${value}`);
+        console.log(`🌍 attributes: ${attributes}`);
+
+				console.log(`Sending to gateway ${this.destGatewayAddress}`);
+
+				try {
+
+					const tx = await IGatewayReceiver__factory
+						.connect(this.destGatewayAddress, this.relayer1)
+						.executeRelayedMessage(sendId, senderBOA,  recipientBOA, payload, value, attributes);
+
+				} catch (error) {
+					console.error("❌ Failed to relay message:", error);
+				}
+        
+				console.log(`✅ ERC-7786 Message delivered to destination node! Tx`);
+				//console.log(`✅ ERC-7786 Message delivered to destination node! Tx: ${receipt?.hash}`);
 				
       }
     );
