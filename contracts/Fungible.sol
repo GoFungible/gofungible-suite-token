@@ -281,14 +281,17 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		console.log("Fungible received message!!!");
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
+		console.log("Fungible received message1!!!");
 
 		Message memory message = abi.decode(messageBytes, (Message));
+		console.log("Fungible received message2!!!");
 
 		// verify sender
 		Metadata memory mefadata = message.metadata;
 		uint32 srcChainId = mefadata.srcChainId;
 		bytes32 srcAddressBytes = mefadata.srcAddress;
 		address srcAddress = address(uint160(uint256(srcAddressBytes)));
+		console.log("Fungible received message3!!!");
 
 		// Execution Simulation (Emit event for test verification)
 		emit MessageReceived(sendId, srcChainId, srcAddress, messageBytes);
@@ -296,6 +299,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// get message info
 		bytes memory payload = message.payload;
 		Header memory header = message.header;
+		console.log("Fungible received message4!!!");
 
 		// We cannot validate message comes from MasterChain because token is unbound:
 		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
@@ -308,10 +312,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			_onCrosschainBind(payload);
 			return IERC7786Recipient.receiveMessage.selector;
 		}
+		console.log("Fungible received message5!!!");
 		
 		// verify sender is valid.
 		require(srcChainId == _masterChain, OnlyMasterChain(srcChainId));
 		require(srcAddress == _masterAddress, OnlyMasterChain(srcChainId));
+		console.log("Fungible received message6!!!");
 
 		if (header.op == MSG_SUP) {
 			_onCrosschainSupply(payload);
@@ -398,9 +404,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _onCrosschainBind(bytes memory payload) internal {
 		// Unpack the byte envelope straight back into the struct format
+		console.log("token bound1");
 		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
+		console.log("token bound2", payloadData.flag);
+		console.log("token bound2", payloadData.masterChain);
+		console.log("token bound2", payloadData.masterAddress);
 		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
 		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
+		console.log("token bound3");
 	}
 
 	// ************************************************************************************************

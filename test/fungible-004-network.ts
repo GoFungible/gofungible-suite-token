@@ -197,14 +197,16 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		// bind OtherMaster1 and OtherSlave2
 		console.log(`Bind will fire event`);
-		expect(await otherMaster1.bindChain(2222, otherSlaveAddress1)).to.not.be.reverted;
-		//expect(await otherSlave2.getMasterChain()).to.equal(1111);
-		//expect(await otherSlave2.getMasterAddress()).to.equal(otherMasterAddress1);
+		expect(await otherMaster1.bindChain(2222, otherSlaveAddress2)).to.not.be.reverted;
+		await new Promise(resolve => setTimeout(resolve, 3000)); // 3 sec
+		expect(await otherSlave2.getMasterChain()).to.equal(1111);
+		expect(await otherSlave2.getMasterAddress()).to.equal(otherMasterAddress1);
 
 		// bind OtherMaster2 and OtherSlave1
-		/*expect(await otherMaster2.bindChain(1111, otherSlaveAddress1).to.not.be.reverted;
-		expect(await otherSlave1.getMasterChain()).to.equal(2222);
-		expect(await otherSlave1.getMasterAddress()).to.equal(otherMasterAddress2);*/
+		//expect(await otherMaster2.bindChain(1111, otherSlaveAddress1)).to.not.be.reverted;
+		//await new Promise(resolve => setTimeout(resolve, 6000)); // 3 sec
+		//expect(await otherSlave1.getMasterChain()).to.equal(2222);
+		//expect(await otherSlave1.getMasterAddress()).to.equal(otherMasterAddress2);
 
 	});
 
