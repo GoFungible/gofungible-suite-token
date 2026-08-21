@@ -3,12 +3,13 @@ pragma solidity 0.8.30;
 
 import "./IERC7786GatewaySource.sol";
 import "./IERC7786Recipient.sol";
+import "./IGatewayReceiver.sol";
 import {LibERC7786ToEthAdapter} from "./LibERC7786ToEthAdapter.sol";
 
 import "hardhat/console.sol";
 
 // Look at how ERC-7985 handles EVM gas limits and execution timeouts within the gateway. 
-contract MockedERC7786Gateway is IERC7786GatewaySource {
+contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 	constructor() {
 		console.log("deployed gateway on ", block.chainid);
@@ -79,6 +80,17 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 		console.log("sending Message 5");
 
 		return outboxId;
+	}
+
+	/**
+	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
+	 */
+	function executeRelayedMessage(bytes32 sendId, bytes memory sender, bytes memory recipient, bytes memory payload, uint256 value, bytes[] memory attributes) external {
+
+		// Execute push delivery to the recipient target contract
+		// bytes4 selector = Fungible(targetContract).receiveMessage(sourceChainId, sender, messagePayload);
+		console.log("gateway receive Message 1");
+
 	}
 
 	function supportsAttribute(bytes4 /* selector */) external pure override returns (bool) {

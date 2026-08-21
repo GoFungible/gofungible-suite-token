@@ -6,8 +6,8 @@ import { Fungible} from "../typechain-types/contracts/Fungible";
 import { ERC7786MockGatewayRelayer } from "./relayer/ERC7786MockGatewayRelayer";
 
 describe("ERC-20X Supply", function () {
-	let owner1: JsonRpcSigner, addr11: JsonRpcSigner, addr12: JsonRpcSigner, addr13: JsonRpcSigner, addrs1: JsonRpcSigner[];
-	let owner2: JsonRpcSigner, addr21: JsonRpcSigner, addr22: JsonRpcSigner, addr23: JsonRpcSigner, addrs2: JsonRpcSigner[];
+	let owner1: JsonRpcSigner, relayer1: JsonRpcSigner, addr11: JsonRpcSigner, addr12: JsonRpcSigner, addr13: JsonRpcSigner, addrs1: JsonRpcSigner[];
+	let owner2: JsonRpcSigner, relayer2: JsonRpcSigner, addr21: JsonRpcSigner, addr22: JsonRpcSigner, addr23: JsonRpcSigner, addrs2: JsonRpcSigner[];
 	let fungibleMaster1: Fungible, fungibleSingleton1: Fungible, otherMaster1: Fungible, otherSlave1: Fungible, mockedERC7786Gateway1: MockedERC7786Gateway;
 	let fungibleMaster2: Fungible, fungibleSingleton2: Fungible, otherMaster2: Fungible, otherSlave2: Fungible, mockedERC7786Gateway2: MockedERC7786Gateway;
 
@@ -20,10 +20,10 @@ describe("ERC-20X Supply", function () {
 		console.log('*******************************');
 
     const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
-		[owner1, addr11, addr12, addr13, ...addrs1] = await node1Provider.listAccounts();
+		[owner1, relayer1, addr11, addr12, addr13, ...addrs1] = await node1Provider.listAccounts();
 
     const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
-		[owner2, addr21, addr22, addr23, ...addrs2] = await node2Provider.listAccounts();
+		[owner2, relayer2, addr21, addr22, addr23, ...addrs2] = await node2Provider.listAccounts();
 
 	});
 
@@ -37,7 +37,7 @@ describe("ERC-20X Supply", function () {
 
     const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
 		await node1Provider.send("anvil_reset", []);
-		[owner1, addr11, addr12, addr13, ...addrs1].map(async (signer, index) => {
+		[owner1, relayer1, addr11, addr12, addr13, ...addrs1].map(async (signer, index) => {
 			const bal = await node1Provider.getBalance(signer.address);
 			const net1 = await node1Provider.getNetwork();
 			console.log(`Node1 ChainId ${net1.chainId} Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
@@ -45,7 +45,7 @@ describe("ERC-20X Supply", function () {
 	
 		const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
 		await node2Provider.send("anvil_reset", []);
-		[owner2, addr21, addr22, addr23, ...addrs2].map(async (signer, index) => {
+		[owner2, relayer2, addr21, addr22, addr23, ...addrs2].map(async (signer, index) => {
 			const bal = await node2Provider.getBalance(signer.address);
 			const net2 = await node2Provider.getNetwork();
 			console.log(`Node2 ChainId ${net2.chainId} Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
@@ -73,7 +73,7 @@ describe("ERC-20X Supply", function () {
 		console.log(`MockedERC7786Gateway2 deployed on ${await mockedERC7786Gateway2.chainId()} at ${mockedERC7786GatewayAddress2}`);
 
 		// launch relayer
-		const relayer = await new ERC7786MockGatewayRelayer("http://127.0.0.1:8545", "http://127.0.0.1:8546", mockedERC7786GatewayAddress1, mockedERC7786GatewayAddress2).init();
+		const relayer = await new ERC7786MockGatewayRelayer(relayer1, relayer2, "http://127.0.0.1:8545", "http://127.0.0.1:8546", mockedERC7786GatewayAddress1, mockedERC7786GatewayAddress2).init();
 		relayer.listenAndRelay();
 
 		console.log(`Initialized network`);
