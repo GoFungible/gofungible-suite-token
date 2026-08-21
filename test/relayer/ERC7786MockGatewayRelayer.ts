@@ -1,22 +1,11 @@
 import { ethers, JsonRpcProvider, JsonRpcSigner, toBeHex, zeroPadValue } from "ethers";
 import { IERC7786GatewaySource__factory } from "../../typechain-types";
 
-// Official ERC-7786 ABIs
-const gatewaySourceAbi = [
-  "event MessagePosted(bytes32 indexed outboxId, string destinationChain, string receiver, bytes payload, bytes attributes)"
-];
-
-const gatewayDestAbi = [
-  "function executeMessage(bytes32 outboxId, string sourceChain, string sender, address receiver, bytes calldata payload, bytes calldata attributes) external returns (bytes4)"
-];
-
 export class ERC7786MockGatewayRelayer {
   private provider1: JsonRpcProvider;
   private provider2: JsonRpcProvider;  
   private sourceGatewayAddress: string;
   private destGatewayAddress: string;
-
-	//private destinationRelayer!: JsonRpcSigner;
 
   constructor(node1Url: string, node2Url: string, sourceGateway: string, destGateway: string) {
     this.provider1 = new ethers.JsonRpcProvider(node1Url);
@@ -26,9 +15,6 @@ export class ERC7786MockGatewayRelayer {
   }
 
   async init() {
-    //const accounts2 = await this.provider2.listAccounts();
-    //this.destinationRelayer = accounts2[0]; // Funded account on chain 2 to pay gas
-
 		console.log(`Initialized ERC7786MockGatewayRelayer`);
 	}
 
@@ -46,7 +32,7 @@ export class ERC7786MockGatewayRelayer {
         console.log(`\n📨 Intercepted ERC-7786 message! Id: ${outboxId}`);
         console.log(`🌍 Target Chain: ${destinationChain} | Recipient: ${receiver}`);
 
-        try {
+        /*try {
           
 					// Execute on destination gateway
           const tx = await gateway2.sendMessage(destinationChain, payload, attributes);
@@ -55,7 +41,7 @@ export class ERC7786MockGatewayRelayer {
 
         } catch (error) {
           console.error("❌ ERC-7786 Execution failed:", error);
-        }
+        }*/
 				
       }
     );
@@ -67,7 +53,7 @@ export class ERC7786MockGatewayRelayer {
         console.log(`\n📨 Intercepted ERC-7786 message! Id: ${outboxId}`);
         console.log(`🌍 Target Chain: ${destinationChain} | Recipient: ${receiver}`);
 
-        try {
+        /*try {
           
 					// Execute on destination gateway
           const tx = await gateway1.sendMessage(destinationChain, payload, attributes);
@@ -76,7 +62,7 @@ export class ERC7786MockGatewayRelayer {
 
         } catch (error) {
           console.error("❌ ERC-7786 Execution failed:", error);
-        }
+        }*/
 				
       }
     );
