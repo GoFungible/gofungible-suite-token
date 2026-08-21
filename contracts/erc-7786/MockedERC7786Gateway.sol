@@ -49,7 +49,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	/**
 	 * @notice Synchronously forwards messages protected by the custom nonReentrant modifier.
 	 */
-	function sendMessage(bytes calldata recipient, bytes calldata payload, bytes[] calldata attributes) external payable override /*nonReentrant*/ returns (bytes32 outboxId) {
+	function sendMessage(bytes calldata recipientBOA, bytes calldata payload, bytes[] calldata attributes) external payable override /*nonReentrant*/ returns (bytes32 outboxId) {
 		//require(recipient.length == 20, "MockERC7786: Invalid recipient address length");
 		console.log("sending Message 1");
 
@@ -58,26 +58,31 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		outboxId = keccak256(abi.encodePacked(block.timestamp, msg.sender, _nonce));
 
 		// TODO: HERE IS A CAIP-350.
-		(uint256 _chainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipient);
-		console.log("sending Message 2 chainId", _chainId);
+		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
+		console.log("sending Message 2 chainId", receiverChainId);
 		console.log("sending Message 2 receiverAddress", receiverAddress);
 		
-		bytes memory senderBytes = abi.encodePacked(msg.sender);
+		// create Binary Interoperable Address for sender
+		bytes memory senderBOA = LibERC7786ToEthAdapter.generateERC7930Record(block.chainid, msg.sender);
 
-		// Execution hand-off interaction (External Call)
-		bytes4 magicValue = IERC7786Recipient(receiverAddress).receiveMessage(outboxId, senderBytes, payload);
+		// sending to the same chainId()
+		if (receiverChainId == block.chainid) {
 
-		console.log("sending Message 3");
+			bytes4 magicValue = IERC7786Recipient(receiverAddress).receiveMessage(outboxId, senderBOA, payload);
+			console.log("Message delivered within the chain", block.chainid);
 
-		// Verification
-		require(magicValue == IERC7786Recipient.receiveMessage.selector, "ERC7786: invalid receiver response");
+			// Verification
+			require(magicValue == IERC7786Recipient.receiveMessage.selector, "ERC7786: invalid receiver response");
+		} 
+		
+		// sending to other chainId()
+		else {
 
-		console.log("sending Message 4");
-
-		// Emitting log safely at the end of the call execution sequence
-		emit MessageSent(outboxId, senderBytes, recipient, payload, msg.value, attributes);
-
-		console.log("sending Message 5");
+			// Emitting log safely at the end of the call execution sequence
+			console.log("sending Message 4");
+			emit MessageSent(outboxId, senderBOA, recipientBOA, payload, msg.value, attributes);
+			console.log("MessageSent fired!!!");
+		}
 
 		return outboxId;
 	}
@@ -85,12 +90,19 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	/**
 	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
 	 */
-	function executeRelayedMessage(bytes32 sendId, bytes memory sender, bytes memory recipient, bytes memory payload, uint256 value, bytes[] memory attributes) external {
+	function executeRelayedMessage(bytes32 sendId, bytes memory senderBOA, bytes memory recipientBOA, bytes memory payload, uint256 value, bytes[] memory attributes) external {
 
 		// Execute push delivery to the recipient target contract
 		// bytes4 selector = Fungible(targetContract).receiveMessage(sourceChainId, sender, messagePayload);
 		console.log("gateway receive Message 1");
 
+		// TODO: HERE IS A CAIP-350.
+		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
+		console.log("executeRelayedMessage chainId", receiverChainId);
+		console.log("executeRelayedMessage receiverAddress", receiverAddress);
+
+		bytes4 magicValue = IERC7786Recipient(receiverAddress).receiveMessage(sendId, senderBOA, payload);
+		require(magicValue == IERC7786Recipient.receiveMessage.selector, "ERC7786: invalid receiver response");
 	}
 
 	function supportsAttribute(bytes4 /* selector */) external pure override returns (bool) {

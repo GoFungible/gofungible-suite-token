@@ -277,7 +277,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// TODO: Use EIP-712
-	function receiveMessage(bytes32 sendId, bytes calldata sender, bytes calldata messageBytes) external override returns (bytes4) {
+	function receiveMessage(bytes32 sendId, bytes calldata senderBOA, bytes calldata messageBytes) external override returns (bytes4) {
+		console.log("Fungible received message!!!");
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 
@@ -301,8 +302,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
 		if (header.op == MSG_BND) {
-			require(_masterChain == ZERO_VALUE, OnlySingletonChain(srcChainId));								// not master chain
-			require(_masterAddress == ZERO_ADDRESS, OnlySingletonChain(srcChainId));	// not master address
+			require(_masterChain == ZERO_VALUE, OnlySingletonChain(srcChainId));										// not master chain
+			require(_masterAddress == ZERO_ADDRESS, OnlySingletonChain(srcChainId));								// not master address
 			require(_totalSupply == ZERO_VALUE, ZeroValueRequired(_totalSupply));										// not supply yet
 			_onCrosschainBind(payload);
 			return IERC7786Recipient.receiveMessage.selector;

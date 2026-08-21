@@ -34,11 +34,11 @@ export class ERC7786MockGatewayRelayer {
 			async (event: any) => {
 
 				// Destructure event payload
-				const [sendId, sender,  recipient, payload, value, attributes] = event.args; 
+				const [sendId, senderBOA,  recipientBOA, payload, value, attributes] = event.args; 
 
         console.log(`\n📨 Intercepted ERC-7786 message! Id: ${sendId}`);
-        console.log(`🌍 sender: ${sender}`);
-        console.log(`🌍 Recipient: ${recipient}`);
+        console.log(`🌍 senderBOA: ${senderBOA}`);
+        console.log(`🌍 recipientBOA: ${recipientBOA}`);
         console.log(`🌍 payload: ${payload}`);
         console.log(`🌍 value: ${value}`);
         console.log(`🌍 attributes: ${attributes}`);
@@ -49,7 +49,7 @@ export class ERC7786MockGatewayRelayer {
 
 					const tx = await IGatewayReceiver__factory
 						.connect(this.destGatewayAddress, this.relayer2)
-						.executeRelayedMessage(sendId, sender,  recipient, payload, value, attributes);
+						.executeRelayedMessage(sendId, senderBOA,  recipientBOA, payload, value, attributes);
 
 				} catch (error) {
 					console.error("❌ Failed to relay message:", error);
