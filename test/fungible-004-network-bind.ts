@@ -19,23 +19,12 @@ describe("ERC-20X Supply", function () {
 		console.log(`\nTest Suite: ${this.title}`);
 		console.log('*******************************');
 
-    const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
-		[owner1, relayer1, addr11, addr12, addr13, ...addrs1] = await node1Provider.listAccounts();
-
-    const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
-		[owner2, relayer2, addr21, addr22, addr23, ...addrs2] = await node2Provider.listAccounts();
-
-	});
-
-	beforeEach(async function (this: Mocha.Context) {
-		console.log(`\nTest: ${this.currentTest?.title}`);
-		console.log('***************************************************************************');
-
 		// ***********************************************************************************************************************************************************
 		// ************************************************************************** Reset Nodes ********************************************************************
 		// ***********************************************************************************************************************************************************
 
     const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
+		[owner1, relayer1, addr11, addr12, addr13, ...addrs1] = await node1Provider.listAccounts();
 		await node1Provider.send("anvil_reset", []);
 		[owner1, relayer1, addr11, addr12, addr13, ...addrs1].map(async (signer, index) => {
 			const bal = await node1Provider.getBalance(signer.address);
@@ -43,7 +32,8 @@ describe("ERC-20X Supply", function () {
 			console.log(`Node1 ChainId ${net1.chainId} Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
 		});
 	
-		const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
+    const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
+		[owner2, relayer2, addr21, addr22, addr23, ...addrs2] = await node2Provider.listAccounts();
 		await node2Provider.send("anvil_reset", []);
 		[owner2, relayer2, addr21, addr22, addr23, ...addrs2].map(async (signer, index) => {
 			const bal = await node2Provider.getBalance(signer.address);
@@ -210,6 +200,12 @@ describe("ERC-20X Supply", function () {
 
 	});
 
+	beforeEach(async function (this: Mocha.Context) {
+		console.log(`\nTest: ${this.currentTest?.title}`);
+		console.log('***************************************************************************');
+
+	});
+
 	afterEach(async() => {
 		console.log('--------------------');
 	});
@@ -218,7 +214,7 @@ describe("ERC-20X Supply", function () {
 		console.log(`--------- End Test Suite ${this.title}  --------`);
 	});
 
-  /*it("should communicate with two completely separate in-memory networks", async () => {
+  it("should communicate with two completely separate in-memory networks", async () => {
 		// verify node1
 		const node1Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8545");
     const net1 = await node1Provider.getNetwork();
@@ -228,7 +224,7 @@ describe("ERC-20X Supply", function () {
 		const node2Provider = new ethers.JsonRpcProvider("http://127.0.0.1:8546");
     const net2 = await node2Provider.getNetwork();
     expect(Number(net2.chainId)).to.equal(2222);
-  });*/
+  });
 
 	/********************************************************************************************************/
 	/************************************************** Bind ************************************************/
