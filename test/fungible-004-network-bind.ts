@@ -80,9 +80,6 @@ describe("ERC-20X Supply", function () {
 		expect(await fungibleMaster1.setAsMasterChain()).to.not.be.reverted;
 		expect(await fungibleMaster1.getMasterChain()).to.equal(1111);
 		expect(await fungibleMaster1.getMasterAddress()).to.equal(fungibleMasterAddress1);
-		expect(await fungibleMaster1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
-		expect(await fungibleMaster1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungibleMaster1.gateway()).to.equal(mockedERC7786GatewayAddress1);		
 		console.log(`FungibleMaster1 deployed on ${await fungibleMaster1.chainId()} at ${fungibleMasterAddress1}`);
 
 		// deploy FungibleSingleton1
@@ -93,9 +90,6 @@ describe("ERC-20X Supply", function () {
 		expect(await fungibleSingleton1.chainId()).to.equal(1111);
 		expect(await fungibleSingleton1.getMasterChain()).to.equal(0);
 		expect(await fungibleSingleton1.getMasterAddress()).to.equal(ZeroAddress);
-		expect(await fungibleSingleton1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
-		expect(await fungibleSingleton1.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
-		expect(await fungibleSingleton1.gateway()).to.equal(mockedERC7786GatewayAddress1);
 		console.log(`FungibleSingleton1 deployed on ${await fungibleSingleton1.chainId()} at ${fungibleSingletonAddress1}`);
 
 		// deploy OtherMaster1
@@ -107,9 +101,6 @@ describe("ERC-20X Supply", function () {
 		expect(await otherMaster1.setAsMasterChain()).to.not.be.reverted;
 		expect(await otherMaster1.getMasterChain()).to.equal(1111);
 		expect(await otherMaster1.getMasterAddress()).to.equal(otherMasterAddress1);
-		expect(await otherMaster1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
-		expect(await otherMaster1.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
-		expect(await otherMaster1.gateway()).to.equal(mockedERC7786GatewayAddress1);
 		console.log(`OtherMaster1 deployed on ${await otherMaster1.chainId()} at ${otherMasterAddress1}`);
 
 		// deploy OtherSlave1
@@ -120,9 +111,6 @@ describe("ERC-20X Supply", function () {
 		expect(await otherSlave1.chainId()).to.equal(1111);
 		expect(await otherSlave1.getMasterChain()).to.equal(0);
 		expect(await otherSlave1.getMasterAddress()).to.equal(ZeroAddress);
-		expect(await otherSlave1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
-		expect(await otherSlave1.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
-		expect(await otherSlave1.gateway()).to.equal(mockedERC7786GatewayAddress1);
 		console.log(`OtherSlave1 deployed on ${await otherSlave1.chainId()} at ${otherSlaveAddress1}`);
 
 		// ***********************************************************************************************************************************************************
@@ -137,9 +125,6 @@ describe("ERC-20X Supply", function () {
 		expect(await fungibleMaster2.setAsMasterChain()).to.not.be.reverted;
 		expect(await fungibleMaster2.getMasterChain()).to.equal(2222);
 		expect(await fungibleMaster2.getMasterAddress()).to.equal(fungibleMasterAddress2);
-		expect(await fungibleMaster2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
-		expect(await fungibleMaster2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
-		expect(await fungibleMaster2.gateway()).to.equal(mockedERC7786GatewayAddress2);
 		console.log(`FungibleMaster2 deployed on ${await fungibleMaster2.chainId()} at ${fungibleMasterAddress2}`);
 
 		// deploy FungibleSingleton2
@@ -150,9 +135,6 @@ describe("ERC-20X Supply", function () {
 		expect(await fungibleSingleton2.chainId()).to.equal(2222);
 		expect(await fungibleSingleton2.getMasterChain()).to.equal(0);
 		expect(await fungibleSingleton2.getMasterAddress()).to.equal(ZeroAddress);
-		expect(await fungibleSingleton2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
-		expect(await fungibleSingleton2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
-		expect(await fungibleSingleton2.gateway()).to.equal(mockedERC7786GatewayAddress2);
 		console.log(`FungibleSingleton2 deployed on ${await fungibleSingleton2.chainId()} at ${fungibleSingletonAddress2}`);
 
 		// deploy OtherMaster2
@@ -164,9 +146,6 @@ describe("ERC-20X Supply", function () {
 		expect(await otherMaster2.setAsMasterChain()).to.not.be.reverted;
 		expect(await otherMaster2.getMasterChain()).to.equal(2222);
 		expect(await otherMaster2.getMasterAddress()).to.equal(otherMasterAddress2);
-		expect(await otherMaster2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
-		expect(await otherMaster2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
-		expect(await otherMaster2.gateway()).to.equal(mockedERC7786GatewayAddress2);
 		console.log(`OtherMaster2 deployed on ${await otherMaster2.chainId()} at ${otherMasterAddress2}`);
 
 		// deploy FungibleSlave2
@@ -177,13 +156,49 @@ describe("ERC-20X Supply", function () {
 		expect(await otherSlave2.chainId()).to.equal(2222);
 		expect(await otherSlave2.getMasterChain()).to.equal(0);
 		expect(await otherSlave2.getMasterAddress()).to.equal(ZeroAddress);
-		expect(await otherSlave2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
-		expect(await otherSlave2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
-		expect(await otherSlave2.gateway()).to.equal(mockedERC7786GatewayAddress2);
 		console.log(`OtherSlave2 deployed on ${await otherSlave2.chainId()} at ${otherSlaveAddress2}`);
 
 		// ***********************************************************************************************************************************************************
-		// *************************************************************** Mock OtherSlave2 and OtherSlave1 **********************************************************
+		// *********************************************************************** Add Gateways **********************************************************************
+		// ***********************************************************************************************************************************************************
+		// TEST CASE: cannot bind if no gateways
+		await expect(otherMaster1.bindChain(2222, otherSlaveAddress2)).to.be.revertedWithCustomError(otherMaster1, "GatewayRequired");
+		await expect(otherMaster2.bindChain(1337, otherSlaveAddress1)).to.be.revertedWithCustomError(otherSlave1, "GatewayRequired");
+
+		expect(await fungibleMaster1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleMaster1.releaseResource(0, 0)).to.not.be.reverted;
+		expect(await fungibleMaster1.gateway()).to.equal(mockedERC7786GatewayAddress1);
+
+		expect(await fungibleSingleton1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleSingleton1.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await fungibleSingleton1.gateway()).to.equal(mockedERC7786GatewayAddress1);
+
+		expect(await otherMaster1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
+		expect(await otherMaster1.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await otherMaster1.gateway()).to.equal(mockedERC7786GatewayAddress1);
+
+		expect(await otherSlave1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
+		expect(await otherSlave1.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await otherSlave1.gateway()).to.equal(mockedERC7786GatewayAddress1);
+
+		expect(await fungibleMaster2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleMaster2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await fungibleMaster2.gateway()).to.equal(mockedERC7786GatewayAddress2);
+
+		expect(await fungibleSingleton2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleSingleton2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await fungibleSingleton2.gateway()).to.equal(mockedERC7786GatewayAddress2);
+
+		expect(await otherMaster2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
+		expect(await otherMaster2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await otherMaster2.gateway()).to.equal(mockedERC7786GatewayAddress2);
+
+		expect(await otherSlave2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
+		expect(await otherSlave2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
+		expect(await otherSlave2.gateway()).to.equal(mockedERC7786GatewayAddress2);
+
+		// ***********************************************************************************************************************************************************
+		// ******************************************** Mock otherMaster1 -> OtherSlave2 and otherMaster2 -> OtherSlave1 *********************************************
 		// ***********************************************************************************************************************************************************
 		// bind OtherMaster1 and OtherSlave2
 		console.log(`Bind will fire event`);
@@ -230,40 +245,12 @@ describe("ERC-20X Supply", function () {
 	/************************************************** Bind ************************************************/
 	/********************************************************************************************************/
 	it("WHO. Only owner can bind.", async() => {
-		//await expect(fungibleMaster1.connect(addr13).bindChain(2222, fungibleSingleton2.getAddress())).to.be.revertedWithCustomError(fungibleMaster1, "OnlyOwner");
-		//await expect(fungibleMaster2.connect(addr13).bindChain(1111, fungibleSingleton1.getAddress())).to.be.revertedWithCustomError(fungibleMaster2, "OnlyOwner");
+		await expect(fungibleMaster1.connect(addr13).bindChain(2222, fungibleSingleton2.getAddress())).to.be.revertedWithCustomError(fungibleMaster1, "OnlyOwner");
+		await expect(fungibleMaster2.connect(addr13).bindChain(1111, fungibleSingleton1.getAddress())).to.be.revertedWithCustomError(fungibleMaster2, "OnlyOwner");
 	});
 
 	/*it.skip("FROM. Should only bind from MasterChain token to Slave token.", async() => {
 		await expect(fungibleSlave1.bindChain(2222, fungibleSlave2)).to.be.revertedWithCustomError(fungibleSlave1, "OnlyMasterChain");
-	});*/
-
-	/*it.skip("HOW. Gateway is required to bind.", async() => {
-		// Tokens
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
-
-		// set Fungible1 as MasterChain
-		expect(await fungible1.getMasterChain()).to.equal(0);
-		await expect(fungible1.setAsMasterChain()).to.not.be.reverted;
-		expect(await fungible1.getMasterChain()).to.equal(await fungible1.chainId());
-		console.log(`Fungible1 ${await fungible1.chainId()} set as MasterChain`);
-
-		// TEST CASE: cannot bind if no gateway on Fungible1
-		expect(await fungible1.gateway()).to.equal(ethers.ZeroAddress);
-		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "GatewayRequired");
-		console.log("OK. Cannot bind if not gateway on Fungible1.");
-
-		// set gateway to Fungible1
-		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
-
-		// TEST CASE: cannot bind if no gateway on Fungible2
-		expect(await fungible2.gateway()).to.equal(ethers.ZeroAddress);
-		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "GatewayRequired");
-		console.log("OK. Cannot bind if not gateway on Fungible1.");
 	});*/
 
 	/*it.skip("TO. Should only bind to Singleton empty token.", async() => {
@@ -416,9 +403,6 @@ describe("ERC-20X Supply", function () {
 		expect(await fungible2.getMasterChain()).to.equal(0);
 		await expect(fungible1.unbindChain(1337)).to.be.revertedWithCustomError(fungible1, "ZeroAddressRequired");
 		console.log("OK. Cannot bind if not gateway on Fungible1.");
-
-
-
 	});*/
 
 	it.skip("HOW. Gateway is required to unbind.", async() => {
