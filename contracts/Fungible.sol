@@ -271,13 +271,25 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes[] memory attributes = new bytes[](0);
 
     bytes32 response = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
-		require(response != bytes32(0), ErrorInCrossChainBind());
+		require(response != bytes32(0), ErrorInCrossChainMessage());
 
 		return true;
 	}
 
 	function _onCrosschainMessageCallback(bytes32 operation) internal returns (bytes4) {
 
+		if (operation == MSG_BND) {
+			return _onCrosschainBindCallback(operation);
+
+		} else if (operation == MSG_SUP) {
+			return _onCrosschainSupplyCallback(operation);
+
+		} else if (operation == MSG_CLO) {
+			return _onCrosschainCloneStateCallback(operation);
+
+		} else {
+			//return _onCrosschainMessageCallback(payload);
+		}
 	}
 
 	// TODO: Use EIP-712
@@ -528,6 +540,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return response;
 	}
 
+	function _onCrosschainCloneStateCallback(bytes32 operation) internal returns (bytes4) {
+
+	}
+
 	function _onCrosschainCloneState(bytes memory payload) internal returns (bytes4) {
 		require(knownChains.length == ZERO_VALUE, "Clone: can only be done once");
 
@@ -688,6 +704,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		bool response = _sendMessage(MSG_SUP, _masterChain, _masterAddress, packedPayload);
 		return response;
+	}
+
+	function _onCrosschainSupplyCallback(bytes32 operation) internal returns (bytes4) {
+
 	}
 
 	// Receives supply transfer

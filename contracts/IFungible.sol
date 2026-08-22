@@ -38,6 +38,7 @@ abstract contract IFungible {
   error OnlySlaveChain(uint256 chain);					//  _masterChain no matches CHAIN_ID
   error OnlySingletonChain(uint256 chain);			//  _masterChain is unassigned
 
+	error ErrorInCrossChainMessage();
 	error ErrorInCrossChainBind();
 
 
