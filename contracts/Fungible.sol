@@ -352,31 +352,39 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return knownChains;
 	}
 
-	function bindChain(uint256 _chainId, address chainAddress) external payable {
+	function bindChain(uint256 toChainId, address toChainAddress) external payable {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		require(_masterChain == CHAIN_ID, OnlyMasterChain(CHAIN_ID));
-		require(chainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
-		require(supplies[_chainId] == ZERO_VALUE, ZeroValueRequired(supplies[_chainId]));		
-		require(addresses[_chainId] == ZERO_ADDRESS, ZeroAddressRequired(msg.sender));
 
-		bool response = _sendCrosschainBind(_chainId, chainAddress, true);
+		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
+		require(toChainId != ZERO_VALUE, NonZeroValueRequired());
+
+		require(toChainId != CHAIN_ID, OnlyBindToOtherChain());
+		require(_masterChain == CHAIN_ID, OnlyBindFromMasterChain());
+		require(supplies[toChainId] == ZERO_VALUE, OnlyBindToSingletonChain());		
+		require(addresses[toChainId] == ZERO_ADDRESS, OnlyBindToSingletonChain());
+
+		bool response = _sendCrosschainBind(toChainId, toChainAddress, true);
 		require (response, ErrorInCrossChainBind());
 
-		knownChains.push(_chainId);
-		addresses[_chainId] = chainAddress;
+		knownChains.push(toChainId);
+		addresses[toChainId] = toChainAddress;
 	}
 
-	function unbindChain(uint256 _chainId) external payable{
+	function unbindChain(uint256 fromChainId) external payable{
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		require(_masterChain == CHAIN_ID, OnlyMasterChain(_chainId));
-		require(addresses[_chainId] != ZERO_ADDRESS, NonZeroAddressRequired());
-		require(supplies[_chainId] == ZERO_VALUE, ZeroValueRequired(supplies[_chainId]));
 
-		bool response = _sendCrosschainBind(_chainId, ZERO_ADDRESS, false);
+		require(supplies[fromChainId] != ZERO_VALUE, NonZeroValueRequired());
+
+		require(fromChainId != CHAIN_ID, OnlyUnbindFromOtherChain());
+		require(_masterChain == CHAIN_ID, OnlyUnbindFromMasterChain());
+		require(supplies[fromChainId] != ZERO_VALUE, OnlyUnbindFromSlaveChain());
+		require(addresses[fromChainId] != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
+
+		bool response = _sendCrosschainBind(fromChainId, ZERO_ADDRESS, false);
 		require (response, ErrorInCrossChainBind());
 
-		removeValueFromArray(knownChains, _chainId);
-		addresses[_chainId] = ZERO_ADDRESS;
+		removeValueFromArray(knownChains, fromChainId);
+		addresses[fromChainId] = ZERO_ADDRESS;
 	}
 	
 	/**
@@ -403,6 +411,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _onCrosschainBind(bytes memory payload) internal {
+		//require(_masterChain == CHAIN_ID, OnlyBindToSingletonChain());
+
 		// Unpack the byte envelope straight back into the struct format
 		console.log("token bound1");
 		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));

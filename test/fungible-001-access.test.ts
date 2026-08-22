@@ -96,8 +96,8 @@ describe("Deploy Token", function () {
 
 		// erc-20n functions
 		await expect(fungibleContract.getChains()).to.not.be.reverted;
-		await expect(fungibleContract.bindChain(0, addr1)).to.be.revertedWithCustomError(fungibleContract, "OnlyMasterChain");
-		await expect(fungibleContract.unbindChain(0)).to.be.revertedWithCustomError(fungibleContract, "OnlyMasterChain");
+		await expect(fungibleContract.bindChain(0, addr1)).to.be.revertedWithCustomError(fungibleContract, "NonZeroValueRequired");
+		await expect(fungibleContract.unbindChain(0)).to.be.revertedWithCustomError(fungibleContract, "NonZeroValueRequired");
 		await expect(() => fungibleContract.getChainAddress(0)).to.not.throw();
 		await expect(() => fungibleContract.getMasterChain()).to.not.throw();
 		await expect(() => fungibleContract.getMasterAddress()).to.not.throw();

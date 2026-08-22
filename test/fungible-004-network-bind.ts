@@ -18,6 +18,7 @@ describe("ERC-20X Supply", function () {
 		console.log('*******************************');
 		console.log(`\nTest Suite: ${this.title}`);
 		console.log('*******************************');
+		console.log(`Preparing bind test cases.`);
 
 		// ***********************************************************************************************************************************************************
 		// ************************************************************************** Reset Nodes ********************************************************************
@@ -249,52 +250,91 @@ describe("ERC-20X Supply", function () {
 		await expect(fungibleMaster2.connect(addr13).bindChain(1111, fungibleSingleton1.getAddress())).to.be.revertedWithCustomError(fungibleMaster2, "OnlyOwner");
 	});
 
-	/*it.skip("FROM. Should only bind from MasterChain token to Slave token.", async() => {
-		await expect(fungibleSlave1.bindChain(2222, fungibleSlave2)).to.be.revertedWithCustomError(fungibleSlave1, "OnlyMasterChain");
+	it("FROM. Can only bind to other chain", async() => {
+		await expect(fungibleMaster1.bindChain(1111, fungibleMaster1.getAddress())).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToOtherChain");
+		await expect(fungibleMaster1.bindChain(1111, fungibleSingleton1)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToOtherChain");
+		await expect(fungibleMaster1.bindChain(1111, otherMaster1)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToOtherChain");
+		await expect(fungibleMaster1.bindChain(1111, otherSlave1)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToOtherChain");
+
+		await expect(fungibleSingleton1.bindChain(1111, fungibleMaster1)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindToOtherChain");
+		await expect(fungibleSingleton1.bindChain(1111, fungibleSingleton1)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindToOtherChain");
+		await expect(fungibleSingleton1.bindChain(1111, otherMaster1)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindToOtherChain");
+		await expect(fungibleSingleton1.bindChain(1111, otherSlave1)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindToOtherChain");
+
+		await expect(otherMaster1.bindChain(1111, fungibleMaster1)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToOtherChain");
+		await expect(otherMaster1.bindChain(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToOtherChain");
+		await expect(otherMaster1.bindChain(1111, otherMaster1)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToOtherChain");
+		await expect(otherMaster1.bindChain(1111, otherSlave1)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToOtherChain");
+
+		await expect(otherSlave1.bindChain(1111, fungibleMaster1)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindToOtherChain");
+		await expect(otherSlave1.bindChain(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindToOtherChain");
+		await expect(otherSlave1.bindChain(1111, otherMaster1)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindToOtherChain");
+		await expect(otherSlave1.bindChain(1111, otherSlave1)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindToOtherChain");
+
+		await expect(fungibleMaster2.bindChain(2222, fungibleMaster2.getAddress())).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToOtherChain");
+		await expect(fungibleMaster2.bindChain(2222, fungibleSingleton2)).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToOtherChain");
+		await expect(fungibleMaster2.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToOtherChain");
+		await expect(fungibleMaster2.bindChain(2222, otherSlave1)).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToOtherChain");
+
+		await expect(fungibleSingleton2.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindToOtherChain");
+		await expect(fungibleSingleton2.bindChain(2222, fungibleSingleton2)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindToOtherChain");
+		await expect(fungibleSingleton2.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindToOtherChain");
+		await expect(fungibleSingleton2.bindChain(2222, otherSlave1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindToOtherChain");
+
+		await expect(otherMaster2.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToOtherChain");
+		await expect(otherMaster2.bindChain(2222, fungibleSingleton2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToOtherChain");
+		await expect(otherMaster2.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToOtherChain");
+		await expect(otherMaster2.bindChain(2222, otherSlave1)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToOtherChain");
+
+		await expect(otherSlave2.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindToOtherChain");
+		await expect(otherSlave2.bindChain(2222, fungibleSingleton2)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindToOtherChain");
+		await expect(otherSlave2.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindToOtherChain");
+		await expect(otherSlave2.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindToOtherChain");
+	});
+
+	/*it("FROM. Should only bind from MasterChain.", async() => {
+		await expect(fungibleSingleton1.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterChain");
+		await expect(fungibleSingleton1.bindChain(2222, fungibleSingleton2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterChain");
+		await expect(fungibleSingleton1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterChain");
+		await expect(fungibleSingleton1.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterChain");
+
+		await expect(otherSlave1.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterChain");
+		await expect(otherSlave1.bindChain(2222, fungibleSingleton2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterChain");
+		await expect(otherSlave1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterChain");
+		await expect(otherSlave1.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterChain");		
+
+		await expect(fungibleSingleton2.bindChain(1111, fungibleMaster1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterChain");
+		await expect(fungibleSingleton2.bindChain(1111, fungibleSingleton1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterChain");
+		await expect(fungibleSingleton2.bindChain(1111, otherMaster1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterChain");
+		await expect(fungibleSingleton2.bindChain(1111, otherSlave1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterChain");
+
+		await expect(otherSlave2.bindChain(1111, fungibleMaster1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterChain");
+		await expect(otherSlave2.bindChain(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterChain");
+		await expect(otherSlave2.bindChain(1111, otherMaster1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterChain");
+		await expect(otherSlave2.bindChain(1111, otherSlave1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterChain");		
 	});*/
 
-	/*it.skip("TO. Should only bind to Singleton empty token.", async() => {
-		// Tokens
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
-		const fungible9 = await ethers.getContractAt('Fungible', fungibleAddress9)
+	it("TO. Should only bind to SingletonChain.", async() => {
+		//await expect(fungibleMaster1.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
+		/*await expect(fungibleMaster1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
+		await expect(fungibleMaster1.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
 
-		// set Fungible1 as MasterChain
-		expect(await fungible1.getMasterChain()).to.equal(0);
-		await expect(fungible1.setAsMasterChain()).to.not.be.reverted;
-		expect(await fungible1.getMasterChain()).to.equal(await fungible1.chainId());
-		console.log(`Fungible1 ${await fungible1.chainId()} set as MasterChain`);
+		await expect(otherMaster1.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
+		await expect(otherMaster1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
+		await expect(otherMaster1.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
 
-		// set Fungible2 as MasterChain
-		expect(await fungible2.getMasterChain()).to.equal(0);
-		await expect(fungible2.setAsMasterChain()).to.not.be.reverted;
-		expect(await fungible2.getMasterChain()).to.equal(await fungible2.chainId());
-		console.log(`Fungible2 ${await fungible2.chainId()} set as MasterChain`);
+		await expect(fungibleMaster2.bindChain(1111, fungibleMaster2)).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToSingletonChain");
+		await expect(fungibleMaster2.bindChain(1111, otherMaster2)).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToSingletonChain");
+		await expect(fungibleMaster2.bindChain(1111, otherSlave2)).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToSingletonChain");
 
-		// set gateway to Fungible1
-		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
+		await expect(otherMaster2.bindChain(1111, fungibleMaster2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");
+		await expect(otherMaster2.bindChain(1111, otherMaster2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");
+		await expect(otherMaster2.bindChain(1111, otherSlave2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");*/
+	});
 
-		// set gateway to Fungible2
-		await expect(fungible2.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible2.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible2.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible2.gateway()) + " attached to Fungible2.");
+	it("TO. Should only bind to Unbound chains.", async() => {
 
-		// set gateway to Fungible9
-		await expect(fungible9.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible9.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible9.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible9.gateway()) + " attached to Fungible2.");
-
-		// TEST CASE: cannot bind a MasterChain
-		await expect(fungible1.bindChain(1337, fungibleAddress2)).to.be.revertedWithCustomError(fungible1, "OnlySingletonChain");
-
-		// TEST CASE: cannot bind a token with supply
-		await expect(fungible1.bindChain(1337, fungibleAddress9)).to.be.revertedWithCustomError(fungible1, "ZeroValueRequired");
-	});*/
+	});
 
 	/*it.skip("OK. Should be able to bind if conditions met.", async() => {
 		// Tokens

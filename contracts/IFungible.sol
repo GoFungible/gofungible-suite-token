@@ -20,15 +20,23 @@ abstract contract IFungible {
   error ZeroAddressRequired(address nonZeroAddress);
   error ZeroValueRequired(uint256 nonZeroVaue);
   error NonZeroAddressRequired();
-  error NonZeroRequired();
+  error NonZeroValueRequired();
 
   error OnlyOwner(address sender);
   error OnlyGateway(address sender);
+
+  error GatewayRequired(address sender);
+
+  error OnlyBindToOtherChain();									//  
+  error OnlyBindFromMasterChain();							//			
+  error OnlyBindToSingletonChain();							//			
+  error OnlyUnbindFromOtherChain();							//  
+  error OnlyUnbindFromMasterChain();						//  
+  error OnlyUnbindFromSlaveChain();							//  
+
   error OnlyMasterChain(uint256 chain);					//  _masterChain matches CHAIN_ID
   error OnlySlaveChain(uint256 chain);					//  _masterChain no matches CHAIN_ID
   error OnlySingletonChain(uint256 chain);			//  _masterChain is unassigned
-
-  error GatewayRequired(address sender);
 
 	error ErrorInCrossChainBind();
 
