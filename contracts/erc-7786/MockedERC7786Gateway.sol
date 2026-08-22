@@ -16,6 +16,10 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		console.log("deployed gateway at ", address(this));
 	}
 
+  function chainId() view external returns(uint256) {
+		return block.chainid;
+	}
+
 	// ************************************************************************************************
 	// *************************************** Reentrancy Guard ***************************************
 	// ************************************************************************************************  
@@ -37,11 +41,39 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		_status = _NOT_ENTERED;
 	}
 
+
+	function supportsAttribute(bytes4 /* selector */) external pure override returns (bool) {
+		return false;
+	}
+
 	uint256 private _nonce;
 
-  function chainId() view external returns(uint256) {
-		return block.chainid;
+	// ************************************************************************************************
+	// ************************************* Negotiation with Relayer *********************************
+	// ************************************************************************************************
+	/**
+	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
+	 */
+	function executeRelayedMessage(bytes32 sendId, bytes memory senderBOA, bytes memory recipientBOA, bytes memory payload, uint256 value, bytes[] memory attributes) external returns (bytes4)  {
+
+		// Execute push delivery to the recipient target contract
+		// bytes4 selector = Fungible(targetContract).receiveMessage(sourceChainId, sender, messagePayload);
+		console.log("gateway receive Message 1");
+
+		// TODO: HERE IS A CAIP-350.
+		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
+		console.log("executeRelayedMessage chainId", receiverChainId);
+		console.log("executeRelayedMessage receiverAddress", receiverAddress);
+
+		return IERC7786Recipient(receiverAddress).receiveMessage(sendId, senderBOA, payload);
 	}
+
+
+
+
+
+
+
 
 	// ************************************************************************************************
 	// ******************************************* ERC-7786 *******************************************
@@ -86,27 +118,6 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		}
 
 		return outboxId;
-	}
-
-	/**
-	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
-	 */
-	function executeRelayedMessage(bytes32 sendId, bytes memory senderBOA, bytes memory recipientBOA, bytes memory payload, uint256 value, bytes[] memory attributes) external returns (bytes4)  {
-
-		// Execute push delivery to the recipient target contract
-		// bytes4 selector = Fungible(targetContract).receiveMessage(sourceChainId, sender, messagePayload);
-		console.log("gateway receive Message 1");
-
-		// TODO: HERE IS A CAIP-350.
-		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		console.log("executeRelayedMessage chainId", receiverChainId);
-		console.log("executeRelayedMessage receiverAddress", receiverAddress);
-
-		return IERC7786Recipient(receiverAddress).receiveMessage(sendId, senderBOA, payload);
-	}
-
-	function supportsAttribute(bytes4 /* selector */) external pure override returns (bool) {
-		return false;
 	}
 
 }
