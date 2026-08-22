@@ -1,5 +1,4 @@
-import { ethers } from 'hardhat';
-import { BigNumberish } from 'ethers';
+import { BigNumberish, ethers } from 'ethers';
 import { keccak256 } from "@ethersproject/keccak256";
 import { toUtf8Bytes } from "@ethersproject/strings";
 
@@ -60,3 +59,47 @@ export let bytes5ToString = function (hexString: string) {
 }
 
 export type Bytes4 = `0x${string}`;
+
+interface WaitForEventOptions {
+  contract: ethers.Contract;
+  eventName: string;
+  timeoutMs?: number;
+  // A predicate function to match specific criteria (e.g., matching a unique requestId)
+  filterPredicate?: (...args: any[]) => boolean;
+}
+
+/**
+ * Universally waits for any ethers.js v6 contract event to fire.
+ * @returns An array containing all arguments emitted by the event.
+ */
+export function waitForContractEvent({
+  contract,
+  eventName,
+  timeoutMs = 5000, // 5 second default timeout
+  filterPredicate
+}: WaitForEventOptions): Promise<any[]> {
+  
+  return new Promise((resolve, reject) => {
+    // 1. Safety Timeout Setup
+    const timeout = setTimeout(() => {
+      contract.off(eventName, listener); // Prevent memory leaks
+      reject(new Error(`Timeout: Event "${eventName}" was not emitted within ${timeoutMs}ms.`));
+    }, timeoutMs);
+
+    // 2. The Universal Listener Wrapper
+    const listener = (...args: any[]) => {
+      // If a custom filter is provided (like checking a requestId), evaluate it
+      if (filterPredicate && !filterPredicate(...args)) {
+        return; // Skip this event emission; it's not the one we are waiting for
+      }
+
+      // Found a match! Clean up and resolve
+      clearTimeout(timeout);
+      contract.off(eventName, listener);
+      resolve(args);
+    };
+
+    // 3. Register the event with ethers v6
+    contract.on(eventName, listener);
+  });
+}
