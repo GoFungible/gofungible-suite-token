@@ -74,7 +74,7 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		// deploy FungibleMaster1
 		const FungibleMaster1 = await ethers.getContractFactory("Fungible", owner1);
-		fungibleMaster1 = await FungibleMaster1.deploy("FungiTest", "FGT", 1000_000_000);
+		fungibleMaster1 = await FungibleMaster1.deploy("FungibleMaster1Test", "FGT", 1000_000_000);
 		expect(await fungibleMaster1.waitForDeployment()).to.not.be.reverted;
 		const fungibleMasterAddress1 = await fungibleMaster1.getAddress();
 		expect(await fungibleMaster1.chainId()).to.equal(1111);
@@ -85,7 +85,7 @@ describe("ERC-20X Supply", function () {
 
 		// deploy FungibleSingleton1
 		const FungibleSingleton1 = await ethers.getContractFactory("Fungible", owner1);
-		fungibleSingleton1 = await FungibleSingleton1.deploy("FungiTest", "FGT", 0);
+		fungibleSingleton1 = await FungibleSingleton1.deploy("FungibleSingleton1Test", "FGT", 0);
 		expect(await fungibleSingleton1.waitForDeployment()).to.not.be.reverted;
 		const fungibleSingletonAddress1 = await fungibleSingleton1.getAddress();
 		expect(await fungibleSingleton1.chainId()).to.equal(1111);
@@ -95,7 +95,7 @@ describe("ERC-20X Supply", function () {
 
 		// deploy OtherMaster1
 		const OtherMaster1 = await ethers.getContractFactory("Fungible", owner1);
-		otherMaster1 = await OtherMaster1.deploy("FungiTest", "FGT", 1000_000_000);
+		otherMaster1 = await OtherMaster1.deploy("OtherMaster1Test", "FGT", 1000_000_000);
 		expect(await otherMaster1.waitForDeployment()).to.not.be.reverted;
 		const otherMasterAddress1 = await otherMaster1.getAddress();
 		expect(await otherMaster1.chainId()).to.equal(1111);
@@ -106,7 +106,7 @@ describe("ERC-20X Supply", function () {
 
 		// deploy OtherSlave1
 		const OtherSlave1 = await ethers.getContractFactory("Fungible", owner1);
-		otherSlave1 = await OtherSlave1.deploy("FungiTest", "FGT", 0);
+		otherSlave1 = await OtherSlave1.deploy("OtherSlave1Test", "FGT", 0);
 		expect(await otherSlave1.waitForDeployment()).to.not.be.reverted;
 		const otherSlaveAddress1 = await otherSlave1.getAddress();
 		expect(await otherSlave1.chainId()).to.equal(1111);
@@ -119,7 +119,7 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		// deploy FungibleMaster2
 		const FungibleMaster2 = await ethers.getContractFactory("Fungible", owner2);
-		fungibleMaster2 = await FungibleMaster2.deploy("FungiTest", "FGT", 1000_000_000);
+		fungibleMaster2 = await FungibleMaster2.deploy("FungibleMaster2Test", "FGT", 1000_000_000);
 		expect(await fungibleMaster2.waitForDeployment()).to.not.be.reverted;
 		const fungibleMasterAddress2 = await fungibleMaster2.getAddress();
 		expect(await fungibleMaster2.chainId()).to.equal(2222);
@@ -130,7 +130,7 @@ describe("ERC-20X Supply", function () {
 
 		// deploy FungibleSingleton2
 		const FungibleSingleton2 = await ethers.getContractFactory("Fungible", owner2);
-		fungibleSingleton2 = await FungibleSingleton2.deploy("FungiTest", "FGT", 0);
+		fungibleSingleton2 = await FungibleSingleton2.deploy("FungibleSingleton2Test", "FGT", 0);
 		expect(await fungibleSingleton2.waitForDeployment()).to.not.be.reverted;
 		const fungibleSingletonAddress2 = await fungibleSingleton2.getAddress();
 		expect(await fungibleSingleton2.chainId()).to.equal(2222);
@@ -140,7 +140,7 @@ describe("ERC-20X Supply", function () {
 
 		// deploy OtherMaster2
 		const OtherMaster2 = await ethers.getContractFactory("Fungible", owner2);
-		otherMaster2 = await OtherMaster2.deploy("FungiTest", "FGT", 1000_000_000);
+		otherMaster2 = await OtherMaster2.deploy("OtherMaster2Test", "FGT", 1000_000_000);
 		expect(await otherMaster2.waitForDeployment()).to.not.be.reverted;
 		const otherMasterAddress2 = await otherMaster2.getAddress();
 		expect(await otherMaster2.chainId()).to.equal(2222);
@@ -151,7 +151,7 @@ describe("ERC-20X Supply", function () {
 
 		// deploy FungibleSlave2
 		const OtherSlave2 = await ethers.getContractFactory("Fungible", owner2);
-		otherSlave2 = await OtherSlave2.deploy("FungiTest", "FGT", 0);
+		otherSlave2 = await OtherSlave2.deploy("FungibleSlave2Test", "FGT", 0);
 		expect(await otherSlave2.waitForDeployment()).to.not.be.reverted;
 		const otherSlaveAddress2 = await otherSlave2.getAddress();
 		expect(await otherSlave2.chainId()).to.equal(2222);
@@ -292,7 +292,7 @@ describe("ERC-20X Supply", function () {
 		await expect(otherSlave2.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindToOtherChain");
 	});
 
-	/*it("FROM. Should only bind from MasterChain.", async() => {
+	it("FROM. Should only bind from MasterChain.", async() => {
 		await expect(fungibleSingleton1.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterChain");
 		await expect(fungibleSingleton1.bindChain(2222, fungibleSingleton2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterChain");
 		await expect(fungibleSingleton1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterChain");
@@ -312,7 +312,7 @@ describe("ERC-20X Supply", function () {
 		await expect(otherSlave2.bindChain(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterChain");
 		await expect(otherSlave2.bindChain(1111, otherMaster1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterChain");
 		await expect(otherSlave2.bindChain(1111, otherSlave1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterChain");		
-	});*/
+	});
 
 	it("TO. Should only bind to SingletonChain.", async() => {
 		//await expect(fungibleMaster1.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
