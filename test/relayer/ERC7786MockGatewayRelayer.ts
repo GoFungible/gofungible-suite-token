@@ -106,7 +106,11 @@ export class ERC7786MockGatewayRelayer {
 
 					const tx = await IGatewayReceiver__factory
 						.connect(this.destGatewayAddress, this.relayer1)
-						.executeRelayedMessage(sendId, senderBOA,  recipientBOA, payload, value, attributes);
+						.executeRelayedMessage(sendId, senderBOA, recipientBOA, payload, value, attributes);
+
+					const tx2 = await IGatewayReceiver__factory
+						.connect(this.sourceGatewayAddress, this.relayer1)
+						.onRelayerResponse(sendId, senderBOA, payload);
 
 				} catch (error:any) {
 
@@ -131,6 +135,10 @@ export class ERC7786MockGatewayRelayer {
 							};
 						}*/
 					}
+
+					const tx = await IGatewayReceiver__factory
+						.connect(this.sourceGatewayAddress, this.relayer1)
+						.onRelayerResponse(sendId, senderBOA, payload);
 
 				}
         
