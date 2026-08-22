@@ -58,3 +58,5 @@ export let stringToBytes5 = function (str: string) {
 export let bytes5ToString = function (hexString: string) {
 	return ethers.toUtf8String(hexString);
 }
+
+export type Bytes4 = `0x${string}`;

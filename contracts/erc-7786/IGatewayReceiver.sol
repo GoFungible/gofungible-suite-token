@@ -10,6 +10,6 @@ interface IGatewayReceiver {
 	/**
 	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
 	 */
-	function executeRelayedMessage(bytes32 sendId, bytes memory sender, bytes memory recipient, bytes memory payload, uint256 value, bytes[] memory attributes) external;
+	function executeRelayedMessage(bytes32 sendId, bytes memory sender, bytes memory recipient, bytes memory payload, uint256 value, bytes[] memory attributes) external returns (bytes4);
 		
 }

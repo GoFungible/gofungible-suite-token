@@ -68,11 +68,11 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		// sending to the same chainId()
 		if (receiverChainId == block.chainid) {
 
-			bytes4 magicValue = IERC7786Recipient(receiverAddress).receiveMessage(outboxId, senderBOA, payload);
+			bytes4 response = IERC7786Recipient(receiverAddress).receiveMessage(outboxId, senderBOA, payload);
 			console.log("Message delivered within the chain", block.chainid);
 
 			// Verification
-			require(magicValue == IERC7786Recipient.receiveMessage.selector, "ERC7786: invalid receiver response");
+			require(response == IERC7786Recipient.receiveMessage.selector, "ERC7786: invalid receiver response");
 		} 
 		
 		// sending to other chainId()
@@ -91,7 +91,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	/**
 	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
 	 */
-	function executeRelayedMessage(bytes32 sendId, bytes memory senderBOA, bytes memory recipientBOA, bytes memory payload, uint256 value, bytes[] memory attributes) external {
+	function executeRelayedMessage(bytes32 sendId, bytes memory senderBOA, bytes memory recipientBOA, bytes memory payload, uint256 value, bytes[] memory attributes) external returns (bytes4)  {
 
 		// Execute push delivery to the recipient target contract
 		// bytes4 selector = Fungible(targetContract).receiveMessage(sourceChainId, sender, messagePayload);
@@ -102,8 +102,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		console.log("executeRelayedMessage chainId", receiverChainId);
 		console.log("executeRelayedMessage receiverAddress", receiverAddress);
 
-		bytes4 magicValue = IERC7786Recipient(receiverAddress).receiveMessage(sendId, senderBOA, payload);
-		require(magicValue == IERC7786Recipient.receiveMessage.selector, "ERC7786: invalid receiver response");
+		return IERC7786Recipient(receiverAddress).receiveMessage(sendId, senderBOA, payload);
 	}
 
 	function supportsAttribute(bytes4 /* selector */) external pure override returns (bool) {
