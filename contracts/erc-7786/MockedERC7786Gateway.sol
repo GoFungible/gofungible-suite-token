@@ -113,23 +113,15 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	}
 
 	// ************************************************************************************************
-	// **************************** Response: Token2 -> Gateway -> Relayer ****************************
-	// ************************************************************************************************
-	// NO RESPONSE METHOD. DONE IN PREVIOUS CALL
-
-
-
-
-	// ************************************************************************************************
 	// ************************ Response: Relayer -> Gateway -> Token1 (ERC-7786) *********************
 	// ************************************************************************************************
 
-	function onRelayerResponse(bytes32 sendId, bytes memory senderBOA, bytes memory payload) external returns (bytes4)  {
-		console.log("onRelayerResponse. What should i do here?");
+	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bytes memory payload) external returns (bytes4)  {
+		console.log("onRelayerCallback. What should i do here?");
 
 		// invoked by relayer
 
-		// must call token
+		// must call token _onCrosschainMessageCallback
 
 	}
 

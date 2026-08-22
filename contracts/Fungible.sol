@@ -276,6 +276,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return true;
 	}
 
+	function _onCrosschainMessageCallback(bytes32 operation) internal returns (bytes4) {
+
+	}
+
 	// TODO: Use EIP-712
 	function receiveMessage(bytes32 sendId, bytes calldata senderBOA, bytes calldata messageBytes) external override returns (bytes4) {
 		console.log("Fungible received message!!!");
@@ -406,6 +410,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		bool response = _sendMessage(MSG_BND, toChain, toAddres, packedPayload);
 		return response;
+	}
+
+	function _onCrosschainBindCallback(bytes32 operation) internal returns (bytes4) {
+
 	}
 
 	function _onCrosschainBind(bytes memory payload) internal returns (bytes4) {

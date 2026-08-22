@@ -51,18 +51,19 @@ export class ERC7786MockGatewayRelayer {
 						.connect(this.destGatewayAddress, this.relayer2)
 						.executeRelayedMessage(sendId, senderBOA,  recipientBOA, payload, value, attributes);
 
-						
+						console.log("SUCESSFULL CALL");
+						//console.log(tx);
 
 				} catch (error:any) {
 
 					console.error("❌ Failed to relay message:", error);
 
 					const rawHexData = error.data || error.error?.data || error.receipt?.data;
-					console.log("ERROR: ", rawHexData)
+					console.log("ERROR1: ", rawHexData)
 
 					if (rawHexData) {
 						const errorSelector = rawHexData.slice(0, 10);
-						console.log("ERROR: ", errorSelector)
+						console.log("ERROR1: ", errorSelector)
 				
 						// 3. Match the selector
 						/*if (errorSelector === MY_ERROR_SELECTOR) {
@@ -110,18 +111,18 @@ export class ERC7786MockGatewayRelayer {
 
 					const tx2 = await IGatewayReceiver__factory
 						.connect(this.sourceGatewayAddress, this.relayer1)
-						.onRelayerResponse(sendId, senderBOA, payload);
+						.onRelayerCallback(sendId, senderBOA, payload);
 
 				} catch (error:any) {
 
 					console.error("❌ Failed to relay message:", error);
 
 					const rawHexData = error.data || error.error?.data || error.receipt?.data;
-					console.log("ERROR: ", rawHexData)
+					console.log("ERROR2: ", rawHexData)
 
 					if (rawHexData) {
 						const errorSelector = rawHexData.slice(0, 10);
-						console.log("ERROR: ", errorSelector)
+						console.log("ERROR2: ", errorSelector)
 				
 						// 3. Match the selector
 						/*if (errorSelector === MY_ERROR_SELECTOR) {
@@ -138,7 +139,7 @@ export class ERC7786MockGatewayRelayer {
 
 					const tx = await IGatewayReceiver__factory
 						.connect(this.sourceGatewayAddress, this.relayer1)
-						.onRelayerResponse(sendId, senderBOA, payload);
+						.onRelayerCallback(sendId, senderBOA, payload);
 
 				}
         
