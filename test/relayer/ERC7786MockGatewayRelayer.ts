@@ -51,8 +51,32 @@ export class ERC7786MockGatewayRelayer {
 						.connect(this.destGatewayAddress, this.relayer2)
 						.executeRelayedMessage(sendId, senderBOA,  recipientBOA, payload, value, attributes);
 
-				} catch (error) {
+						
+
+				} catch (error:any) {
+
 					console.error("❌ Failed to relay message:", error);
+
+					const rawHexData = error.data || error.error?.data || error.receipt?.data;
+					console.log("ERROR: ", rawHexData)
+
+					if (rawHexData) {
+						const errorSelector = rawHexData.slice(0, 10);
+						console.log("ERROR: ", errorSelector)
+				
+						// 3. Match the selector
+						/*if (errorSelector === MY_ERROR_SELECTOR) {
+							return {
+								status: 400,
+								body: {
+									success: false,
+									error: "ONLY_BIND_TO_SINGLETON_CHAIN",
+									message: "This operation is restricted to the singleton chain configuration."
+								}
+							};
+						}*/
+					}
+					
 				}
         
 				console.log(`✅ ERC-7786 Message delivered to destination node! Tx`);
@@ -84,8 +108,30 @@ export class ERC7786MockGatewayRelayer {
 						.connect(this.destGatewayAddress, this.relayer1)
 						.executeRelayedMessage(sendId, senderBOA,  recipientBOA, payload, value, attributes);
 
-				} catch (error) {
+				} catch (error:any) {
+
 					console.error("❌ Failed to relay message:", error);
+
+					const rawHexData = error.data || error.error?.data || error.receipt?.data;
+					console.log("ERROR: ", rawHexData)
+
+					if (rawHexData) {
+						const errorSelector = rawHexData.slice(0, 10);
+						console.log("ERROR: ", errorSelector)
+				
+						// 3. Match the selector
+						/*if (errorSelector === MY_ERROR_SELECTOR) {
+							return {
+								status: 400,
+								body: {
+									success: false,
+									error: "ONLY_BIND_TO_SINGLETON_CHAIN",
+									message: "This operation is restricted to the singleton chain configuration."
+								}
+							};
+						}*/
+					}
+
 				}
         
 				console.log(`✅ ERC-7786 Message delivered to destination node! Tx`);
