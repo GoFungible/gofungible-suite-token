@@ -320,13 +320,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		console.log("Fungible received message6!!!");
 
 		if (header.op == MSG_SUP) {
-			_onCrosschainSupply(payload);
+			return _onCrosschainSupply(payload);
 
 		} else if (header.op == MSG_CLO) {
-			_onCrosschainCloneState(payload);
+			return _onCrosschainCloneState(payload);
 
 		} else {
-			_onCrosschainMessage(payload);
+			return _onCrosschainMessage(payload);
 		}
 	}
 
