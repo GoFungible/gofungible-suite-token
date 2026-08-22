@@ -309,8 +309,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			require(_masterChain == ZERO_VALUE, OnlySingletonChain(srcChainId));										// not master chain
 			require(_masterAddress == ZERO_ADDRESS, OnlySingletonChain(srcChainId));								// not master address
 			require(_totalSupply == ZERO_VALUE, ZeroValueRequired(_totalSupply));										// not supply yet
-			_onCrosschainBind(payload);
-			return IERC7786Recipient.receiveMessage.selector;
+
+			return _onCrosschainBind(payload);
 		}
 		console.log("Fungible received message5!!!");
 		
@@ -328,12 +328,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		} else {
 			_onCrosschainMessage(payload);
 		}
-
-		// Compliance Return: Return the exact function selector (0x3ca22197)
-		return IERC7786Recipient.receiveMessage.selector;
 	}
 
-	function _onCrosschainMessage(bytes memory payload) internal {
+	function _onCrosschainMessage(bytes memory payload) internal returns (bytes4) {
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySendMessage.length; i++){
@@ -341,6 +338,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			_staticCall(_extGatewaySendMessage[i], encodedData);
     }
 
+		return IERC7786Recipient.receiveMessage.selector;
 	}
 
 	// ************************************************************************************************
@@ -410,8 +408,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return response;
 	}
 
-	function _onCrosschainBind(bytes memory payload) internal {
-		//require(_masterChain == CHAIN_ID, OnlyBindToSingletonChain());
+	function _onCrosschainBind(bytes memory payload) internal returns (bytes4) {
+		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
+		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
 
 		// Unpack the byte envelope straight back into the struct format
 		console.log("token bound1");
@@ -422,6 +421,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
 		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
 		console.log("token bound3");
+
+		return IERC7786Recipient.receiveMessage.selector;
 	}
 
 	// ************************************************************************************************
@@ -519,7 +520,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return response;
 	}
 
-	function _onCrosschainCloneState(bytes memory payload) internal {
+	function _onCrosschainCloneState(bytes memory payload) internal returns (bytes4) {
 		require(knownChains.length == ZERO_VALUE, "Clone: can only be done once");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -537,6 +538,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		for(uint i=0; i<knownChains.length; i++) {
 			supplies[knownChains[i]] = payloadData.supplies[i];
 		}
+
+		return IERC7786Recipient.receiveMessage.selector;
 
 	}
 
@@ -680,7 +683,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// Receives supply transfer
-	function _onCrosschainSupply(bytes memory payload) internal {
+	function _onCrosschainSupply(bytes memory payload) internal returns (bytes4) {
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
@@ -731,6 +734,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			//bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", fromChain, toChain, amount );
 			//_staticCall(_extGatewaySyncSupply[i], encodedData);
     }
+
+		return IERC7786Recipient.receiveMessage.selector;
 
 	}
 
