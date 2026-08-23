@@ -69,7 +69,7 @@ export class ERC7786MockGatewayRelayer {
 
 					const tx1 = await IGatewayReceiver__factory
 						.connect(destGatewayAddress, destRelayer)
-						.executeRelayedMessage(sendId, senderBOA,  recipientBOA, payload, value, attributes);
+						.relayMessage(sendId, senderBOA,  recipientBOA, payload, value, attributes);
 
 					const tx2 = await IGatewayReceiver__factory
 						.connect(sourceGatewayAddress, sourceRelayer)

@@ -98,7 +98,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	/**
 	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
 	 */
-	function executeRelayedMessage(bytes32 sendId, bytes memory senderBOA, bytes memory recipientBOA, bytes memory payload, uint256 value, bytes[] memory attributes) external returns (bytes4)  {
+	function relayMessage(bytes32 sendId, bytes memory senderBOA, bytes memory recipientBOA, bytes memory payload, uint256 value, bytes[] memory attributes) external returns (bytes4)  {
 
 		// Execute push delivery to the recipient target contract
 		// bytes4 selector = Fungible(targetContract).receiveMessage(sourceChainId, sender, messagePayload);
