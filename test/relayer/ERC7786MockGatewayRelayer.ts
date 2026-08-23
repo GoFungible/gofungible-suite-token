@@ -52,6 +52,9 @@ export class ERC7786MockGatewayRelayer {
       sourceGateway.filters.MessageSent(),
 			async (event: any) => {
 
+				// ************************************************************************************************
+				// ************** Event request from source gateway sent to destination gateway *******************
+				// ************************************************************************************************
 				// Destructure event payload
 				const [sendId, senderBOA,  recipientBOA, payload, value, attributes] = event.args; 
 
@@ -69,16 +72,25 @@ export class ERC7786MockGatewayRelayer {
 
 					const tx1 = await IGatewayReceiver__factory
 						.connect(destGatewayAddress, destRelayer)
-						.relayMessage(sendId, senderBOA,  recipientBOA, payload, value, attributes);
+						.sendRelayerMessageToToken(sendId, senderBOA,  recipientBOA, payload, value, attributes);
+
+					console.log("SUCESSFULL CALL. sending back OK to source token via relayer");
+
+				// ************************************************************************************************
+				// ********************** Sucessfull operation callback notification to source ********************
+				// ************************************************************************************************			
 
 					const tx2 = await IGatewayReceiver__factory
 						.connect(sourceGatewayAddress, sourceRelayer)
 						.onRelayerCallback(sendId, senderBOA, payload);
 
-						console.log("SUCESSFULL CALL");
-						//console.log(tx);
+					console.log("SUCESSFULL CALL");
+					//console.log(tx);
 				} 
 
+				// ************************************************************************************************
+				// ************************ Failed operation callback notification to source **********************
+				// ************************************************************************************************				
 				// case of failed call
 				catch (error:any) {
 

@@ -7,7 +7,7 @@ describe("Cross-Chain End-to-End Test", () => {
     // ... code to deploy your SourceBridge on node1 and DestBridge on node2 ...
 
     // Instantiate and start the relayer background process
-    relayer = new ERC7786MockGatewayRelater(
+    relayer = new ERC7786MockGatewayRelayer(
       "http://127.0.0.1:8545", // Node 1 RPC
       "http://127.0.0.1:8546", // Node 2 RPC
       sourceBridgeAddress,
