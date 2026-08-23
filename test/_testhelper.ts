@@ -60,6 +60,8 @@ export let bytes5ToString = function (hexString: string) {
 
 export type Bytes4 = `0x${string}`;
 
+export const NO_SELECTOR: string = "0x00000000";
+
 interface WaitForEventOptions {
   contract: ethers.BaseContract;
   eventName: string;

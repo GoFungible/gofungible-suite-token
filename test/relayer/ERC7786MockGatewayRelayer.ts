@@ -81,7 +81,7 @@ export class ERC7786MockGatewayRelayer {
 					// case of sucessfull call
 					const tx2 = await IGatewayReceiver__factory
 						.connect(sourceGatewayAddress, sourceRelayer)
-						.onRelayerCallback(sendId, senderBOA, true);
+						.onRelayerCallback(sendId, senderBOA, "0x00000000");
 
 					console.log(`✅ ERC-7786 Message: SUCESSFULL callback sent to source gateway. Hash: ${tx2?.hash}`);
 				} 
@@ -96,16 +96,16 @@ export class ERC7786MockGatewayRelayer {
 
 					const rawHexData = error.data || error.error?.data || error.receipt?.data;
 					console.error("❌ Error receipt:", rawHexData);
-					if (rawHexData) {
-						const errorSelector = rawHexData.slice(0, 10);
+					//if (rawHexData) {
+						const errorSelector: string = rawHexData.slice(0, 10);
 						console.error("❌ Error selector:", errorSelector);
-					}
+					//}
 
 					console.error(`❌ ERC-7786 Message: Sending FAILED callback to source gateway.`);
 
 					const tx = await IGatewayReceiver__factory
 						.connect(sourceGatewayAddress, sourceRelayer)
-						.onRelayerCallback(sendId, senderBOA, false);
+						.onRelayerCallback(sendId, senderBOA, errorSelector);
 
 					console.error(`❌ ERC-7786 Message: FAILED callback sent to source gateway. Hash: ${tx?.hash}`);
 

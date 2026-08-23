@@ -4,7 +4,7 @@ import { JsonRpcSigner, ZeroAddress } from "ethers";
 import { MockedERC7786Gateway } from "../typechain-types";
 import { Fungible} from "../typechain-types/contracts/Fungible";
 import { ERC7786MockGatewayRelayer } from "./relayer/ERC7786MockGatewayRelayer";
-import { waitForContractEvent } from "./_testhelper";
+import { NO_SELECTOR, waitForContractEvent } from "./_testhelper";
 
 describe("ERC-20X Supply", function () {
 	let owner1: JsonRpcSigner, relayer1: JsonRpcSigner, addr11: JsonRpcSigner, addr12: JsonRpcSigner, addr13: JsonRpcSigner, addrs1: JsonRpcSigner[];
@@ -207,15 +207,14 @@ describe("ERC-20X Supply", function () {
 		// ******************************************** Mock otherMaster1 -> OtherSlave2 and otherMaster2 -> OtherSlave1 *********************************************
 		// ***********************************************************************************************************************************************************
 		// bind OtherMaster1 and OtherSlave2
-		console.log(`Bind will fire event`);
 		expect(await otherMaster1.bindChain(2222, otherSlaveAddress2)).to.not.be.reverted;
-		expect(await waitForContractEvent({ contract: otherMaster1, eventName: "MessageExecutionFinished" }).then(([sendId, wasSuccessful]) => wasSuccessful)).to.be.true;
+		expect(await waitForContractEvent({ contract: otherMaster1, eventName: "MessageExecutionFinished" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(NO_SELECTOR);
 		expect(await otherSlave2.getMasterChain()).to.equal(1111);
 		expect(await otherSlave2.getMasterAddress()).to.equal(otherMasterAddress1);
 
 		// bind OtherMaster2 and OtherSlave1
 		expect(await otherMaster2.bindChain(1111, otherSlaveAddress1)).to.not.be.reverted;
-		expect(await waitForContractEvent({ contract: otherMaster2, eventName: "MessageExecutionFinished" }).then(([sendId, wasSuccessful]) => wasSuccessful)).to.be.true;
+		expect(await waitForContractEvent({ contract: otherMaster2, eventName: "MessageExecutionFinished" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(NO_SELECTOR);
 		expect(await otherSlave1.getMasterChain()).to.equal(2222);
 		expect(await otherSlave1.getMasterAddress()).to.equal(otherMasterAddress2);
 
@@ -320,7 +319,9 @@ describe("ERC-20X Supply", function () {
 	});
 
 	it("TO. Should only bind to SingletonChain.", async() => {
-		//await expect(fungibleMaster1.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
+
+		expect(await fungibleMaster1.bindChain(2222, fungibleMaster2)).to.not.be.reverted;
+		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "MessageExecutionFinished" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal("0x2bee5e06");
 		/*await expect(fungibleMaster1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
 		await expect(fungibleMaster1.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
 

@@ -119,13 +119,14 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 	// invoked by relayer to notify SUCESS or FAILURE
 	// calls token _onCrosschainMessageCallback
-	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bool wasSuccessful) external returns (bytes4)  {
-		console.log("onRelayerCallback. Result:", wasSuccessful);
+	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bytes4 selectorIfError) external returns (bytes4)  {
+		console.log("onRelayerCallback. Result:");
+		console.logBytes4(selectorIfError);
 		console.logBytes32(sendId);
 
 		// notifies token _onCrosschainMessageCallback
 		(uint256 senderChainId, address senderAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
-		IFungible(senderAddress)._onCrosschainMessageCallback(sendId, "", wasSuccessful);
+		IFungible(senderAddress)._onCrosschainMessageCallback(sendId, "", selectorIfError);
 
 	}
 

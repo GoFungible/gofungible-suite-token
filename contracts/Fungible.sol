@@ -276,11 +276,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return true;
 	}
 
-	function _onCrosschainMessageCallback(bytes32 sendId, bytes32 operation, bool wasSuccessful) external override {
+	function _onCrosschainMessageCallback(bytes32 sendId, bytes32 operation, bytes4 selectorIfError) external override {
 		console.log("Source token was confirmed on status of message operation.");
 
-		if (!wasSuccessful) {
-			emit MessageExecutionFinished(sendId, wasSuccessful);
+		if (selectorIfError != bytes4(0)) {
+			emit MessageExecutionFinished(sendId, selectorIfError);
 			console.log("Event emitted to listeners. Operation rolled back");
 			return;
 		}
@@ -298,7 +298,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			//return _onCrosschainMessageCallback(payload);
 		}
 
-		emit MessageExecutionFinished(sendId, wasSuccessful);
+		emit MessageExecutionFinished(sendId, selectorIfError);
 		console.log("Event emitted to listeners. Operation finally committed on source token");
 	}
 

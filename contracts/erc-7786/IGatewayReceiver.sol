@@ -15,6 +15,6 @@ interface IGatewayReceiver {
 	/**
 	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
 	 */
-	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bool wasSuccessful) external returns (bytes4);
+	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bytes4 selectorIfError) external returns (bytes4);
 		
 }
