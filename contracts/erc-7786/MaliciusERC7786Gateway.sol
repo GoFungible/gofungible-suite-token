@@ -30,7 +30,7 @@ contract MaliciusERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 	}
 
-	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bytes memory payload) external returns (bytes4)  {
+	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bool wasSuccessful) external returns (bytes4) {
 
 		// invoked by relayer
 

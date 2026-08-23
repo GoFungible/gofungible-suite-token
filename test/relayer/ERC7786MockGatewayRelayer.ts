@@ -58,60 +58,58 @@ export class ERC7786MockGatewayRelayer {
 				// Destructure event payload
 				const [sendId, senderBOA,  recipientBOA, payload, value, attributes] = event.args; 
 
-        console.log(`\n📨 Intercepted ERC-7786 message! Id: ${sendId}`);
+        /*console.log(`\n📨 Intercepted ERC-7786 message! Id: ${sendId}`);
         console.log(`🌍 senderBOA: ${senderBOA}`);
         console.log(`🌍 recipientBOA: ${recipientBOA}`);
         console.log(`🌍 payload: ${payload}`);
         console.log(`🌍 value: ${value}`);
-        console.log(`🌍 attributes: ${attributes}`);
+        console.log(`🌍 attributes: ${attributes}`);*/
 
-				console.log(`\n📨 Sending to Destination Gateway ${destGatewayAddress}`);
+				console.log(`\n📨 Sending message ${sendId} to Destination Gateway ${destGatewayAddress}`);
 
-				// case of sucessfull call
 				try {
 
 					const tx1 = await IGatewayReceiver__factory
 						.connect(destGatewayAddress, destRelayer)
 						.sendRelayerMessageToToken(sendId, senderBOA,  recipientBOA, payload, value, attributes);
 
-					console.log("SUCESSFULL CALL. sending back OK to source token via relayer");
+					console.log(`✅ ERC-7786 Message: SUCESSFULL operation on destination gateway. Hash: ${tx1?.hash}`);
 
-				// ************************************************************************************************
-				// ********************** Sucessfull operation callback notification to source ********************
-				// ************************************************************************************************			
-
+					// ************************************************************************************************
+					// ***************** Sending sucessfull operation callback notification to source *****************
+					// ************************************************************************************************			
+					// case of sucessfull call
 					const tx2 = await IGatewayReceiver__factory
 						.connect(sourceGatewayAddress, sourceRelayer)
-						.onRelayerCallback(sendId, senderBOA, payload);
+						.onRelayerCallback(sendId, senderBOA, true);
 
-					console.log("SUCESSFULL CALL");
-					//console.log(tx);
+					console.log(`✅ ERC-7786 Message: SUCESSFULL callback sent to source gateway. Hash: ${tx2?.hash}`);
 				} 
 
 				// ************************************************************************************************
-				// ************************ Failed operation callback notification to source **********************
+				// ********************* Sending failed operation callback notification to source *****************
 				// ************************************************************************************************				
 				// case of failed call
 				catch (error:any) {
 
-					console.error("❌ Failed to relay message:", error);
+					console.error("❌ Destination gateway notifies FAILED to execute message:", error);
 
 					const rawHexData = error.data || error.error?.data || error.receipt?.data;
-					console.log("ERROR1: ", rawHexData)
-
+					console.error("❌ Error receipt:", rawHexData);
 					if (rawHexData) {
 						const errorSelector = rawHexData.slice(0, 10);
-						console.log("ERROR1: ", errorSelector)
+						console.error("❌ Error selector:", errorSelector);
 					}
+
+					console.error(`❌ ERC-7786 Message: Sending FAILED callback to source gateway.`);
 
 					const tx = await IGatewayReceiver__factory
 						.connect(sourceGatewayAddress, sourceRelayer)
-						.onRelayerCallback(sendId, senderBOA, payload);
+						.onRelayerCallback(sendId, senderBOA, false);
+
+					console.error(`❌ ERC-7786 Message: FAILED callback sent to source gateway. Hash: ${tx?.hash}`);
 
 				}
-        
-				console.log(`✅ ERC-7786 Message delivered to destination node! Tx`);
-				//console.log(`✅ ERC-7786 Message delivered to destination node! Tx: ${receipt?.hash}`);
 				
       }
     );

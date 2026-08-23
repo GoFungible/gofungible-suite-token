@@ -16,11 +16,6 @@ interface IERC7786GatewaySource {
 		bytes[] attributes
 	);
 
-	event Message2Sent(
-		string param,
-		string value
-	);
-
 	error UnsupportedAttribute(bytes4 selector);
 
 	function supportsAttribute(bytes4 selector) external view returns (bool);

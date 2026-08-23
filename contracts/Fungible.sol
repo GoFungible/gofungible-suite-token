@@ -276,20 +276,30 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return true;
 	}
 
-	function _onCrosschainMessageCallback(bytes32 operation) internal returns (bytes4) {
+	function _onCrosschainMessageCallback(bytes32 sendId, bytes32 operation, bool wasSuccessful) external override {
+		console.log("Source token was confirmed on status of message operation.");
+
+		if (!wasSuccessful) {
+			emit MessageExecutionSuccessful(sendId);
+			console.log("Event emitted to listeners. Operation rolled back");
+			return;
+		}
 
 		if (operation == MSG_BND) {
-			return _onCrosschainBindCallback(operation);
+			_onCrosschainBindCallback(operation);
 
 		} else if (operation == MSG_SUP) {
-			return _onCrosschainSupplyCallback(operation);
+			_onCrosschainSupplyCallback(operation);
 
 		} else if (operation == MSG_CLO) {
-			return _onCrosschainCloneStateCallback(operation);
+			_onCrosschainCloneStateCallback(operation);
 
 		} else {
 			//return _onCrosschainMessageCallback(payload);
 		}
+
+		emit MessageExecutionSuccessful(sendId);
+		console.log("Event emitted to listeners. Operation finally committed on source token");
 	}
 
 	// TODO: Use EIP-712

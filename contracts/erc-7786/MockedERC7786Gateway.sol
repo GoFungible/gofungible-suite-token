@@ -4,6 +4,7 @@ pragma solidity 0.8.30;
 import "./IERC7786GatewaySource.sol";
 import "./IERC7786Recipient.sol";
 import "./IGatewayReceiver.sol";
+import "../IFungible.sol";
 import {LibERC7786ToEthAdapter} from "./LibERC7786ToEthAdapter.sol";
 
 import "hardhat/console.sol";
@@ -116,13 +117,15 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	// ************************ Response: Relayer -> Gateway -> Token1 (ERC-7786) *********************
 	// ************************************************************************************************
 
-	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bytes memory payload) external returns (bytes4)  {
-		console.log("onRelayerCallback. What should i do here?");
+	// invoked by relayer to notify SUCESS or FAILURE
+	// calls token _onCrosschainMessageCallback
+	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bool wasSuccessful) external returns (bytes4)  {
+		console.log("onRelayerCallback. Result:", wasSuccessful);
 		console.logBytes32(sendId);
 
-		// invoked by relayer
-
-		// must call token _onCrosschainMessageCallback
+		// notifies token _onCrosschainMessageCallback
+		(uint256 senderChainId, address senderAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
+		IFungible(senderAddress)._onCrosschainMessageCallback(sendId, "", wasSuccessful);
 
 	}
 

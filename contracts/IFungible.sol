@@ -57,6 +57,13 @@ abstract contract IFungible {
 		// require(msg.value == 0, "No Ether allowed");
 	}
 
+	// here the operation is completed by the source
+	function _onCrosschainMessageCallback(bytes32 sendId, bytes32 operation, bool wasSuccessful) external virtual;
+
+	event MessageExecutionSuccessful(bytes32 indexed sendId);
+
+	event MessageExecutionUnsuccessful(bytes32 indexed sendId);
+
 	// ************************************************************************************************
 	// ********************************************* Modifiers ****************************************
 	// ************************************************************************************************
