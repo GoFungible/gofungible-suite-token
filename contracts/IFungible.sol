@@ -60,9 +60,7 @@ abstract contract IFungible {
 	// here the operation is completed by the source
 	function _onCrosschainMessageCallback(bytes32 sendId, bytes32 operation, bool wasSuccessful) external virtual;
 
-	event MessageExecutionSuccessful(bytes32 indexed sendId);
-
-	event MessageExecutionUnsuccessful(bytes32 indexed sendId);
+	event MessageExecutionFinished(bytes32 indexed sendId, bool wasSucessfull);
 
 	// ************************************************************************************************
 	// ********************************************* Modifiers ****************************************

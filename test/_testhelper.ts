@@ -61,11 +61,10 @@ export let bytes5ToString = function (hexString: string) {
 export type Bytes4 = `0x${string}`;
 
 interface WaitForEventOptions {
-  contract: ethers.Contract;
+  contract: ethers.BaseContract;
   eventName: string;
   timeoutMs?: number;
-  // A predicate function to match specific criteria (e.g., matching a unique requestId)
-  filterPredicate?: (...args: any[]) => boolean;
+  filterPredicate?: (...args: any[]) => boolean;	// A predicate function to match specific criteria (e.g., matching a unique requestId)
 }
 
 /**
@@ -80,6 +79,9 @@ export function waitForContractEvent({
 }: WaitForEventOptions): Promise<any[]> {
   
   return new Promise((resolve, reject) => {
+
+		const start: number = performance.now();
+
     // 1. Safety Timeout Setup
     const timeout = setTimeout(() => {
       contract.off(eventName, listener); // Prevent memory leaks
@@ -94,6 +96,7 @@ export function waitForContractEvent({
       }
 
       // Found a match! Clean up and resolve
+			console.log(`Operation delayed ${performance.now() - start} ms`);
       clearTimeout(timeout);
       contract.off(eventName, listener);
       resolve(args);

@@ -280,7 +280,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		console.log("Source token was confirmed on status of message operation.");
 
 		if (!wasSuccessful) {
-			emit MessageExecutionSuccessful(sendId);
+			emit MessageExecutionFinished(sendId, wasSuccessful);
 			console.log("Event emitted to listeners. Operation rolled back");
 			return;
 		}
@@ -298,7 +298,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			//return _onCrosschainMessageCallback(payload);
 		}
 
-		emit MessageExecutionSuccessful(sendId);
+		emit MessageExecutionFinished(sendId, wasSuccessful);
 		console.log("Event emitted to listeners. Operation finally committed on source token");
 	}
 
