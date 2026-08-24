@@ -4,7 +4,7 @@ import { JsonRpcSigner, ZeroAddress } from "ethers";
 import { MockedERC7786Gateway } from "../typechain-types";
 import { Fungible} from "../typechain-types/contracts/Fungible";
 import { ERC7786MockGatewayRelayer } from "./relayer/ERC7786MockGatewayRelayer";
-import { NO_SELECTOR, waitForContractEvent } from "./_testhelper";
+import { NO_SELECTOR, OnlyBindToSingletonChainError, selector, UNIVERSAL_ERRORS_ABI, waitForContractEvent } from "./_testhelper";
 
 describe("ERC-20X Supply", function () {
 	let owner1: JsonRpcSigner, relayer1: JsonRpcSigner, addr11: JsonRpcSigner, addr12: JsonRpcSigner, addr13: JsonRpcSigner, addrs1: JsonRpcSigner[];
@@ -42,6 +42,10 @@ describe("ERC-20X Supply", function () {
 			const net2 = await node2Provider.getNetwork();
 			console.log(`Node2 ChainId ${net2.chainId} Accounts[${index}] (${signer.address}): ${ethers.formatEther(bal)}`);
 		});
+
+		for (const error of UNIVERSAL_ERRORS_ABI) {
+			console.log(`${selector(error)} : ${error}`);
+		}
 
 		// ***********************************************************************************************************************************************************
 		// ************************************************************************** Deploy Network *****************************************************************
@@ -321,7 +325,7 @@ describe("ERC-20X Supply", function () {
 	it("TO. Should only bind to SingletonChain.", async() => {
 
 		expect(await fungibleMaster1.bindChain(2222, fungibleMaster2)).to.not.be.reverted;
-		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "MessageExecutionFinished" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal("0x2bee5e06");
+		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "MessageExecutionFinished" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
 		/*await expect(fungibleMaster1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
 		await expect(fungibleMaster1.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
 

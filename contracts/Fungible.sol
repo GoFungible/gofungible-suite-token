@@ -332,9 +332,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
 		if (header.op == MSG_BND) {
-			require(_masterChain == ZERO_VALUE, OnlySingletonChain(srcChainId));										// not master chain
-			require(_masterAddress == ZERO_ADDRESS, OnlySingletonChain(srcChainId));								// not master address
-			require(_totalSupply == ZERO_VALUE, ZeroValueRequired(_totalSupply));										// not supply yet
+			require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());										// not master chain
+			require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());								// not master address
+			require(_totalSupply == ZERO_VALUE, ZeroValueRequired(_totalSupply));								// not supply yet
 
 			return _onCrosschainBind(payload);
 		}

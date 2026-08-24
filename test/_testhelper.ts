@@ -58,10 +58,6 @@ export let bytes5ToString = function (hexString: string) {
 	return ethers.toUtf8String(hexString);
 }
 
-export type Bytes4 = `0x${string}`;
-
-export const NO_SELECTOR: string = "0x00000000";
-
 interface WaitForEventOptions {
   contract: ethers.BaseContract;
   eventName: string;
@@ -108,3 +104,57 @@ export function waitForContractEvent({
     contract.on(eventName, listener);
   });
 }
+
+
+export type Bytes4 = `0x${string}`;
+
+export const NO_SELECTOR: string = "0x00000000";
+export let selector = function (signature: string) {
+	return ethers.id(signature).slice(0, 10);
+}
+
+export const ZeroAddressRequiredError = "ZeroAddressRequired(address nonZeroAddress)";		// 0x926be0ae
+export const ZeroValueRequiredError = "ZeroValueRequired(uint256 nonZeroVaue)";						// 0x51be93a0
+export const NonZeroAddressRequiredError = "NonZeroAddressRequired()";										// 0xd357d001
+export const NonZeroValueRequiredError = "NonZeroValueRequired()";												// 0x8f8b9fd4
+export const OnlyOwnerError = "OnlyOwner(address sender)";																// 0x907433a7
+export const OnlyGatewayError = "OnlyGateway(address sender)";														// 0xfe0858c6
+export const GatewayRequiredError = "GatewayRequired(address sender)";										// 0xee88ae73
+export const OnlyBindToOtherChainError = "OnlyBindToOtherChain()";												// 0x191c314d
+export const OnlyBindFromMasterChainError = "OnlyBindFromMasterChain()";									// 0x314cc367
+export const OnlyBindToSingletonChainError = "OnlyBindToSingletonChain()";								// 0xf530503f
+export const OnlyUnbindFromOtherChainError = "OnlyUnbindFromOtherChain()";								// 0x491b56c3
+export const OnlyUnbindFromMasterChainError = "OnlyUnbindFromMasterChain()";							// 0xd23243c5
+export const OnlyUnbindFromSlaveChainError = "OnlyUnbindFromSlaveChain()";								// 0x98971510
+export const OnlyMasterChainError = "OnlyMasterChain(uint256 chain)";											// 0x38cd76ac
+export const OnlySlaveChainError = "OnlySlaveChain(uint256 chain)";												// 0xbdcf02ba
+export const OnlySingletonChainError = "OnlySingletonChain(uint256 chain)";								// 0xa1a81528
+export const ErrorInCrossChainMessageError = "ErrorInCrossChainMessage()";								// 0xf874e27f
+export const ErrorInCrossChainBindError = "ErrorInCrossChainBind()";											// 0x4d6b778d
+
+export const UNIVERSAL_ERRORS_ABI = [
+	`error ${ZeroAddressRequiredError}`,
+	`error ${ZeroValueRequiredError}`,
+	`error ${NonZeroAddressRequiredError}`,
+	`error ${NonZeroValueRequiredError}`,
+
+	`error ${OnlyOwnerError}`,
+	`error ${OnlyGatewayError}`,
+
+	`error ${GatewayRequiredError}`,
+
+	`error ${OnlyBindToOtherChainError}`,
+	`error ${OnlyBindFromMasterChainError}`,
+	`error ${OnlyBindToSingletonChainError}`,
+	`error ${OnlyUnbindFromOtherChainError}`,
+	`error ${OnlyUnbindFromMasterChainError}`,
+	`error ${OnlyUnbindFromSlaveChainError}`,
+
+	`error ${OnlyMasterChainError}`,
+	`error ${OnlySlaveChainError}`,
+	`error ${OnlySingletonChainError}`,
+
+	`error ${ErrorInCrossChainMessageError}`,
+	`error ${ErrorInCrossChainBindError}`,
+];
+export const universalInterface = new ethers.Interface(UNIVERSAL_ERRORS_ABI);
