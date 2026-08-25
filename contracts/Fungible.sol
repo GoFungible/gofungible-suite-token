@@ -309,18 +309,17 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 		console.log("Fungible received message1!!!");
 
-		Message memory message = abi.decode(messageBytes, (Message));
-		console.log("Fungible received message2!!!");
-
-		// Validate sender
+		// Validate sender from gateway data
 		(uint256 srcChainId, address srcAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
 		// TODO
+		// require....
 
 		// Acknowdledge message
 		emit MessageReceived(sendId, srcChainId, srcAddress, messageBytes);
 		console.log("Fungible received message3!!!");
 
 		// get message info
+		Message memory message = abi.decode(messageBytes, (Message));
 		bytes memory payload = message.payload;
 		Header memory header = message.header;
 		console.log("Fungible received message4!!!");
