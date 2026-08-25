@@ -312,15 +312,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		Message memory message = abi.decode(messageBytes, (Message));
 		console.log("Fungible received message2!!!");
 
-		// verify sender
-		Metadata memory mefadata = message.metadata;
-		uint32 srcChainId = mefadata.srcChainId;
-		bytes32 srcAddressBytes = mefadata.srcAddress;
-		address srcAddress = address(uint160(uint256(srcAddressBytes)));
-		console.log("Fungible received message3!!!");
+		// Validate sender
+		(uint256 srcChainId, address srcAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
+		// TODO
 
-		// Execution Simulation (Emit event for test verification)
+		// Acknowdledge message
 		emit MessageReceived(sendId, srcChainId, srcAddress, messageBytes);
+		console.log("Fungible received message3!!!");
 
 		// get message info
 		bytes memory payload = message.payload;

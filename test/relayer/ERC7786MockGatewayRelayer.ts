@@ -59,7 +59,8 @@ export class ERC7786MockGatewayRelayer {
 				// Destructure event payload
 				const [sendId, senderBOA,  recipientBOA, payload, value, attributes] = event.args; 
 
-        /*console.log(`\n📨 Intercepted ERC-7786 message! Id: ${sendId}`);
+				console.log(`\n📨 Intercepted ERC-7786 message by relayer! Id: ${sendId}`);
+        /*
         console.log(`🌍 senderBOA: ${senderBOA}`);
         console.log(`🌍 recipientBOA: ${recipientBOA}`);
         console.log(`🌍 payload: ${payload}`);

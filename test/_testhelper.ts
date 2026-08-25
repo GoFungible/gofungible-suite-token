@@ -77,14 +77,17 @@ export function waitForContractEvent({
 }: WaitForEventOptions): Promise<any[]> {
   
   return new Promise((resolve, reject) => {
+		console.log(`WaitForEventOptions1`);
 
 		const start: number = performance.now();
+		console.log(`WaitForEventOptions2`);
 
     // 1. Safety Timeout Setup
     const timeout = setTimeout(() => {
       contract.off(eventName, listener); // Prevent memory leaks
       reject(new Error(`Timeout: Event "${eventName}" was not emitted within ${timeoutMs}ms.`));
     }, timeoutMs);
+		console.log(`WaitForEventOptions3`);
 
     // 2. The Universal Listener Wrapper
     const listener = (...args: any[]) => {
@@ -92,13 +95,17 @@ export function waitForContractEvent({
       if (filterPredicate && !filterPredicate(...args)) {
         return; // Skip this event emission; it's not the one we are waiting for
       }
+			console.log(`WaitForEventOptions4`);
+			console.log(eventName);
 
       // Found a match! Clean up and resolve
 			console.log(`Operation delayed ${performance.now() - start} ms`);
       clearTimeout(timeout);
       contract.off(eventName, listener);
+			console.log(`listener removed`);
       resolve(args);
     };
+		console.log(`WaitForEventOptions5`);
 
     // 3. Register the event with ethers v6
     contract.on(eventName, listener);
