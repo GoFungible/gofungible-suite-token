@@ -64,9 +64,8 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		console.log("sending Message 2 chainId", receiverChainId);
-		console.log("sending Message 2 receiverAddress", receiverAddress);
-		
+		print(0, "sending Message 2 to", receiverChainId, receiverAddress);
+
 		// create Binary Interoperable Address for sender
 		bytes memory senderBOA = LibERC7786ToEthAdapter.generateERC7930Record(block.chainid, msg.sender);
 
@@ -84,8 +83,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		else {
 
 			// Emitting log safely at the end of the call execution sequence
-			console.log("sending Message 4 to", receiverChainId);
-			console.log("sending Message 4 to", receiverAddress);
+			print(0, "sending Message 4 to", receiverChainId, receiverAddress);
 			emit MessageSent(outboxId, senderBOA, recipientBOA, payload, msg.value, attributes);
 			console.log("MessageSent fired!!!");
 		}
@@ -99,18 +97,17 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	/**
 	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
 	 */
-	function sendRelayerMessageToToken(bytes32 sendId, bytes memory senderBOA, bytes memory recipientBOA, bytes memory payload, uint256 value, bytes[] memory attributes) external returns (bytes4)  {
+	function sendRelayerMessageToToken(bytes32 id, bytes memory senderBOA, bytes memory recipientBOA, bytes memory payload, uint256 value, bytes[] memory attributes) external returns (bytes4)  {
 
 		// Execute push delivery to the recipient target contract
 		// bytes4 selector = Fungible(targetContract).receiveMessage(sourceChainId, sender, messagePayload);
-		console.log("gateway receive Message 1");
+		console.log(string(abi.encodePacked(id, " | ", " gateway receive Message 1")));
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		console.log("executeRelayedMessage chainId", receiverChainId);
-		console.log("executeRelayedMessage receiverAddress", receiverAddress);
+		print(id, "executeRelayedMessage chainId", receiverChainId, receiverAddress);
 
-		return IERC7786Recipient(receiverAddress).receiveMessage(sendId, senderBOA, payload);
+		return IERC7786Recipient(receiverAddress).receiveMessage(id, senderBOA, payload);
 	}
 
 	// ************************************************************************************************
@@ -119,15 +116,38 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 	// invoked by relayer to notify SUCESS or FAILURE
 	// calls token _onCrosschainMessageCallback
-	function onRelayerCallback(bytes32 sendId, bytes memory senderBOA, bytes4 selectorIfError) external returns (bytes4)  {
-		console.log("onRelayerCallback. Result:");
+	function onRelayerCallback(bytes32 id, bytes memory senderBOA, bytes4 selectorIfError) external returns (bytes4)  {
+		print(id, "Message response received by gateway Result");
 		console.logBytes4(selectorIfError);
-		console.logBytes32(sendId);
 
 		// notifies token _onCrosschainMessageCallback
 		(uint256 senderChainId, address senderAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
-		IFungible(senderAddress)._onCrosschainMessageCallback(sendId, "", selectorIfError);
+		IFungible(senderAddress)._onCrosschainMessageCallback(id, "", selectorIfError);
+		print(id, "Fungible notified about the message resultkkk");
 
 	}
+
+	function print(bytes32 id, string memory message) public {
+			console.log(string(abi.encodePacked("<< ", _toHexString(id), " >>: ", message)));
+	}
+	function print(bytes32 id, string memory message, uint256 data) public {
+			console.log(string(abi.encodePacked("<< ", _toHexString(id), " >>: ", message, data)));
+	}
+	function print(bytes32 id, string memory message, address _address) public {
+			console.log(string(abi.encodePacked("<< ", _toHexString(id), " >>: ", message, string(abi.encodePacked(_address)))));
+	}
+	function print(bytes32 id, string memory message, uint256 data, address _address) public {
+			console.log(string(abi.encodePacked("<< ", _toHexString(id), " >>: ", message, data, string(abi.encodePacked(_address)))));
+	}
+	function _toHexString(bytes32 data) internal pure returns (string memory) {
+			bytes memory alphabet = "0123456789abcdef";
+			bytes memory str = new bytes(64);
+			for (uint256 i = 0; i < 32; i++) {
+					str[i*2] = alphabet[uint8(data[i] >> 4)];
+					str[i*2 + 1] = alphabet[uint8(data[i] & 0x0f)];
+			}
+			return string(str);
+	}
+
 
 }

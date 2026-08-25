@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
+import "hardhat/console.sol";
+
 abstract contract IFungible {
 
 	// ************************************************************************************************
@@ -145,5 +147,29 @@ abstract contract IFungible {
 		_array.pop();
 	}
 
+	// ************************************************************************************************
+	// *********************************************** Log ********************************************
+	// ************************************************************************************************
+	function print(bytes32 id, string memory message) public {
+			console.log(string(abi.encodePacked("<< ", _toHexString(id), " >>: ", message)));
+	}
+	function print(bytes32 id, string memory message, uint256 data) public {
+			console.log(string(abi.encodePacked("<< ", _toHexString(id), " >>: ", message, data)));
+	}
+	function print(bytes32 id, string memory message, address _address) public {
+			console.log(string(abi.encodePacked("<< ", _toHexString(id), " >>: ", message, string(abi.encodePacked(_address)))));
+	}
+	function print(bytes32 id, string memory message, uint256 data, address _address) public {
+			console.log(string(abi.encodePacked("<< ", _toHexString(id), " >>: ", message, data, string(abi.encodePacked(_address)))));
+	}
+	function _toHexString(bytes32 data) internal pure returns (string memory) {
+			bytes memory alphabet = "0123456789abcdef";
+			bytes memory str = new bytes(64);
+			for (uint256 i = 0; i < 32; i++) {
+					str[i*2] = alphabet[uint8(data[i] >> 4)];
+					str[i*2 + 1] = alphabet[uint8(data[i] & 0x0f)];
+			}
+			return string(str);
+	}
 
 }
