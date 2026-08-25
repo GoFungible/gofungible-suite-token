@@ -245,7 +245,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _extGateway;
 	}
 
-  function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bool) {
+  function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bytes32) {
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(_extGateway));
 
 		// By doing this, this contract only interacts with the based networks. Be aware.
@@ -270,10 +270,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		bytes[] memory attributes = new bytes[](0);
 
-    bytes32 response = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
-		require(response != bytes32(0), ErrorInCrossChainMessage());
+    bytes32 id = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
+		require(id != bytes32(0), ErrorInCrossChainMessage());
 
-		return true;
+		return id;
 	}
 
 	function _onCrosschainMessageCallback(bytes32 id, bytes32 operation, bytes4 selectorIfError) external override {
@@ -373,7 +373,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return knownChains;
 	}
 
-	function bindChain(uint256 toChainId, address toChainAddress) external payable {
+	function bindChain(uint256 toChainId, address toChainAddress) external payable override returns (bytes32) {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
 		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
@@ -384,14 +384,17 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(supplies[toChainId] == ZERO_VALUE, OnlyBindToSingletonChain());		
 		require(addresses[toChainId] == ZERO_ADDRESS, OnlyBindToSingletonChain());
 
-		bool response = _sendCrosschainBind(toChainId, toChainAddress, true);
-		require (response, ErrorInCrossChainBind());
+		bytes32 id = _sendCrosschainBind(toChainId, toChainAddress, true);
+		require (id != bytes32(0), ErrorInCrossChainBind());
 
+		// TODO: this should be on _onCrosschainBindCallback
 		knownChains.push(toChainId);
 		addresses[toChainId] = toChainAddress;
+
+		return id;
 	}
 
-	function unbindChain(uint256 fromChainId) external payable{
+	function unbindChain(uint256 fromChainId) external payable override returns (bytes32) {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
 		require(supplies[fromChainId] != ZERO_VALUE, NonZeroValueRequired());
@@ -401,11 +404,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(supplies[fromChainId] != ZERO_VALUE, OnlyUnbindFromSlaveChain());
 		require(addresses[fromChainId] != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
 
-		bool response = _sendCrosschainBind(fromChainId, ZERO_ADDRESS, false);
-		require (response, ErrorInCrossChainBind());
+		bytes32 id = _sendCrosschainBind(fromChainId, ZERO_ADDRESS, false);
+		require (id != bytes32(0), ErrorInCrossChainBind());
 
+		// TODO: this should be on _onCrosschainBindCallback
 		removeValueFromArray(knownChains, fromChainId);
 		addresses[fromChainId] = ZERO_ADDRESS;
+
+		return id;
 	}
 	
 	/**
@@ -418,7 +424,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		address masterAddress;
 	}
 
-	function _sendCrosschainBind(uint256 toChain, address toAddres, bool isBound) internal returns (bool) {
+	function _sendCrosschainBind(uint256 toChain, address toAddres, bool isBound) internal returns (bytes32) {
     // Build your application's data package
     FungibleBindPayload memory payload = FungibleBindPayload({
 			flag: isBound,
@@ -427,8 +433,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     });
     bytes memory packedPayload = abi.encode(payload);
 
-		bool response = _sendMessage(MSG_BND, toChain, toAddres, packedPayload);
-		return response;
+		bytes32 id = _sendMessage(MSG_BND, toChain, toAddres, packedPayload);
+		return id;
 	}
 
 	function _onCrosschainBindCallback(bytes32 operation) internal returns (bytes4) {
@@ -498,8 +504,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// transfer state to new master
 		if (_newMasterChain != CHAIN_ID) {
-			bool result = _cloneState(_newMasterChain, _newMasterAddress);
-			require (result, "MasterChain: state transfer failed");
+			bytes32 id = _cloneState(_newMasterChain, _newMasterAddress);
+			require (id != bytes32(0), "MasterChain: state transfer failed");
 		}
 
 		// broadcast to all other chains
@@ -524,7 +530,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint256[] supplies;       				// The total amount of tokens being moved
 	}
 
-	function _cloneState(uint256 toChain, address toAddress) internal returns (bool) {
+	function _cloneState(uint256 toChain, address toAddress) internal returns (bytes32) {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
 		uint256[] memory suppliesList = new uint256[](knownChains.length);
@@ -543,8 +549,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
     bytes memory packedPayload = abi.encode(payload);
 
-		bool response = _sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
-		return response;
+		bytes32 id = _sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
+		return id;
 	}
 
 	function _onCrosschainCloneStateCallback(bytes32 operation) internal returns (bytes4) {
@@ -653,8 +659,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// if transferring from master update remote before, then update master
 		if (CHAIN_ID == _masterChain) {
 
-			bool result = _sendCrosschainSupply(inChain, inAddress, amount);
-			require (result, "Transfer failure");
+			bytes32 id = _sendCrosschainSupply(inChain, inAddress, amount);
+			require (id != bytes32(0), "Transfer failure");
 
 			// burn in this chain
 			_balances[msg.sender] -= amount;
@@ -675,8 +681,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// if transferring from no master to no master send to master, then update
 		else {
-			bool result2 = _sendCrosschainSupply(_masterChain, _masterAddress, amount);
-			require (result2, "Transfer failure");
+			bytes32 id = _sendCrosschainSupply(_masterChain, _masterAddress, amount);
+			require (id != bytes32(0), "Transfer failure");
 
 			// burn in this chain
 			_balances[msg.sender] -= amount;
@@ -698,7 +704,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint256 amount;          	// The total amount of tokens being moved
 	}
 
-	function _sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal returns (bool) {
+	function _sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal returns (bytes32) {
     // Build your application's data package
     FungibleSupplyPayload memory payload = FungibleSupplyPayload({
 			outChain: CHAIN_ID,
@@ -709,8 +715,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     });
     bytes memory packedPayload = abi.encode(payload);
 
-		bool response = _sendMessage(MSG_SUP, _masterChain, _masterAddress, packedPayload);
-		return response;
+		bytes32 id = _sendMessage(MSG_SUP, _masterChain, _masterAddress, packedPayload);
+		return id;
 	}
 
 	function _onCrosschainSupplyCallback(bytes32 operation) internal returns (bytes4) {
@@ -747,16 +753,16 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		else if (CHAIN_ID == _masterChain && inChain != CHAIN_ID) {
 
 			// forward to inChain
-			bool result2 = _sendCrosschainSupply(inChain, inAddress, amount);
-			if (result2) {
+			bytes32 id = _sendCrosschainSupply(inChain, inAddress, amount);
+			if (id != bytes32(0)) {
 				supplies[inChain] += amount;
 				supplies[outChain] -= amount;
 			}
 
 			// rollback outChain
 			else {
-				bool result3 = _sendCrosschainSupply(outChain, outAddress, /*-1 **/ amount);
-				if (!result3) {
+				bytes32 id1 = _sendCrosschainSupply(outChain, outAddress, /*-1 **/ amount);
+				if (id1 == bytes32(0)) {
 					// problem here
 					// manual retry
 				}
