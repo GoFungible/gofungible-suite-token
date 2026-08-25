@@ -272,6 +272,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
     bytes32 id = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
 		require(id != bytes32(0), ErrorInCrossChainMessage());
+		print(id, "id returned by sendMessage from gateway.");
 
 		return id;
 	}
@@ -391,6 +392,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		knownChains.push(toChainId);
 		addresses[toChainId] = toChainAddress;
 
+		print(id, "bindChain allocated id");
 		return id;
 	}
 

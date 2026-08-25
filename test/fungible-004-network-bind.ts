@@ -251,7 +251,7 @@ describe("ERC-20X Supply", function () {
   });
 
 	/********************************************************************************************************/
-	/************************************************** Bind ************************************************/
+	/**************************************** Bind - Sender Test Cases **************************************/
 	/********************************************************************************************************/
 	it("WHO. Only owner can bind.", async() => {
 		await expect(fungibleMaster1.connect(addr13).bindChain(2222, fungibleSingleton2.getAddress())).to.be.revertedWithCustomError(fungibleMaster1, "OnlyOwner");
@@ -322,10 +322,21 @@ describe("ERC-20X Supply", function () {
 		await expect(otherSlave2.bindChain(1111, otherSlave1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterChain");		
 	});
 
+	/********************************************************************************************************/
+	/**************************************** Bind - Receiver Test Cases ************************************/
+	/********************************************************************************************************/
 	it("TO. Should only bind to SingletonChain.", async() => {
 
 		expect(await fungibleMaster1.bindChain(2222, fungibleMaster2)).to.not.be.reverted;
 		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "MessageExecutionFinished" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
+
+		// should get the id of the message to filter
+
+		// track also receiver filtering by id
+
+		// track response filtering by id
+
+		//expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "MessageExecutionFinished" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
 		/*await expect(fungibleMaster1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
 		await expect(fungibleMaster1.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToSingletonChain");
 

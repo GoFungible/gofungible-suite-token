@@ -56,15 +56,15 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	 */
 	function sendMessage(bytes calldata recipientBOA, bytes calldata payload, bytes[] calldata attributes) external payable override /*nonReentrant*/ returns (bytes32 outboxId) {
 		//require(recipient.length == 20, "MockERC7786: Invalid recipient address length");
-		console.log("sending Message 1");
 
 		// State & Identifier updates
 		_nonce++;
 		outboxId = keccak256(abi.encodePacked(block.timestamp, msg.sender, _nonce));
+		print(outboxId, "sending Message 1");
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		print(0, "sending Message 2 to", receiverChainId, receiverAddress);
+		print(outboxId, "sending Message 2 to", receiverChainId, receiverAddress);
 
 		// create Binary Interoperable Address for sender
 		bytes memory senderBOA = LibERC7786ToEthAdapter.generateERC7930Record(block.chainid, msg.sender);
@@ -85,7 +85,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 			// Emitting log safely at the end of the call execution sequence
 			print(0, "sending Message 4 to", receiverChainId, receiverAddress);
 			emit MessageSent(outboxId, senderBOA, recipientBOA, payload, msg.value, attributes);
-			console.log("MessageSent fired!!!");
+			print(outboxId, "MessageSent event fired!!!");
 		}
 
 		return outboxId;
@@ -123,7 +123,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		// notifies token _onCrosschainMessageCallback
 		(uint256 senderChainId, address senderAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
 		IFungible(senderAddress)._onCrosschainMessageCallback(id, "", selectorIfError);
-		print(id, "Fungible notified about the message resultkkk");
+		print(id, "Fungible notified about the message result");
 
 	}
 
