@@ -25,6 +25,7 @@ abstract contract IFungible {
   error OnlyOwner(address sender);
   error OnlyGateway(address sender);
 
+  error UnexpectedCallback(bytes32 id);
   error GatewayRequired(address sender);
 
   error OnlyBindToOtherChain();									//  
@@ -42,7 +43,6 @@ abstract contract IFungible {
 	error ErrorInCrossChainBind();
 
 
-	event FungibleMessageSent(bytes32 indexed sendId, bytes32 operation, uint256 toChain, address toAddress, bytes packedPayload);
 
 
 	// ************************************************************************************************
@@ -59,10 +59,17 @@ abstract contract IFungible {
 		// require(msg.value == 0, "No Ether allowed");
 	}
 
+
+
+
 	// here the operation is completed by the source
 	function _onCrosschainMessageCallback(bytes32 sendId, bytes32 operation, bytes4 selectorIfError) external virtual;
 
-	event MessageExecutionFinished(bytes32 indexed sendId, bytes4 selectorIfError);
+	event FungibleMessageSent(bytes32 indexed sendId, bytes32 operation, uint256 toChain, address toAddress, bytes packedPayload);
+
+	event FungibleMessageReceived(bytes32 indexed sendId);
+	
+	event FungibleMessageCallback(bytes32 indexed sendId, bytes4 selectorIfError);
 
 	// ************************************************************************************************
 	// ********************************************* Modifiers ****************************************

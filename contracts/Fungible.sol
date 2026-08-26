@@ -245,6 +245,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return _extGateway;
 	}
 
+	// ************************************************************************************************
+	// ************************************ ERC-7786 Messages *****************************************
+	// ************************************************************************************************
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bytes32) {
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(_extGateway));
 
@@ -270,41 +273,21 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		bytes[] memory attributes = new bytes[](0);
 
+		// send message
     bytes32 id = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
 		require(id != bytes32(0), ErrorInCrossChainMessage());
 		print(id, "[3] id returned by sendMessage from gateway.");
+
+		// add pending callback
+		pendingCallbacks[id] = PendingCallback({
+			operation: operation
+		});
 
 		// to really guarantee thaht this is the tx, we need to emit in the token
 		// if we emit in the gateway, we can get the worng event
 		emit FungibleMessageSent(id, operation, toChain, toAddress, packedPayload);
 
 		return id;
-	}
-
-	function _onCrosschainMessageCallback(bytes32 id, bytes32 operation, bytes4 selectorIfError) external override {
-		print(id, "[11] Source token was confirmed on status of message operation");
-
-		if (selectorIfError != bytes4(0)) {
-			emit MessageExecutionFinished(id, selectorIfError);
-			print(id, "Event emitted to listeners. Operation rolled back");
-			return;
-		}
-
-		if (operation == MSG_BND) {
-			_onCrosschainBindCallback(id);
-
-		} else if (operation == MSG_SUP) {
-			_onCrosschainSupplyCallback(id);
-
-		} else if (operation == MSG_CLO) {
-			_onCrosschainCloneStateCallback(id);
-
-		} else {
-			//return _onCrosschainMessageCallback(payload);
-		}
-
-		emit MessageExecutionFinished(id, selectorIfError);
-		print(id, "Event emitted to listeners. Operation finally committed on source token");
 	}
 
 	// TODO: Use EIP-712
@@ -367,6 +350,41 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     }
 
 		return IERC7786Recipient.receiveMessage.selector;
+	}
+
+	// PendingCallbacks
+	struct PendingCallback {
+		bytes32 operation;
+	}
+	mapping(bytes32 => PendingCallback) public pendingCallbacks;
+
+	function _onCrosschainMessageCallback(bytes32 id, bytes32 operation, bytes4 selectorIfError) external override {
+		require(pendingCallbacks[id].operation != "", UnexpectedCallback(id));
+		print(id, "[11] Source token was confirmed on status of message operation");
+
+		delete pendingCallbacks[id];
+
+		if (selectorIfError != bytes4(0)) {
+			emit FungibleMessageCallback(id, selectorIfError);
+			print(id, "Event emitted to listeners. Operation rolled back");
+			return;
+		}
+
+		if (operation == MSG_BND) {
+			_onCrosschainBindCallback(id);
+
+		} else if (operation == MSG_SUP) {
+			_onCrosschainSupplyCallback(id);
+
+		} else if (operation == MSG_CLO) {
+			_onCrosschainCloneStateCallback(id);
+
+		} else {
+			//return _onCrosschainMessageCallback(payload);
+		}
+
+		emit FungibleMessageCallback(id, selectorIfError);
+		print(id, "Event emitted to listeners. Operation finally committed on source token");
 	}
 
 	// ************************************************************************************************
