@@ -297,6 +297,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 		print(id, "[7] Fungible received message1!!!");
 
+		emit FungibleMessageReceived(id);
+
 		// Validate sender from gateway data
 		(uint256 srcChainId, address srcAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
 		// TODO
