@@ -14,8 +14,6 @@ abstract contract IFungible {
 	bytes32 constant MSG_CLO = "CLO";
 	bytes32 constant MSG_SUP = "SUP";
 
-
-
 	// ************************************************************************************************
 	// ******************************************** Errors ********************************************
 	// ************************************************************************************************
@@ -43,6 +41,8 @@ abstract contract IFungible {
 	error ErrorInCrossChainMessage();
 	error ErrorInCrossChainBind();
 
+
+	event FungibleMessageSent(bytes32 indexed sendId, bytes32 operation, uint256 toChain, address toAddress, bytes packedPayload);
 
 
 	// ************************************************************************************************

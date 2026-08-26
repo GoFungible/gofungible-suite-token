@@ -274,6 +274,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(id != bytes32(0), ErrorInCrossChainMessage());
 		print(id, "[3] id returned by sendMessage from gateway.");
 
+		// to really guarantee thaht this is the tx, we need to emit in the token
+		// if we emit in the gateway, we can get the worng event
+		emit FungibleMessageSent(id, operation, toChain, toAddress, packedPayload);
+
 		return id;
 	}
 
