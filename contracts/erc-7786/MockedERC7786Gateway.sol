@@ -54,17 +54,17 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	/**
 	 * @notice Synchronously forwards messages protected by the custom nonReentrant modifier.
 	 */
-	function sendMessage(bytes calldata recipientBOA, bytes calldata payload, bytes[] calldata attributes) external payable override /*nonReentrant*/ returns (bytes32 outboxId) {
+	function sendMessage(bytes calldata recipientBOA, bytes calldata payload, bytes[] calldata attributes) external payable override /*nonReentrant*/ returns (bytes32 id) {
 		//require(recipient.length == 20, "MockERC7786: Invalid recipient address length");
 
 		// State & Identifier updates
 		_nonce++;
-		outboxId = keccak256(abi.encodePacked(block.timestamp, msg.sender, _nonce));
-		print(outboxId, "sending Message 1");
+		id = keccak256(abi.encodePacked(block.timestamp, msg.sender, _nonce));
+		print(id, "[4] sending Message 1");
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		print(outboxId, "sending Message 2 to", receiverChainId, receiverAddress);
+		print(id, "[4] sending Message 2 to", receiverChainId, receiverAddress);
 
 		// create Binary Interoperable Address for sender
 		bytes memory senderBOA = LibERC7786ToEthAdapter.generateERC7930Record(block.chainid, msg.sender);
@@ -72,8 +72,8 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		// sending to the same chainId()
 		if (receiverChainId == block.chainid) {
 
-			bytes4 response = IERC7786Recipient(receiverAddress).receiveMessage(outboxId, senderBOA, payload);
-			console.log("Message delivered within the chain", block.chainid);
+			bytes4 response = IERC7786Recipient(receiverAddress).receiveMessage(id, senderBOA, payload);
+			console.log("[9] Message delivered within the chain", block.chainid);
 
 			// Verification
 			require(response == IERC7786Recipient.receiveMessage.selector, "ERC7786: invalid receiver response");
@@ -83,12 +83,12 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		else {
 
 			// Emitting log safely at the end of the call execution sequence
-			print(0, "sending Message 4 to", receiverChainId, receiverAddress);
-			emit MessageSent(outboxId, senderBOA, recipientBOA, payload, msg.value, attributes);
-			print(outboxId, "MessageSent event fired!!!");
+			print(0, "[4] sending Message 4 to", receiverChainId, receiverAddress);
+			emit MessageSent(id, senderBOA, recipientBOA, payload, msg.value, attributes);
+			print(id, "[4] MessageSent event fired!!!");
 		}
 
-		return outboxId;
+		return id;
 	}
 
 	// ************************************************************************************************
@@ -105,7 +105,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		print(id, "executeRelayedMessage chainId", receiverChainId, receiverAddress);
+		print(id, "[6] executeRelayedMessage chainId", receiverChainId, receiverAddress);
 
 		return IERC7786Recipient(receiverAddress).receiveMessage(id, senderBOA, payload);
 	}
@@ -117,7 +117,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	// invoked by relayer to notify SUCESS or FAILURE
 	// calls token _onCrosschainMessageCallback
 	function onRelayerCallback(bytes32 id, bytes memory senderBOA, bytes4 selectorIfError) external returns (bytes4)  {
-		print(id, "Message response received by gateway Result");
+		print(id, "[10] Message response received by gateway Result");
 		console.logBytes4(selectorIfError);
 
 		// notifies token _onCrosschainMessageCallback

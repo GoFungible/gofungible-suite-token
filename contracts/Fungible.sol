@@ -272,13 +272,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
     bytes32 id = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
 		require(id != bytes32(0), ErrorInCrossChainMessage());
-		print(id, "id returned by sendMessage from gateway.");
+		print(id, "[3] id returned by sendMessage from gateway.");
 
 		return id;
 	}
 
 	function _onCrosschainMessageCallback(bytes32 id, bytes32 operation, bytes4 selectorIfError) external override {
-		print(id, "Source token was confirmed on status of message operation");
+		print(id, "[11] Source token was confirmed on status of message operation");
 
 		if (selectorIfError != bytes4(0)) {
 			emit MessageExecutionFinished(id, selectorIfError);
@@ -305,10 +305,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// TODO: Use EIP-712
 	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external override returns (bytes4) {
-		print(id, "Fungible received message!!!");
+		print(id, "[7] Fungible received message!!!");
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
-		print(id, "Fungible received message1!!!");
+		print(id, "[7] Fungible received message1!!!");
 
 		// Validate sender from gateway data
 		(uint256 srcChainId, address srcAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
@@ -317,13 +317,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// Acknowdledge message
 		emit MessageReceived(id, srcChainId, srcAddress, messageBytes);
-		print(id, "Fungible received message3!!!");
+		print(id, "[7] Fungible received message3!!!");
 
 		// get message info
 		Message memory message = abi.decode(messageBytes, (Message));
 		bytes memory payload = message.payload;
 		Header memory header = message.header;
-		print(id, "Fungible received message4!!!");
+		print(id, "[7] Fungible received message4!!!");
 
 		// We cannot validate message comes from MasterChain because token is unbound:
 		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
@@ -336,12 +336,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 			return _onCrosschainBind(payload);
 		}
-		print(id, "Fungible received message5!!!");
+		print(id, "[7] Fungible received message5!!!");
 		
 		// verify sender is valid.
 		require(srcChainId == _masterChain, OnlyMasterChain(srcChainId));
 		require(srcAddress == _masterAddress, OnlyMasterChain(srcChainId));
-		print(id, "Fungible received message6!!!");
+		print(id, "[7] Fungible received message6!!!");
 
 		if (header.op == MSG_SUP) {
 			return _onCrosschainSupply(payload);
@@ -374,7 +374,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return knownChains;
 	}
 
-	function bindChain(uint256 toChainId, address toChainAddress) external payable override returns (bytes32) {
+	function bindChain(uint256 toChainId, address toChainAddress) external payable override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
 		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
@@ -388,15 +388,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes32 id = _sendCrosschainBind(toChainId, toChainAddress, true);
 		require (id != bytes32(0), ErrorInCrossChainBind());
 
+		// TODO: Fire event with id
+		print(id, "[1] bindChain allocated id");
+
 		// TODO: this should be on _onCrosschainBindCallback
 		knownChains.push(toChainId);
 		addresses[toChainId] = toChainAddress;
-
-		print(id, "bindChain allocated id");
-		return id;
 	}
 
-	function unbindChain(uint256 fromChainId) external payable override returns (bytes32) {
+	function unbindChain(uint256 fromChainId) external payable override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
 		require(supplies[fromChainId] != ZERO_VALUE, NonZeroValueRequired());
@@ -409,11 +409,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		bytes32 id = _sendCrosschainBind(fromChainId, ZERO_ADDRESS, false);
 		require (id != bytes32(0), ErrorInCrossChainBind());
 
+		// TODO: Fire event with id
+		print(id, "bindChain allocated id");
+		
 		// TODO: this should be on _onCrosschainBindCallback
 		removeValueFromArray(knownChains, fromChainId);
 		addresses[fromChainId] = ZERO_ADDRESS;
-
-		return id;
 	}
 	
 	/**
@@ -436,11 +437,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     bytes memory packedPayload = abi.encode(payload);
 
 		bytes32 id = _sendMessage(MSG_BND, toChain, toAddres, packedPayload);
+		print(id, "[2] _sendCrosschainBind");
 		return id;
 	}
 
 	function _onCrosschainBindCallback(bytes32 operation) internal returns (bytes4) {
-
+		print(0, "[12] _onCrosschainBindCallback");
 	}
 
 	function _onCrosschainBind(bytes memory payload) internal returns (bytes4) {
@@ -448,14 +450,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
 
 		// Unpack the byte envelope straight back into the struct format
-		print(0, "token bound1");
+		print(0, "[8] token bound1");
 		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
-		console.log("token bound2", payloadData.flag);
-		console.log("token bound2", payloadData.masterChain);
-		console.log("token bound2", payloadData.masterAddress);
+		console.log("[8] token bound2", payloadData.flag);
+		console.log("[8] token bound2", payloadData.masterChain);
+		console.log("[8] token bound2", payloadData.masterAddress);
 		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
 		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
-		console.log("token bound3");
+		console.log("[8] token bound3");
 
 		return IERC7786Recipient.receiveMessage.selector;
 	}

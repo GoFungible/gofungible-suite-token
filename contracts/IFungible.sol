@@ -116,9 +116,9 @@ abstract contract IFungible {
 
 	function transferMasterChain(uint256 chainId) external virtual;
 
-	function bindChain(uint256 toChainId, address toChainAddress) external payable virtual returns (bytes32);
+	function bindChain(uint256 toChainId, address toChainAddress) external payable virtual;
 
-	function unbindChain(uint256 fromChainId) external payable virtual returns (bytes32);
+	function unbindChain(uint256 fromChainId) external payable virtual;
 
 	// ************************************************************************************************
 	// ********************************************* Helpers ******************************************
