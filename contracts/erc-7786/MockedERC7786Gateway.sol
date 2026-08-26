@@ -59,8 +59,10 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 		// State & Identifier updates
 		_nonce++;
+		console.log(_nonce);
+		print(0, "[4] nonce: ", _nonce);
 		id = keccak256(abi.encodePacked(block.timestamp, msg.sender, _nonce));
-		print(id, "[4] sending Message 1");
+		print(id, "[4] created id");
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
@@ -83,7 +85,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		else {
 
 			// Emitting log safely at the end of the call execution sequence
-			print(0, "[4] sending Message 4 to", receiverChainId, receiverAddress);
+			print(id, "[4] sending Message 4 to", receiverChainId, receiverAddress);
 			emit MessageSent(id, senderBOA, recipientBOA, payload, msg.value, attributes);
 			print(id, "[4] MessageSent event fired!!!");
 		}
