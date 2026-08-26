@@ -327,11 +327,8 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	it("TO. Should only bind to SingletonChain.", async() => {
 
-		//expect(await fungibleMaster1.bindChain(2222, fungibleMaster2)).to.not.be.reverted;
-		// should get the id of the message to filter
-		const [id] = (await fungibleMaster1.bindChain(2222, fungibleMaster2, { gasLimit: 5000000 }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
-		console.log("[3] ******************** id: ******************", id);
-		//expect(await waitForContractEvent({ contract: fungibleMaster2, eventName: "FungibleMessageCallback" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
+		const [id] = (await fungibleMaster1.bindChain(2222, fungibleMaster2).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
+		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallback", filterPredicate: (_id) => id==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
 
 		// track also receiver filtering by id
 		//expect(await waitForContractEvent({ contract: fungibleMaster2, eventName: "FungibleMessageCallback" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
