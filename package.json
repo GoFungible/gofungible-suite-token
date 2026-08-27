@@ -10,7 +10,7 @@
     "test": "hardhat test",
 
     "anvil": "npm run open:anvils && sleep 3 && npm run test",
-    "open:anvils": "gnome-terminal -- bash -c 'npm run anvil:node1; exec bash' & gnome-terminal -- bash -c 'npm run anvil:node2; exec bash'",
+    "open:anvils": "gnome-terminal --title='1111' -- bash -c 'npm run anvil:node1; exec bash' & gnome-terminal --title='2222' -- bash -c 'npm run anvil:node2; exec bash'",
 		"anvil:node1": "node_modules/@foundry-rs/anvil-linux-amd64/bin/anvil --port 8545 --chain-id 1111",
     "anvil:node2": "node_modules/@foundry-rs/anvil-linux-amd64/bin/anvil --port 8546 --chain-id 2222",
 
