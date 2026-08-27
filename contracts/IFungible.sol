@@ -29,19 +29,19 @@ abstract contract IFungible {
   error UnexpectedCallback(bytes32 id);
   error GatewayRequired(address sender);
 
-  error OnlyBindToOtherChain();									//  
-  error OnlyBindFromMasterChain();							//			
-  error OnlyBindToSingletonChain();							//			
-  error OnlyUnbindFromOtherChain();							//  
-  error OnlyUnbindFromMasterChain();						//  
-  error OnlyUnbindFromSlaveChain();							//  
+  error OnlyBindToOtherChain();														//
+  error OnlyBindFromMasterChain();												//
+  error OnlyBindToSingletonChain();												//
+  error OnlyUnbindFromOtherChain();												//
+  error OnlyUnbindFromMasterChain();											//
+  error OnlyUnbindFromSlaveChain();												//
 
-  error OnlyMasterChain(uint256 chain);					//  _masterChain matches CHAIN_ID
-  error OnlySlaveChain(uint256 chain);					//  _masterChain no matches CHAIN_ID
-  error OnlySingletonChain(uint256 chain);			//  _masterChain is unassigned
+  error OnlyMasterChain(uint256 chain);										//  _masterChain matches CHAIN_ID
+  error OnlySlaveChain(uint256 chain);										//  _masterChain no matches CHAIN_ID
+  error OnlySingletonChain(uint256 chain);								//  _masterChain is unassigned
 
-	error ErrorInGatewaySendingMessage();
-	error ErrorDeliveringMessage();
+	error ErrorInGatewaySendingMessage();										// error in close gateway
+	error ErrorDeliveringMessage(bytes32 errorSelector);
 
 	// ************************************************************************************************
 	// ********************************************* Defaut *******************************************

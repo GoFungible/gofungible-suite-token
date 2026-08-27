@@ -330,35 +330,30 @@ describe("ERC-20X Supply", function () {
 	/**************************************** Bind - Receiver Test Cases ************************************/
 	/********************************************************************************************************/
 	it("TO. Should only bind to SingletonChain.", async() => {
+		const [id1] = (await fungibleMaster1.bindChain(2222, fungibleMaster2, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
+		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id1==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
+		const [id2] = (await fungibleMaster1.bindChain(2222, otherMaster2, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
+		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id2==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
+		const [id3] = (await fungibleMaster1.bindChain(2222, otherSlave2, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
+		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id3==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
 
-		//console.log("uno1")
-		//const [id1] = (await fungibleMaster1.bindChain(2222, fungibleMaster2, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
-		//console.log("uno2")
-		//expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id1==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
+		const [id4] = (await fungibleMaster2.bindChain(1111, fungibleMaster1, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster2.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
+		expect(await waitForContractEvent({ contract: fungibleMaster2, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id4==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
+		const [id5] = (await fungibleMaster2.bindChain(1111, otherMaster1, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster2.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
+		expect(await waitForContractEvent({ contract: fungibleMaster2, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id5==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
+		const [id6] = (await fungibleMaster2.bindChain(1111, otherSlave1, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster2.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
+		expect(await waitForContractEvent({ contract: fungibleMaster2, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id3==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
+	});
 
-		//console.log("uno3")
-		//const [id2] = (await fungibleMaster1.bindChain(2222, otherMaster2, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
-		//console.log("uno4")
-		//expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id2==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
-
-		//console.log("uno5")
-		//const [id3] = (await fungibleMaster1.bindChain(2222, otherSlave2).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
-		//expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id3==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
+	it("TO. Should only bind to Unbound chains.", async() => {
 
 		/*await expect(otherMaster1.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
 		await expect(otherMaster1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
 		await expect(otherMaster1.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
 
-		await expect(fungibleMaster2.bindChain(1111, fungibleMaster2)).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToSingletonChain");
-		await expect(fungibleMaster2.bindChain(1111, otherMaster2)).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToSingletonChain");
-		await expect(fungibleMaster2.bindChain(1111, otherSlave2)).to.be.revertedWithCustomError(fungibleMaster2, "OnlyBindToSingletonChain");
-
 		await expect(otherMaster2.bindChain(1111, fungibleMaster2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");
 		await expect(otherMaster2.bindChain(1111, otherMaster2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");
 		await expect(otherMaster2.bindChain(1111, otherSlave2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");*/
-	});
-
-	it("TO. Should only bind to Unbound chains.", async() => {
 
 	});
 
