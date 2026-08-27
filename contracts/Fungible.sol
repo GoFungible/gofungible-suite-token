@@ -327,15 +327,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
 		if (header.op == MSG_BND) {
-			console.log("HERE IS THE ERROR!!!! masterAddress must ZERO ADDRESS but is not. move this inside the function");
-			console.log(_masterAddress);
-			print(id, "[7] Validations!!!1", _masterAddress);
-			require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());										// not master chain
-			print(id, "[7] Validations!!!2");
-			require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());								// not master address
-			print(id, "[7] Validations!!!3");
-			require(_totalSupply == ZERO_VALUE, ZeroValueRequired(_totalSupply));								// not supply yet
-			print(id, "[7] Validations!!!4");
 			return _onCrosschainBind(payload);
 		} else if (header.op == MSG_UBD) {
 			return _onCrosschainUnbind(payload);
@@ -467,6 +458,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		print(0, "[8] _onCrosschainBind");
 		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
 		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
+		require(_totalSupply == ZERO_VALUE, OnlyBindToEmptyToken(_totalSupply));
 
 		// Unpack the byte envelope straight back into the struct format
 		print(0, "[8] token bound1");
