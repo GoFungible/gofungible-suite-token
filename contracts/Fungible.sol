@@ -248,19 +248,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ************************************ ERC-7786 Messages *****************************************
 	// ************************************************************************************************
-	// [0] this token operation							// bind()
-	// [1] this token sendMessage						// _sendMessage()
-	// [2] local gateway request						// sendMessage()
-	// [3] id provision to This token				// id =
-	// [4] relayer request									// on()
-	// [5] remote gateway request						// sendRelayerMessageToToken()
-	// [6] remote token receive message			// receiveMessage()
-	// [7] remote token receive operation		// _onBind()										-----------------
-	// [8] remote gateway response					// sendRelayerMessageToToken()
-	// [9] relayer response									// on()
-	// [10] local gateway response					// sendMessage()
-	// [11] this token message callback			// _onMessageCallback()
-	// [12] this token operation callback		// _onBindCallback()
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bytes32) {
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(_extGateway));
 
