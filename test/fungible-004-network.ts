@@ -424,4 +424,12 @@ describe("ERC-20X Supply", function () {
 		//fungible1.setMasterChain(1337);
 	});
 
+	/********************************************************************************************************/
+	/******************************************** Transfer MasterChain **************************************/
+	/********************************************************************************************************/
+	it.skip("Should be able to transfer master chain status", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
+		//fungible1.setMasterChain(1337);
+	});
+
 });
