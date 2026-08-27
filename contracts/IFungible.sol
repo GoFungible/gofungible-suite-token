@@ -63,7 +63,7 @@ abstract contract IFungible {
 
 
 	// here the operation is completed by the source
-	function _onCrosschainMessageCallback(bytes32 sendId, bytes4 selectorIfError) external virtual;
+	function _onMessageCallback(bytes32 sendId, bytes4 selectorIfError) external virtual;
 
 	event FungibleMessageSent(bytes32 indexed sendId, bytes32 operation, uint256 toChain, address toAddress, bytes packedPayload);
 

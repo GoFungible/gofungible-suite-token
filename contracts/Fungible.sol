@@ -327,9 +327,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
 		if (header.op == MSG_BND) {
-			return _onCrosschainBind(payload);
+			return _onBind(payload);
 		} else if (header.op == MSG_UBD) {
-			return _onCrosschainUnbind(payload);
+			return _onUnbind(payload);
 		}
 		print(id, "[7] Fungible received message5!!!");
 		
@@ -339,17 +339,17 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		print(id, "[7] Fungible received message6!!!");
 
 		if (header.op == MSG_SUP) {
-			return _onCrosschainSupply(payload);
+			return _onSupply(payload);
 
 		} else if (header.op == MSG_CLO) {
-			return _onCrosschainCloneState(payload);
+			return _onCloneState(payload);
 
 		} else {
-			return _onCrosschainMessage(payload);
+			return _onMessage(payload);
 		}
 	}
 
-	function _onCrosschainMessage(bytes memory payload) internal returns (bytes4) {
+	function _onMessage(bytes memory payload) internal returns (bytes4) {
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySendMessage.length; i++){
@@ -367,7 +367,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 	mapping(bytes32 => PendingCallbacks) public pendingCallbacks;
 
-	function _onCrosschainMessageCallback(bytes32 id, bytes4 selectorIfError) external override {
+	function _onMessageCallback(bytes32 id, bytes4 selectorIfError) external override {
     require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 		require(pendingCallbacks[id].op != bytes32(0), UnexpectedCallback(id));
 		print(id, "[11] Source token was confirmed on status of message operation");
@@ -390,19 +390,19 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		}
 
 		if (op == MSG_BND) {
-			_onCrosschainBindCallback(payload);
+			_onBindCallback(payload);
 
 		} else if (op == MSG_UBD) {
-			_onCrosschainUnbindCallback(payload);
+			_onUnbindCallback(payload);
 
 		} else if (op == MSG_SUP) {
-			_onCrosschainSupplyCallback(payload);
+			_onSupplyCallback(payload);
 
 		} else if (op == MSG_CLO) {
-			_onCrosschainCloneStateCallback(payload);
+			_onCloneStateCallback(payload);
 
 		} else {
-			//return _onCrosschainMessageCallback(payload);
+			//return _onMessageCallback(payload);
 		}
 
 		emit FungibleMessageCallbackProcessed(id, selectorIfError);
@@ -454,8 +454,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     });
 	}
 
-	function _onCrosschainBind(bytes memory payload) internal returns (bytes4) {
-		print(0, "[8] _onCrosschainBind");
+	function _onBind(bytes memory payload) internal returns (bytes4) {
+		print(0, "[8] _onBind");
 		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
 		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
 		require(_totalSupply == ZERO_VALUE, OnlyBindToEmptyToken(_totalSupply));
@@ -472,8 +472,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return IERC7786Recipient.receiveMessage.selector;
 	}
 
-	function _onCrosschainBindCallback(bytes memory payload) internal {
-		print(0, "[12] _onCrosschainBindCallback");
+	function _onBindCallback(bytes memory payload) internal {
+		print(0, "[12] _onBindCallback");
 
 		// resolve transaction
     (uint256 toChainId, address toChainAddress) = abi.decode(payload, (uint256, address));
@@ -507,8 +507,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     });
 	}
 
-	function _onCrosschainUnbind(bytes memory payload) internal returns (bytes4) {
-		print(0, "[8] _onCrosschainUnbind");
+	function _onUnbind(bytes memory payload) internal returns (bytes4) {
+		print(0, "[8] _onUnbind");
 		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
 		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
 
@@ -524,8 +524,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return IERC7786Recipient.receiveMessage.selector;
 	}
 
-	function _onCrosschainUnbindCallback(bytes memory payload) internal {
-		print(0, "[12] _onCrosschainUnbindCallback");
+	function _onUnbindCallback(bytes memory payload) internal {
+		print(0, "[12] _onUnbindCallback");
 
     (uint256 fromChainId) = abi.decode(payload, (uint256));
 		removeValueFromArray(knownChains, fromChainId);
@@ -626,11 +626,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
 	}
 
-	function _onCrosschainCloneStateCallback(bytes memory payload) internal {
+	function _onCloneStateCallback(bytes memory payload) internal {
 
 	}
 
-	function _onCrosschainCloneState(bytes memory payload) internal returns (bytes4) {
+	function _onCloneState(bytes memory payload) internal returns (bytes4) {
 		require(knownChains.length == ZERO_VALUE, "Clone: can only be done once");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -789,12 +789,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_sendMessage(MSG_SUP, _masterChain, _masterAddress, packedPayload);
 	}
 
-	function _onCrosschainSupplyCallback(bytes memory payload) internal {
+	function _onSupplyCallback(bytes memory payload) internal {
 
 	}
 
 	// Receives supply transfer
-	function _onCrosschainSupply(bytes memory payload) internal returns (bytes4) {
+	function _onSupply(bytes memory payload) internal returns (bytes4) {
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
