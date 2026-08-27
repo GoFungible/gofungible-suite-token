@@ -411,15 +411,6 @@ describe("ERC-20X Supply", function () {
 		console.log("OK. Cannot bind if not gateway on Fungible1.");
 	});*/
 
-	it.skip("HOW. Gateway is required to unbind.", async() => {
-
-	});
-
-	it.skip("OK. Should be able to unbind if conditions met.", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		//fungible1.setMasterChain(1337);
-	});
-
 	it.skip("OK. Should be able to unbind if conditions met.", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
@@ -429,14 +420,6 @@ describe("ERC-20X Supply", function () {
 	/************************************************ Addresses *********************************************/
 	/********************************************************************************************************/
 	it.skip("Should be able to read chain addresses", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		//fungible1.setMasterChain(1337);
-	});
-
-	/********************************************************************************************************/
-	/******************************************** Transfer MasterChain **************************************/
-	/********************************************************************************************************/
-	it.skip("Should be able to transfer master chain status", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
 		//fungible1.setMasterChain(1337);
 	});
