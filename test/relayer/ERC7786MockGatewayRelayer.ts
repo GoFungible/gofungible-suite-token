@@ -59,7 +59,7 @@ export class ERC7786MockGatewayRelayer {
 				// Destructure event payload
 				const [id, senderBOA,  recipientBOA, payload, value, attributes] = event.args; 
 
-				console.log(`\n📨 ${id}; [5] Intercepted ERC-7786 message by relayer! Id: ${id}`);
+				console.log(`\n📨 ${id}; [4] Intercepted ERC-7786 message by relayer! Id: ${id}`);
         /*
         console.log(`🌍 senderBOA: ${senderBOA}`);
         console.log(`🌍 recipientBOA: ${recipientBOA}`);
@@ -67,7 +67,7 @@ export class ERC7786MockGatewayRelayer {
         console.log(`🌍 value: ${value}`);
         console.log(`🌍 attributes: ${attributes}`);*/
 
-				console.log(`\n📨 ${id}; [5] Sending message ${id} to Destination Gateway ${destGatewayAddress}`);
+				console.log(`\n📨 ${id}; [4] Sending message ${id} to Destination Gateway ${destGatewayAddress}`);
 
 				try {
 
@@ -75,7 +75,7 @@ export class ERC7786MockGatewayRelayer {
 						.connect(destGatewayAddress, destRelayer)
 						.sendRelayerMessageToToken(id, senderBOA,  recipientBOA, payload, value, attributes);
 
-					console.log(`✅ ${id}; [5] ERC-7786 Message: SUCESSFULL operation on destination gateway. Hash: ${tx1?.hash}`);
+					console.log(`✅ ${id}; [7] ERC-7786 Message: SUCESSFULL operation on destination gateway. Hash: ${tx1?.hash}`);
 
 					// ************************************************************************************************
 					// ***************** Sending sucessfull operation callback notification to source *****************

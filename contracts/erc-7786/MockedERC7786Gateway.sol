@@ -60,13 +60,13 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		// State & Identifier updates
 		_nonce++;
 		console.log(_nonce);
-		print(0, "[4] nonce: ", _nonce);
+		print(0, "[3] nonce: ", _nonce);
 		id = keccak256(abi.encodePacked(block.timestamp, msg.sender, _nonce));
-		print(id, "[4] created id");
+		print(id, "[3] created id");
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		print(id, "[4] sending Message 2 to", receiverChainId, receiverAddress);
+		print(id, "[3] sending Message 2 to", receiverChainId, receiverAddress);
 
 		// create Binary Interoperable Address for sender
 		bytes memory senderBOA = LibERC7786ToEthAdapter.generateERC7930Record(block.chainid, msg.sender);
@@ -85,9 +85,9 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		else {
 
 			// Emitting log safely at the end of the call execution sequence
-			print(id, "[4] sending Message 4 to", receiverChainId, receiverAddress);
+			print(id, "[3] sending Message 4 to", receiverChainId, receiverAddress);
 			emit MessageSent(id, senderBOA, recipientBOA, payload, msg.value, attributes);
-			print(id, "[4] MessageSent event fired!!!");
+			print(id, "[3] MessageSent event fired!!!");
 		}
 
 		return id;
@@ -103,11 +103,11 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 		// Execute push delivery to the recipient target contract
 		// bytes4 selector = Fungible(targetContract).receiveMessage(sourceChainId, sender, messagePayload);
-		console.log(string(abi.encodePacked(id, " | ", " gateway receive Message 1")));
+		// console.log(string(abi.encodePacked(id, " | ", " gateway receive Message 1")));
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		print(id, "[6] executeRelayedMessage chainId", receiverChainId, receiverAddress);
+		print(id, "[5] executeRelayedMessage chainId", receiverChainId, receiverAddress);
 
 		return IERC7786Recipient(receiverAddress).receiveMessage(id, senderBOA, payload);
 	}
@@ -124,7 +124,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		// notifies token _onMessageCallback
 		(uint256 senderChainId, address senderAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
 		IFungible(senderAddress)._onMessageCallback(id, selectorIfError);
-		print(id, "Fungible notified about the message result");
+		print(id, "[10] Fungible notified about the message result");
 	}
 
 	function print(bytes32 id, string memory message) public {

@@ -248,24 +248,25 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ************************************ ERC-7786 Messages *****************************************
 	// ************************************************************************************************
-	// [01] this token operation
-	// [02] this token sendMessage
-	// [03] local gateway request
-	// [04] id provision to This token
-	// [05] relayer request
-	// [06] remote gateway request
-	// [07] remote token receive message
-	// [08] remote token receive operation
-	// [09] remote gateway response
-	// [10] relayer response
-	// [11] local gateway response
-	// [12] this token message callback
-	// [13] this token operation callback
+	// [0] this token operation							// bind()
+	// [1] this token sendMessage						// _sendMessage()
+	// [2] local gateway request						// sendMessage()
+	// [3] id provision to This token				// id =
+	// [4] relayer request									// on()
+	// [5] remote gateway request						// sendRelayerMessageToToken()
+	// [6] remote token receive message			// receiveMessage()
+	// [7] remote token receive operation		// _onBind()										-----------------
+	// [8] remote gateway response					// sendRelayerMessageToToken()
+	// [9] relayer response									// on()
+	// [10] local gateway response					// sendMessage()
+	// [11] this token message callback			// _onMessageCallback()
+	// [12] this token operation callback		// _onBindCallback()
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bytes32) {
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(_extGateway));
 
 		// By doing this, this contract only interacts with the based networks. Be aware.
 		bytes memory recipient = LibERC7786ToEthAdapter.generateERC7930Record(toChain, toAddress);
+		print(0, "[1] sendMessage", toChain, toAddress);
 
 		// message content
 		Message memory message = Message({
@@ -300,10 +301,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// TODO: Use EIP-712
 	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external override returns (bytes4) {
-		print(id, "[7] Fungible received message!!!");
+		print(id, "[6] Fungible received message!!!");
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
-		print(id, "[7] Fungible received message1!!!");
 
 		emit FungibleMessageReceived(id);
 
@@ -314,13 +314,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// Acknowdledge message
 		emit MessageReceived(id, srcChainId, srcAddress, messageBytes);
-		print(id, "[7] Fungible received message3!!!");
 
 		// get message info
 		Message memory message = abi.decode(messageBytes, (Message));
 		bytes memory payload = message.payload;
 		Header memory header = message.header;
-		print(id, "[7] Fungible received message4!!!");
+		print(id, "[6] Fungible received message4!!!");
 
 		// We cannot validate message comes from MasterChain because token is unbound:
 		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
@@ -331,12 +330,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		} else if (header.op == MSG_UBD) {
 			return _onUnbind(payload);
 		}
-		print(id, "[7] Fungible received message5!!!");
+		print(id, "[6] Fungible received message5!!!");
 		
 		// verify sender is valid.
 		require(srcChainId == _masterChain, OnlyMasterChain(srcChainId));
 		require(srcAddress == _masterAddress, OnlyMasterChain(srcChainId));
-		print(id, "[7] Fungible received message6!!!");
+		print(id, "[6] Fungible received message6!!!");
 
 		if (header.op == MSG_SUP) {
 			return _onSupply(payload);
@@ -431,6 +430,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// bind
 	function bind(uint256 toChainId, address toChainAddress) external payable override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
+		print(0, "[0] bind", toChainId, toChainAddress);
 
 		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
 		require(toChainId != ZERO_VALUE, NonZeroValueRequired());
@@ -461,19 +461,20 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(_totalSupply == ZERO_VALUE, OnlyBindToEmptyToken(_totalSupply));
 
 		// Unpack the byte envelope straight back into the struct format
-		print(0, "[8] token bound1");
+		print(0, "[7] token bound1");
 		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
 		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
 		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
-		console.log("[8] token bound2", payloadData.flag);
-		console.log("[8] token bound2", payloadData.masterChain);
-		console.log("[8] token bound2", payloadData.masterAddress);
+		console.log("[7] token bound2", payloadData.flag);
+		console.log("[7] token bound2", payloadData.masterChain);
+		console.log("[7] token bound2", payloadData.masterAddress);
 
 		return IERC7786Recipient.receiveMessage.selector;
 	}
 
 	function _onBindCallback(bytes memory payload) internal {
 		// resolve transaction
+		print(0, "[12] _onBindCallback");
     (uint256 toChainId, address toChainAddress) = abi.decode(payload, (uint256, address));
 		console.log(toChainId);
 		console.log(toChainAddress);
