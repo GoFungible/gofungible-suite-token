@@ -326,19 +326,14 @@ describe("ERC-20X Supply", function () {
 		await expect(otherSlave2.bindChain(1111, otherSlave1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterChain");		
 	});
 
+	it("TO. Should only bind to Unbound chains.", async() => {
+		//await expect(otherMaster1.bindChain(2222, fungibleSingleton2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
+		//await expect(otherMaster2.bindChain(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");
+	});
+
 	/********************************************************************************************************/
 	/**************************************** Bind - Receiver Test Cases ************************************/
 	/********************************************************************************************************/
-	it("TO. Should only bind to Unbound chains.", async() => {
-		/*await expect(otherMaster1.bindChain(2222, fungibleMaster2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
-		await expect(otherMaster1.bindChain(2222, otherMaster2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
-		await expect(otherMaster1.bindChain(2222, otherSlave2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
-
-		await expect(otherMaster2.bindChain(1111, fungibleMaster2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");
-		await expect(otherMaster2.bindChain(1111, otherMaster2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");
-		await expect(otherMaster2.bindChain(1111, otherSlave2)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");*/
-	});
-
 	it("TO. Should only bind to SingletonToken.", async() => {
 		const [id1] = (await fungibleMaster1.bindChain(2222, fungibleMaster2, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
 		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id1==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToSingletonChainError));
@@ -360,74 +355,21 @@ describe("ERC-20X Supply", function () {
 
 	});
 
-	/*it.skip("OK. Should be able to bind if conditions met.", async() => {
-		// Tokens
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
+	it.skip("OK. Should be able to bind if conditions met.", async() => {
+		expect(await fungibleMaster1.bindChain(2222, fungibleSingleton2)).to.not.be.reverted;
+		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(NO_SELECTOR);
+		expect(await fungibleMaster1.getChains()).to.include(2222n);
+		expect(await fungibleMaster1.getChainAddress(2222)).to.equals(fungibleSingleton2);
+		expect(await fungibleSingleton2.getMasterChain()).to.equal(1111);
+		expect(await fungibleSingleton2.getMasterAddress()).to.equal(fungibleMaster1);
 
-		// set Fungible1 as MasterChain
-		expect(await fungible1.getMasterChain()).to.equal(0);
-		await expect(fungible1.setAsMasterChain()).to.not.be.reverted;
-		expect(await fungible1.getMasterChain()).to.equal(await fungible1.chainId());
-		console.log(`Fungible1 ${await fungible1.chainId()} set as MasterChain`);
-
-		// set gateway to Fungible1
-		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
-
-		// set gateway to Fungible2
-		await expect(fungible2.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible2.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible2.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible2.gateway()) + " attached to Fungible2.");
-
-		// bind Fungible2 to Fungible1
-		expect(await fungible1.bindChain(1337, fungibleAddress2)).to.not.be.reverted;
-		expect(await fungible2.getMasterChain()).to.equal(1337);
-		expect(await fungible2.getMasterAddress()).to.equal(fungibleAddress1);
-	});*/
-
-	/*it.skip("TO. Should not bind a second token in the same chain.", async() => {
-		// Tokens
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
-		const fungible3 = await ethers.getContractAt('Fungible', fungibleAddress3)
-
-		// set Fungible1 as MasterChain
-		expect(await fungible1.getMasterChain()).to.equal(0);
-		await expect(fungible1.setAsMasterChain()).to.not.be.reverted;
-		expect(await fungible1.getMasterChain()).to.equal(await fungible1.chainId());
-		console.log(`Fungible1 ${await fungible1.chainId()} set as MasterChain`);
-
-		// set gateway to Fungible1
-		await expect(fungible1.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible1.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible1.gateway()) + " attached to Fungible1.");
-
-		// set gateway to Fungible2
-		await expect(fungible2.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible2.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible2.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible2.gateway()) + " attached to Fungible2.");
-
-		// set gateway to Fungible3
-		await expect(fungible3.addResource(0, 1, mockedERC7786GatewayAddress, 132, 0, 0)).to.not.be.reverted;
-		await expect(fungible3.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungible3.gateway()).to.equal(mockedERC7786GatewayAddress);
-		console.log("Gateway " + (await fungible3.gateway()) + " attached to Fungible3.");
-
-		// bind Fungible2 to Fungible1
-		expect(await fungible1.bindChain(1337, fungibleAddress2)).to.not.be.reverted;
-		expect(await fungible2.getMasterChain()).to.equal(1337);
-		expect(await fungible2.getMasterAddress()).to.equal(fungibleAddress1);
-
-		// TEST CASE: cannot bind a second token
-		// TODO: mock second chain
-		//await expect(fungible1.bindChain(1337, fungibleAddress3)).to.be.revertedWithCustomError(fungible1, "OnlySingletonChain");
-	});*/
+		expect(await fungibleMaster2.bindChain(1111, fungibleSingleton1)).to.not.be.reverted;
+		expect(await waitForContractEvent({ contract: fungibleMaster2, eventName: "FungibleMessageCallbackProcessed" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(NO_SELECTOR);
+		expect(await fungibleMaster2.getChains()).to.include(1111n);
+		expect(await fungibleMaster2.getChainAddress(1111)).to.equals(fungibleSingleton1);
+		expect(await fungibleSingleton1.getMasterChain()).to.equal(2222);
+		expect(await fungibleSingleton1.getMasterAddress()).to.equal(fungibleMaster2);
+	});
 
 	/********************************************************************************************************/
 	/************************************************** Unbind **********************************************/
