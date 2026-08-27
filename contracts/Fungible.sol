@@ -429,8 +429,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// bind
-	function bindChain(uint256 toChainId, address toChainAddress) external payable override {
-		console.log("************ bindchain", toChainAddress);
+	function bind(uint256 toChainId, address toChainAddress) external payable override {
+		console.log("************ bind", toChainAddress);
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
 		require(toChainId != ZERO_VALUE, NonZeroValueRequired());
@@ -484,7 +484,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// unbind
-	function unbindChain(uint256 fromChainId) external payable override {
+	function unbind(uint256 fromChainId) external payable override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(supplies[fromChainId] != ZERO_VALUE, NonZeroValueRequired());
 		require(fromChainId != CHAIN_ID, OnlyUnbindFromOtherChain());
