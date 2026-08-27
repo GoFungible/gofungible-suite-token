@@ -430,13 +430,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// bind
 	function bind(uint256 toChainId, address toChainAddress) external payable override {
-		console.log("************ bind", toChainAddress);
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
+
 		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
 		require(toChainId != ZERO_VALUE, NonZeroValueRequired());
+
 		require(toChainId != CHAIN_ID, OnlyBindToOtherChain());
 		require(_masterChain == CHAIN_ID, OnlyBindFromMasterToken());
-		require(supplies[toChainId] == ZERO_VALUE, OnlyBindToSingletonChain());		
+		require(supplies[toChainId] == ZERO_VALUE, OnlyBindToSingletonChain());
 		require(addresses[toChainId] == ZERO_ADDRESS, OnlyBindToSingletonChain());
 
 		// send message to the binding chain
@@ -455,7 +456,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _onBind(bytes memory payload) internal returns (bytes4) {
-		print(0, "[8] _onBind");
 		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
 		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
 		require(_totalSupply == ZERO_VALUE, OnlyBindToEmptyToken(_totalSupply));
@@ -473,8 +473,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _onBindCallback(bytes memory payload) internal {
-		print(0, "[12] _onBindCallback");
-
 		// resolve transaction
     (uint256 toChainId, address toChainAddress) = abi.decode(payload, (uint256, address));
 		console.log(toChainId);
@@ -486,9 +484,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// unbind
 	function unbind(uint256 fromChainId) external payable override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		require(supplies[fromChainId] != ZERO_VALUE, NonZeroValueRequired());
-		require(fromChainId != CHAIN_ID, OnlyUnbindFromOtherChain());
+		require(fromChainId != ZERO_VALUE, NonZeroValueRequired());
 		require(_masterChain == CHAIN_ID, OnlyUnbindFromMasterChain());
+		require(fromChainId != CHAIN_ID, OnlyUnbindFromOtherChain());
 		require(supplies[fromChainId] != ZERO_VALUE, OnlyUnbindFromSlaveChain());
 		require(addresses[fromChainId] != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
 
@@ -509,8 +507,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _onUnbind(bytes memory payload) internal returns (bytes4) {
 		print(0, "[8] _onUnbind");
-		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
-		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
+		require(_masterChain != ZERO_VALUE, OnlyUnbindFromSlaveChain());
+		require(_masterAddress != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
+		require(_totalSupply == ZERO_VALUE, OnlyUnbindFromSlaveChain());
 
 		// Unpack the byte envelope straight back into the struct format
 		print(0, "[8] token bound1");
