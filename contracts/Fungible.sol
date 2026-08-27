@@ -275,13 +275,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// send message
     bytes32 id = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
-		require(id != bytes32(0), ErrorInCrossChainMessage());
+		require(id != bytes32(0), ErrorInGatewaySendingMessage());
 		print(id, "[3] id returned by sendMessage from gateway.");
-
-		// add pending callback
-		pendingCallbacks[id] = PendingCallback({
-			operation: operation
-		});
 
 		// to really guarantee thaht this is the tx, we need to emit in the token
 		// if we emit in the gateway, we can get the worng event
@@ -362,41 +357,47 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// PendingCallbacks
-	struct PendingCallback {
-		bytes32 operation;
+	struct PendingCallbacks {
+		bytes32 op;
+		bytes payload;
 	}
-	mapping(bytes32 => PendingCallback) public pendingCallbacks;
+	mapping(bytes32 => PendingCallbacks) public pendingCallbacks;
 
-	function _onCrosschainMessageCallback(bytes32 id, bytes32 operation, bytes4 selectorIfError) external override {
-		require(pendingCallbacks[id].operation != "", UnexpectedCallback(id));
+	function _onCrosschainMessageCallback(bytes32 id, bytes4 selectorIfError) external override {
+		require(pendingCallbacks[id].op != bytes32(0), UnexpectedCallback(id));
 		print(id, "[11] Source token was confirmed on status of message operation");
 
+		// get callback info and delete record
+		bytes32 op = pendingCallbacks[id].op;
+		bytes memory payload = pendingCallbacks[id].payload;
 		delete pendingCallbacks[id];
 
 		if (selectorIfError != bytes4(0)) {
-			emit FungibleMessageCallback(id, selectorIfError);
-			print(id, "Event emitted to listeners. Operation rolled back");
-			return;
+			print(id, "[11] Event emitted to listeners.");
+			print(id, "[11] Operation rolled back on receiver. Source changes wont be performed.");
+			emit FungibleMessageCallbackProcessed(id, selectorIfError);
+
+			revert ErrorDeliveringMessage();
 		}
 
-		if (operation == MSG_BND) {
-			_onCrosschainBindCallback(id);
+		if (op == MSG_BND) {
+			_onCrosschainBindCallback(payload);
 
-		} else if (operation == MSG_UBD) {
-			_onCrosschainUnbindCallback(id);
+		} else if (op == MSG_UBD) {
+			_onCrosschainUnbindCallback(payload);
 
-		} else if (operation == MSG_SUP) {
-			_onCrosschainSupplyCallback(id);
+		} else if (op == MSG_SUP) {
+			_onCrosschainSupplyCallback(payload);
 
-		} else if (operation == MSG_CLO) {
-			_onCrosschainCloneStateCallback(id);
+		} else if (op == MSG_CLO) {
+			_onCrosschainCloneStateCallback(payload);
 
 		} else {
 			//return _onCrosschainMessageCallback(payload);
 		}
 
-		emit FungibleMessageCallback(id, selectorIfError);
-		print(id, "Event emitted to listeners. Operation finally committed on source token");
+		emit FungibleMessageCallbackProcessed(id, selectorIfError);
+		print(id, "[11] Event emitted to listeners. Operation finally committed on source token");
 	}
 
 	// ************************************************************************************************
@@ -436,12 +437,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			masterAddress: _masterAddress
     }));
 		bytes32 id = _sendMessage(MSG_BND, toChainId, toChainAddress, packedPayload);
-		print(id, "[1] id received");
-		require (id != bytes32(0), ErrorInCrossChainBind());
 
-		// TODO: this should be on _onCrosschainBindCallback
-		knownChains.push(toChainId);
-		addresses[toChainId] = toChainAddress;
+		// if message sending was not reverted we can record info for callback processing
+		pendingCallbacks[id] = PendingCallbacks({
+			op: MSG_BND,
+			payload: abi.encode(toChainId, toChainAddress)
+    });
 	}
 
 	function _onCrosschainBind(bytes memory payload) internal returns (bytes4) {
@@ -461,8 +462,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return IERC7786Recipient.receiveMessage.selector;
 	}
 
-	function _onCrosschainBindCallback(bytes32 id) internal returns (bytes4) {
+	function _onCrosschainBindCallback(bytes memory payload) internal {
 		print(0, "[12] _onCrosschainBindCallback");
+
+		// resolve transaction
+    (uint256 toChainId, address toChainAddress) = abi.decode(payload, (uint256, address));
+		console.log(toChainId);
+		console.log(toChainAddress);
+		knownChains.push(toChainId);
+		addresses[toChainId] = toChainAddress;
 	}
 
 	// unbind
@@ -481,11 +489,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			masterAddress: _masterAddress
     }));
 		bytes32 id = _sendMessage(MSG_UBD, fromChainId, addresses[fromChainId], packedPayload);
-		require (id != bytes32(0), ErrorInCrossChainBind());
-		
-		// TODO: this should be on _onCrosschainBindCallback
-		removeValueFromArray(knownChains, fromChainId);
-		addresses[fromChainId] = ZERO_ADDRESS;
+
+		// if message sending was not reverted we can record info for callback processing
+		pendingCallbacks[id] = PendingCallbacks({
+			op: MSG_UBD,
+			payload: abi.encode(fromChainId)
+    });
 	}
 
 	function _onCrosschainUnbind(bytes memory payload) internal returns (bytes4) {
@@ -505,8 +514,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return IERC7786Recipient.receiveMessage.selector;
 	}
 
-	function _onCrosschainUnbindCallback(bytes32 id) internal returns (bytes4) {
+	function _onCrosschainUnbindCallback(bytes memory payload) internal {
 		print(0, "[12] _onCrosschainUnbindCallback");
+
+    (uint256 fromChainId) = abi.decode(payload, (uint256));
+		removeValueFromArray(knownChains, fromChainId);
+		addresses[fromChainId] = ZERO_ADDRESS;
+		supplies[fromChainId] = ZERO_VALUE;
 	}
 
 	// ************************************************************************************************
@@ -555,8 +569,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// transfer state to new master
 		if (_newMasterChain != CHAIN_ID) {
-			bytes32 id = _cloneState(_newMasterChain, _newMasterAddress);
-			require (id != bytes32(0), "MasterChain: state transfer failed");
+			_cloneState(_newMasterChain, _newMasterAddress);
 		}
 
 		// broadcast to all other chains
@@ -581,7 +594,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint256[] supplies;       				// The total amount of tokens being moved
 	}
 
-	function _cloneState(uint256 toChain, address toAddress) internal returns (bytes32) {
+	function _cloneState(uint256 toChain, address toAddress) internal {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 
 		uint256[] memory suppliesList = new uint256[](knownChains.length);
@@ -600,11 +613,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
     bytes memory packedPayload = abi.encode(payload);
 
-		bytes32 id = _sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
-		return id;
+		_sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
 	}
 
-	function _onCrosschainCloneStateCallback(bytes32 id) internal returns (bytes4) {
+	function _onCrosschainCloneStateCallback(bytes memory payload) internal {
 
 	}
 
@@ -710,8 +722,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// if transferring from master update remote before, then update master
 		if (CHAIN_ID == _masterChain) {
 
-			bytes32 id = _sendCrosschainSupply(inChain, inAddress, amount);
-			require (id != bytes32(0), "Transfer failure");
+			_sendCrosschainSupply(inChain, inAddress, amount);
 
 			// burn in this chain
 			_balances[msg.sender] -= amount;
@@ -732,8 +743,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// if transferring from no master to no master send to master, then update
 		else {
-			bytes32 id = _sendCrosschainSupply(_masterChain, _masterAddress, amount);
-			require (id != bytes32(0), "Transfer failure");
+			_sendCrosschainSupply(_masterChain, _masterAddress, amount);
 
 			// burn in this chain
 			_balances[msg.sender] -= amount;
@@ -755,7 +765,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint256 amount;          	// The total amount of tokens being moved
 	}
 
-	function _sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal returns (bytes32) {
+	function _sendCrosschainSupply(uint256 toChain, address toAddress, uint256 amount) internal {
     // Build your application's data package
     FungibleSupplyPayload memory payload = FungibleSupplyPayload({
 			outChain: CHAIN_ID,
@@ -766,11 +776,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     });
     bytes memory packedPayload = abi.encode(payload);
 
-		bytes32 id = _sendMessage(MSG_SUP, _masterChain, _masterAddress, packedPayload);
-		return id;
+		_sendMessage(MSG_SUP, _masterChain, _masterAddress, packedPayload);
 	}
 
-	function _onCrosschainSupplyCallback(bytes32 id) internal returns (bytes4) {
+	function _onCrosschainSupplyCallback(bytes memory payload) internal {
 
 	}
 
@@ -804,7 +813,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		else if (CHAIN_ID == _masterChain && inChain != CHAIN_ID) {
 
 			// forward to inChain
-			bytes32 id = _sendCrosschainSupply(inChain, inAddress, amount);
+			/*bytes32 id = _sendCrosschainSupply(inChain, inAddress, amount);
 			if (id != bytes32(0)) {
 				supplies[inChain] += amount;
 				supplies[outChain] -= amount;
@@ -812,12 +821,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 			// rollback outChain
 			else {
-				bytes32 id1 = _sendCrosschainSupply(outChain, outAddress, /*-1 **/ amount);
+				bytes32 id1 = _sendCrosschainSupply(outChain, outAddress, -1, amount);
 				if (id1 == bytes32(0)) {
 					// problem here
 					// manual retry
 				}
-			}
+			}*/
 
 		}
 

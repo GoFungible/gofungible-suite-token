@@ -124,7 +124,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 		// notifies token _onCrosschainMessageCallback
 		(uint256 senderChainId, address senderAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
-		IFungible(senderAddress)._onCrosschainMessageCallback(id, "", selectorIfError);
+		IFungible(senderAddress)._onCrosschainMessageCallback(id, selectorIfError);
 		print(id, "Fungible notified about the message result");
 
 	}

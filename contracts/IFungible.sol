@@ -40,11 +40,8 @@ abstract contract IFungible {
   error OnlySlaveChain(uint256 chain);					//  _masterChain no matches CHAIN_ID
   error OnlySingletonChain(uint256 chain);			//  _masterChain is unassigned
 
-	error ErrorInCrossChainMessage();
-	error ErrorInCrossChainBind();
-
-
-
+	error ErrorInGatewaySendingMessage();
+	error ErrorDeliveringMessage();
 
 	// ************************************************************************************************
 	// ********************************************* Defaut *******************************************
@@ -65,13 +62,13 @@ abstract contract IFungible {
 
 
 	// here the operation is completed by the source
-	function _onCrosschainMessageCallback(bytes32 sendId, bytes32 operation, bytes4 selectorIfError) external virtual;
+	function _onCrosschainMessageCallback(bytes32 sendId, bytes4 selectorIfError) external virtual;
 
 	event FungibleMessageSent(bytes32 indexed sendId, bytes32 operation, uint256 toChain, address toAddress, bytes packedPayload);
 
 	event FungibleMessageReceived(bytes32 indexed sendId);
 	
-	event FungibleMessageCallback(bytes32 indexed sendId, bytes4 selectorIfError);
+	event FungibleMessageCallbackProcessed(bytes32 indexed sendId, bytes4 selectorIfError);
 
 	// ************************************************************************************************
 	// ********************************************* Modifiers ****************************************
