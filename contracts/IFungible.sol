@@ -11,6 +11,7 @@ abstract contract IFungible {
   uint256 constant ZERO_VALUE = 0;
   address constant ZERO_ADDRESS = address(0);
 	bytes32 constant MSG_BND = "BND";
+	bytes32 constant MSG_UBD = "UBD";
 	bytes32 constant MSG_CLO = "CLO";
 	bytes32 constant MSG_SUP = "SUP";
 
@@ -50,6 +51,7 @@ abstract contract IFungible {
 	// ************************************************************************************************
 	// NO receive() function is declared here.
 	/*receive() external payable {
+
 	}*/
 
 	// Fallback handles missing function calls but rejects Ether

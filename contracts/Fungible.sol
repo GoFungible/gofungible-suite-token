@@ -319,11 +319,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
 		if (header.op == MSG_BND) {
+			console.log("HERE IS THE ERROR!!!! masterAddress must ZERO ADDRESS but is not. move this inside the function");
+			console.log(_masterAddress);
+			print(id, "[7] Validations!!!1", _masterAddress);
 			require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());										// not master chain
+			print(id, "[7] Validations!!!2");
 			require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());								// not master address
+			print(id, "[7] Validations!!!3");
 			require(_totalSupply == ZERO_VALUE, ZeroValueRequired(_totalSupply));								// not supply yet
-
+			print(id, "[7] Validations!!!4");
 			return _onCrosschainBind(payload);
+		} else if (header.op == MSG_UBD) {
+			return _onCrosschainUnbind(payload);
 		}
 		print(id, "[7] Fungible received message5!!!");
 		
@@ -375,6 +382,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		if (operation == MSG_BND) {
 			_onCrosschainBindCallback(id);
 
+		} else if (operation == MSG_UBD) {
+			_onCrosschainUnbindCallback(id);
+
 		} else if (operation == MSG_SUP) {
 			_onCrosschainSupplyCallback(id);
 
@@ -408,7 +418,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		address masterAddress;
 	}
 
+	// bind
 	function bindChain(uint256 toChainId, address toChainAddress) external payable override {
+		console.log("************ bindchain", toChainAddress);
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
 		require(toChainId != ZERO_VALUE, NonZeroValueRequired());
@@ -424,6 +436,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			masterAddress: _masterAddress
     }));
 		bytes32 id = _sendMessage(MSG_BND, toChainId, toChainAddress, packedPayload);
+		print(id, "[1] id received");
 		require (id != bytes32(0), ErrorInCrossChainBind());
 
 		// TODO: this should be on _onCrosschainBindCallback
@@ -431,29 +444,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		addresses[toChainId] = toChainAddress;
 	}
 
-	function unbindChain(uint256 fromChainId) external payable override {
-		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		require(supplies[fromChainId] != ZERO_VALUE, NonZeroValueRequired());
-		require(fromChainId != CHAIN_ID, OnlyUnbindFromOtherChain());
-		require(_masterChain == CHAIN_ID, OnlyUnbindFromMasterChain());
-		require(supplies[fromChainId] != ZERO_VALUE, OnlyUnbindFromSlaveChain());
-		require(addresses[fromChainId] != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
-
-		// send message to the unbinding chain
-    bytes memory packedPayload = abi.encode(FungibleBindPayload({
-			flag: false,
-			masterChain: _masterChain,
-			masterAddress: _masterAddress
-    }));
-		bytes32 id = _sendMessage(MSG_BND, fromChainId, addresses[fromChainId], packedPayload);
-		require (id != bytes32(0), ErrorInCrossChainBind());
-		
-		// TODO: this should be on _onCrosschainBindCallback
-		removeValueFromArray(knownChains, fromChainId);
-		addresses[fromChainId] = ZERO_ADDRESS;
-	}
-
 	function _onCrosschainBind(bytes memory payload) internal returns (bytes4) {
+		print(0, "[8] _onCrosschainBind");
 		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
 		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
 
@@ -471,6 +463,50 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _onCrosschainBindCallback(bytes32 id) internal returns (bytes4) {
 		print(0, "[12] _onCrosschainBindCallback");
+	}
+
+	// unbind
+	function unbindChain(uint256 fromChainId) external payable override {
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+		require(supplies[fromChainId] != ZERO_VALUE, NonZeroValueRequired());
+		require(fromChainId != CHAIN_ID, OnlyUnbindFromOtherChain());
+		require(_masterChain == CHAIN_ID, OnlyUnbindFromMasterChain());
+		require(supplies[fromChainId] != ZERO_VALUE, OnlyUnbindFromSlaveChain());
+		require(addresses[fromChainId] != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
+
+		// send message to the unbinding chain
+    bytes memory packedPayload = abi.encode(FungibleBindPayload({
+			flag: false,
+			masterChain: _masterChain,
+			masterAddress: _masterAddress
+    }));
+		bytes32 id = _sendMessage(MSG_UBD, fromChainId, addresses[fromChainId], packedPayload);
+		require (id != bytes32(0), ErrorInCrossChainBind());
+		
+		// TODO: this should be on _onCrosschainBindCallback
+		removeValueFromArray(knownChains, fromChainId);
+		addresses[fromChainId] = ZERO_ADDRESS;
+	}
+
+	function _onCrosschainUnbind(bytes memory payload) internal returns (bytes4) {
+		print(0, "[8] _onCrosschainUnbind");
+		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
+		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
+
+		// Unpack the byte envelope straight back into the struct format
+		print(0, "[8] token bound1");
+		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
+		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
+		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
+		console.log("[8] token bound2", payloadData.flag);
+		console.log("[8] token bound2", payloadData.masterChain);
+		console.log("[8] token bound2", payloadData.masterAddress);
+
+		return IERC7786Recipient.receiveMessage.selector;
+	}
+
+	function _onCrosschainUnbindCallback(bytes32 id) internal returns (bytes4) {
+		print(0, "[12] _onCrosschainUnbindCallback");
 	}
 
 	// ************************************************************************************************
