@@ -29,7 +29,7 @@ abstract contract IFungible {
   error UnexpectedCallback(bytes32 id);
   error GatewayRequired(address sender);
 
-  error OnlyBindFromMasterChain();												//
+  error OnlyBindFromMasterToken();												//
   error OnlyBindToOtherChain();														//
   error OnlyBindToSingletonChain();												//
   error OnlyBindToEmptyToken(uint256 totalSupply);				//

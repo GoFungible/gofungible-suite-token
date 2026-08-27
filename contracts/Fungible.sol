@@ -435,7 +435,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
 		require(toChainId != ZERO_VALUE, NonZeroValueRequired());
 		require(toChainId != CHAIN_ID, OnlyBindToOtherChain());
-		require(_masterChain == CHAIN_ID, OnlyBindFromMasterChain());
+		require(_masterChain == CHAIN_ID, OnlyBindFromMasterToken());
 		require(supplies[toChainId] == ZERO_VALUE, OnlyBindToSingletonChain());		
 		require(addresses[toChainId] == ZERO_ADDRESS, OnlyBindToSingletonChain());
 
