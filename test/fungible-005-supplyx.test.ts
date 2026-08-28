@@ -147,35 +147,28 @@ describe("ERC-20X Supply", function () {
 	});
 
 	/********************************************************************************************************/
-	/************************************************ TransferX *********************************************/
-	/********************************************************************************************************/
-	it("Should be able to transferX", async() => {
-
-	});
-
-	// On ChainA: ChainA:AccountA to ChainA:AccountB (transfer)
-	// On ChainA: ChainA:AccountA to ChainB:AccountB (transferX) <-------------
-	// On ChainB: ChainA:AccountA to ChainB:AccountB (proxy)
-	// On ChainC: ChainA:AccountA to ChainB:AccountB (proxy)
-	it("ChainA should be able to transfer from ChainA:owner to ChainB:owner", async() => {
-
-	});
-	
-	it("ChainA should be able to transfer from ChainA:AccountA to ChainB:AccountB", async() => {
-
-	});
-
-	/********************************************************************************************************/
 	/************************************************* Bridge ***********************************************/
 	/********************************************************************************************************/
-	it("Should be able to bridge", async() => {
+	it("FROM. Only owner should be able to bridge", async() => {
+
+	});
+
+	it("FROM. Only Master Token should be able to bridge", async() => {
+
+	});
+
+	it("TO. Only can bridge to bound token token", async() => {
 
 	});
 
 	/********************************************************************************************************/
 	/************************************************** Pay *************************************************/
 	/********************************************************************************************************/
-	it("Should be able to pay", async() => {
+	it("Any holder should be able to pay within same network", async() => {
+
+	});
+
+	it("Any holder should be able to pay cross-network", async() => {
 
 	});
 
