@@ -537,7 +537,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	 * @notice Message blueprint struct for cross-chain execution.
 	 */
 	struct FungibleBindPayload {
-		bool flag;
 		uint256 masterChain;
 		address masterAddress;
 	}
@@ -557,7 +556,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// send message to the binding chain
     bytes memory packedPayload = abi.encode(FungibleBindPayload({
-			flag: true,
 			masterChain: _masterChain,
 			masterAddress: _masterAddress
     }));
@@ -575,14 +573,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
 		require(_totalSupply == ZERO_VALUE, OnlyBindToEmptyToken(_totalSupply));
 
-		// Unpack the byte envelope straight back into the struct format
 		print(0, "[7-BUS] token bound1");
 		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
-		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
-		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
-		console.log("[7-BUS] token bound2", payloadData.flag);
-		console.log("[7-BUS] token bound2", payloadData.masterChain);
-		console.log("[7-BUS] token bound2", payloadData.masterAddress);
+		_masterChain = payloadData.masterChain;
+		_masterAddress = payloadData.masterAddress;
 
 		return IERC7786Recipient.receiveMessage.selector;
 	}
@@ -608,7 +602,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// send message to the unbinding chain
     bytes memory packedPayload = abi.encode(FungibleBindPayload({
-			flag: false,
 			masterChain: _masterChain,
 			masterAddress: _masterAddress
     }));
@@ -626,14 +619,16 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(_masterAddress != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
 		require(_totalSupply == ZERO_VALUE, OnlyUnbindFromSlaveChain());
 
-		// Unpack the byte envelope straight back into the struct format
+		// verify is the masterchain and masteraddress
 		print(0, "[0-BUS] token bound1");
 		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
-		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
-		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
-		console.log("[0-BUS] token bound2", payloadData.flag);
-		console.log("[0-BUS] token bound2", payloadData.masterChain);
-		console.log("[0-BUS] token bound2", payloadData.masterAddress);
+		require(_masterChain == payloadData.masterChain, OnlyUnbindFromMasterChain());
+		require(_masterAddress == payloadData.masterAddress, OnlyUnbindFromMasterChain());
+
+		// unbind
+		print(0, "[0-BUS] token bound1");
+		_masterChain = 0;
+		_masterAddress = ZERO_ADDRESS;
 
 		return IERC7786Recipient.receiveMessage.selector;
 	}
