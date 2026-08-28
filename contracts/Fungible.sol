@@ -287,7 +287,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// TODO: Use EIP-712
-	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external override returns (bytes4) {
+	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external override nonReentrant returns (bytes4) {
 		print(id, "[6-FUN] Fungible received message!!!");
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
@@ -342,7 +342,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 	mapping(bytes32 => PendingCallbacks) public pendingCallbacks;
 
-	function _onMessageCallback(bytes32 id, bytes4 selectorIfError) external override {
+	function _onMessageCallback(bytes32 id, bytes4 selectorIfError) external override nonReentrant {
     require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 		require(pendingCallbacks[id].op != bytes32(0), UnexpectedCallback(id));
 		print(id, "[11-FUN] Source token was confirmed on status of message operation");
@@ -554,7 +554,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// bind
-	function bind(uint256 toChainId, address toChainAddress) external payable override {
+	function bind(uint256 toChainId, address toChainAddress) external payable nonReentrant override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		print(0, "[0-BUS] bind", toChainId, toChainAddress);
 
@@ -604,7 +604,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// unbind
-	function unbind(uint256 fromChainId) external payable override {
+	function unbind(uint256 fromChainId) external payable nonReentrant override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
 		require(fromChainId != ZERO_VALUE, NonZeroValueRequired());
 		require(_masterChain == CHAIN_ID, OnlyUnbindFromMasterChain());
