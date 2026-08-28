@@ -551,8 +551,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		require(toChainId != CHAIN_ID, OnlyBindToOtherChain());
 		require(_masterChain == CHAIN_ID, OnlyBindFromMasterToken());
-		require(supplies[toChainId] == ZERO_VALUE, OnlyBindToSingletonChain());
-		require(addresses[toChainId] == ZERO_ADDRESS, OnlyBindToSingletonChain());
+		require(supplies[toChainId] == ZERO_VALUE, OnlyBindToUnboundChain(toChainId));
+		require(addresses[toChainId] == ZERO_ADDRESS, OnlyBindToUnboundChain(toChainId));
 
 		// send message to the binding chain
     bytes memory packedPayload = abi.encode(FungibleBindPayload({

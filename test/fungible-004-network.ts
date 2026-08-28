@@ -257,9 +257,31 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/**************************************** Bind - Sender Test Cases **************************************/
 	/********************************************************************************************************/
-	it("WHO. Only owner can bind.", async() => {
+	it("FROM. Only owner can bind.", async() => {
 		await expect(fungibleMaster1.connect(addr13).bind(2222, fungibleSingleton2.getAddress())).to.be.revertedWithCustomError(fungibleMaster1, "OnlyOwner");
 		await expect(fungibleMaster2.connect(addr13).bind(1111, fungibleSingleton1.getAddress())).to.be.revertedWithCustomError(fungibleMaster2, "OnlyOwner");
+	});
+
+	it("FROM. Should only bind from MasterToken.", async() => {
+		await expect(fungibleSingleton1.bind(2222, fungibleMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
+		await expect(fungibleSingleton1.bind(2222, fungibleSingleton2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
+		await expect(fungibleSingleton1.bind(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
+		await expect(fungibleSingleton1.bind(2222, otherSlave2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
+
+		await expect(otherSlave1.bind(2222, fungibleMaster2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterToken");
+		await expect(otherSlave1.bind(2222, fungibleSingleton2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterToken");
+		await expect(otherSlave1.bind(2222, otherMaster2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterToken");
+		await expect(otherSlave1.bind(2222, otherSlave2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterToken");		
+
+		await expect(fungibleSingleton2.bind(1111, fungibleMaster1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterToken");
+		await expect(fungibleSingleton2.bind(1111, fungibleSingleton1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterToken");
+		await expect(fungibleSingleton2.bind(1111, otherMaster1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterToken");
+		await expect(fungibleSingleton2.bind(1111, otherSlave1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterToken");
+
+		await expect(otherSlave2.bind(1111, fungibleMaster1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterToken");
+		await expect(otherSlave2.bind(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterToken");
+		await expect(otherSlave2.bind(1111, otherMaster1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterToken");
+		await expect(otherSlave2.bind(1111, otherSlave1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterToken");		
 	});
 
 	it("FROM. Can only bind to other chain", async() => {
@@ -304,31 +326,9 @@ describe("ERC-20X Supply", function () {
 		await expect(otherSlave2.bind(2222, otherSlave2)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindToOtherChain");
 	});
 
-	it("FROM. Should only bind from MasterChain.", async() => {
-		await expect(fungibleSingleton1.bind(2222, fungibleMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
-		await expect(fungibleSingleton1.bind(2222, fungibleSingleton2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
-		await expect(fungibleSingleton1.bind(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
-		await expect(fungibleSingleton1.bind(2222, otherSlave2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
-
-		await expect(otherSlave1.bind(2222, fungibleMaster2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterToken");
-		await expect(otherSlave1.bind(2222, fungibleSingleton2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterToken");
-		await expect(otherSlave1.bind(2222, otherMaster2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterToken");
-		await expect(otherSlave1.bind(2222, otherSlave2)).to.be.revertedWithCustomError(otherSlave1, "OnlyBindFromMasterToken");		
-
-		await expect(fungibleSingleton2.bind(1111, fungibleMaster1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterToken");
-		await expect(fungibleSingleton2.bind(1111, fungibleSingleton1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterToken");
-		await expect(fungibleSingleton2.bind(1111, otherMaster1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterToken");
-		await expect(fungibleSingleton2.bind(1111, otherSlave1)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyBindFromMasterToken");
-
-		await expect(otherSlave2.bind(1111, fungibleMaster1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterToken");
-		await expect(otherSlave2.bind(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterToken");
-		await expect(otherSlave2.bind(1111, otherMaster1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterToken");
-		await expect(otherSlave2.bind(1111, otherSlave1)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindFromMasterToken");		
-	});
-
 	it("TO. Should only bind to Unbound chains.", async() => {
-		//await expect(otherMaster1.bind(2222, fungibleSingleton2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToSingletonChain");
-		//await expect(otherMaster2.bind(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToSingletonChain");
+		await expect(otherMaster1.bind(2222, fungibleSingleton2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToUnboundChain");
+		await expect(otherMaster2.bind(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToUnboundChain");
 	});
 
 	/********************************************************************************************************/

@@ -31,6 +31,7 @@ abstract contract IFungible {
 
   error OnlyBindFromMasterToken();												//
   error OnlyBindToOtherChain();														//
+  error OnlyBindToUnboundChain(uint256 chainId);					//
   error OnlyBindToSingletonChain();												//
   error OnlyBindToEmptyToken(uint256 totalSupply);				//
   error OnlyUnbindFromOtherChain();												//
