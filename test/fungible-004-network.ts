@@ -440,54 +440,42 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************** Unbind **********************************************/
 	/********************************************************************************************************/
-	/*it.skip("WHO. Only owner can unbind.", async() => {
-		// Tokens
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
-
-		// TEST CASE: can not unbind if not owner
-		await expect(fungible1.connect(addr13).unbind(1337)).to.be.revertedWithCustomError(fungible1, "OnlyOwner");
-	});*/
-
-	/*it.skip("FROM. Should only unbind from MasterChain token.", async() => {
-		// Tokens
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
-
-		// TEST CASE: cannot unbind if no MasterChain on Fungible1
-		expect(await fungible1.getMasterChain()).to.equal(0);
-		await expect(fungible1.unbind(1337)).to.be.revertedWithCustomError(fungible1, "OnlyMasterChain");
-		console.log("OK. Cannot bind if not gateway on Fungible1.");
-	});*/
-
-	/*it.skip("TO. Should only unbind Slave empty tokens.", async() => {
-		// Tokens
-		const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		const fungible2 = await ethers.getContractAt('Fungible', fungibleAddress2)
-
-		// set Fungible1 as MasterChain
-		expect(await fungible1.getMasterChain()).to.equal(0);
-		await expect(fungible1.setAsMasterChain()).to.not.be.reverted;
-		expect(await fungible1.getMasterChain()).to.equal(await fungible1.chainId());
-		console.log(`Fungible1 ${await fungible1.chainId()} set as MasterChain`);
-
-		// TEST CASE: should not unbind Singleton token
-		expect(await fungible2.getMasterChain()).to.equal(0);
-		await expect(fungible1.unbind(1337)).to.be.revertedWithCustomError(fungible1, "ZeroAddressRequired");
-		console.log("OK. Cannot bind if not gateway on Fungible1.");
-	});*/
-
-	it.skip("OK. Should be able to unbind if conditions met.", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		//fungible1.setMasterChain(1337);
+	it("FROM. Only owner can unbind.", async() => {
+		await expect(otherMaster1.connect(addr13).unbind(2222)).to.be.revertedWithCustomError(otherMaster1, "OnlyOwner");
+		await expect(otherMaster2.connect(addr13).unbind(1111)).to.be.revertedWithCustomError(otherMaster1, "OnlyOwner");
 	});
 
-	/********************************************************************************************************/
-	/************************************************ Addresses *********************************************/
-	/********************************************************************************************************/
-	it.skip("Should be able to read chain addresses", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1)
-		//fungible1.setMasterChain(1337);
+	it.skip("FROM. Should only unbind from MasterChain token.", async() => {
+		await expect(otherSlave2.unbind(1111)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromMasterChain");
+		await expect(otherSlave1.unbind(2222)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromMasterChain");
+	});
+
+	it.skip("FROM. Should only unbind from other token.", async() => {
+		await expect(otherMaster1.unbind(1111)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromOtherChain");
+		await expect(otherMaster2.unbind(2222)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromOtherChain");
+	});
+
+	it.skip("FROM. Should only unbind from bound token.", async() => {
+		await expect(otherMaster1.unbind(3333)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromOtherChain");
+		await expect(otherMaster2.unbind(3333)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromOtherChain");
+	});
+
+	it("TO. Should only unbind Slave empty tokens.", async() => {
+
+	});
+
+	it.skip("OK. Should be able to unbind if conditions met.", async() => {
+		await expect(otherMaster1.unbind(2222)).to.not.be.reverted;
+		expect(await otherMaster1.getChains()).to.not.include(2222n);
+		expect(await otherMaster1.getChainAddress(2222)).to.equals(ZeroAddress);
+		expect(await otherSlave2.getMasterChain()).to.equal(0);
+		expect(await otherSlave2.getMasterAddress()).to.equal(ZeroAddress);
+
+		await expect(otherMaster2.unbind(1111)).to.not.be.reverted;
+		expect(await otherMaster2.getChains()).to.not.include(1111n);
+		expect(await otherMaster2.getChainAddress(1111)).to.equals(ZeroAddress);
+		expect(await otherSlave1.getMasterChain()).to.equal(0);
+		expect(await otherSlave1.getMasterAddress()).to.equal(ZeroAddress);
 	});
 
 	/********************************************************************************************************/
