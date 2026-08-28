@@ -336,6 +336,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	function _onMessage(bytes memory payload) internal returns (bytes4) {
+		print(0, "[6-FUN] _onMessage()");
 
 		// run relayer extensions
 		for(uint i=0; i<_extGatewaySendMessage.length; i++){

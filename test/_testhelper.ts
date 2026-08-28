@@ -124,12 +124,16 @@ export const ZeroAddressRequiredError = "ZeroAddressRequired(address nonZeroAddr
 export const ZeroValueRequiredError = "ZeroValueRequired(uint256 nonZeroVaue)";						// 0x51be93a0
 export const NonZeroAddressRequiredError = "NonZeroAddressRequired()";										// 0xd357d001
 export const NonZeroValueRequiredError = "NonZeroValueRequired()";												// 0x8f8b9fd4
+
 export const OnlyOwnerError = "OnlyOwner(address sender)";																// 0x907433a7
 export const OnlyGatewayError = "OnlyGateway(address sender)";														// 0xfe0858c6
+
 export const GatewayRequiredError = "GatewayRequired(address sender)";										// 0xee88ae73
+
 export const OnlyBindToOtherChainError = "OnlyBindToOtherChain()";												// 0x191c314d
 export const OnlyBindFromMasterChainError = "OnlyBindFromMasterChain()";									// 0x314cc367
 export const OnlyBindToSingletonChainError = "OnlyBindToSingletonChain()";								// 0xf530503f
+export const OnlyBindToEmptyTokenError = "OnlyBindToEmptyToken(uint256)";									// 0x4087ed04
 export const OnlyUnbindFromOtherChainError = "OnlyUnbindFromOtherChain()";								// 0x491b56c3
 export const OnlyUnbindFromMasterChainError = "OnlyUnbindFromMasterChain()";							// 0xd23243c5
 export const OnlyUnbindFromSlaveChainError = "OnlyUnbindFromSlaveChain()";								// 0x98971510
@@ -153,6 +157,7 @@ export const UNIVERSAL_ERRORS_ABI = [
 	`error ${OnlyBindToOtherChainError}`,
 	`error ${OnlyBindFromMasterChainError}`,
 	`error ${OnlyBindToSingletonChainError}`,
+	`error ${OnlyBindToEmptyTokenError}`,
 	`error ${OnlyUnbindFromOtherChainError}`,
 	`error ${OnlyUnbindFromMasterChainError}`,
 	`error ${OnlyUnbindFromSlaveChainError}`,
