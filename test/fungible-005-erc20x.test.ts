@@ -80,14 +80,6 @@ describe("ERC-20X Supply", function () {
 	});
 
 	/********************************************************************************************************/
-	/************************************************ Addresses *********************************************/
-	/********************************************************************************************************/
-	it("Should be able to get cross addresses", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
-		//fungible1.getAllRemoteSupplies();
-	});
-
-	/********************************************************************************************************/
 	/************************************************ Supplies **********************************************/
 	/********************************************************************************************************/
 	it("Should be able to get cross supplies", async() => {
@@ -98,12 +90,6 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************ TransferX *********************************************/
 	/********************************************************************************************************/
-
-	it("Should be able to bridge", async() => {
-		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
-		//fungible1.getAllRemoteSupplies();
-	});
-
 	it("Should be able to transferX", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
 		//fungible1.getAllRemoteSupplies();
@@ -136,5 +122,22 @@ describe("ERC-20X Supply", function () {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
 		//fungible1.transferX(1337, fungibleAddress2, 100_000);
 	});
+
+	/********************************************************************************************************/
+	/************************************************* Bridge ***********************************************/
+	/********************************************************************************************************/
+	it("Should be able to bridge", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
+		//fungible1.getAllRemoteSupplies();
+	});
+
+	/********************************************************************************************************/
+	/************************************************** Pay *************************************************/
+	/********************************************************************************************************/
+	it("Should be able to bridge", async() => {
+		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
+		//fungible1.getAllRemoteSupplies();
+	});
+
 
 });
