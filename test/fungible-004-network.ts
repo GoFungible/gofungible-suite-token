@@ -259,7 +259,6 @@ describe("ERC-20X Supply", function () {
 	beforeEach(async function (this: Mocha.Context) {
 		console.log(`\nTest: ${this.currentTest?.title}`);
 		console.log('***************************************************************************');
-
 	});
 
 	afterEach(async() => {
