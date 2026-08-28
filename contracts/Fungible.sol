@@ -331,20 +331,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			return _onCloneState(payload);
 
 		} else {
-			return _onMessage(payload);
+			return _onCustomMessage(payload);
 		}
-	}
-
-	function _onMessage(bytes memory payload) internal returns (bytes4) {
-		print(0, "[6-FUN] _onMessage()");
-
-		// run relayer extensions
-		for(uint i=0; i<_extGatewaySendMessage.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(bytes memory payload)", payload );
-			_staticCall(_extGatewaySendMessage[i], encodedData);
-    }
-
-		return IERC7786Recipient.receiveMessage.selector;
 	}
 
 	// PendingCallbacks
@@ -389,11 +377,35 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			_onCloneStateCallback(payload);
 
 		} else {
-			//return _onMessageCallback(payload);
+			_onCustomMessageCallback(payload);
 		}
 
 		emit FungibleMessageCallbackProcessed(id, selectorIfError);
 		print(id, "[11-FUN] FungibleMessageCallbackProcessed event emitted to listeners. Operation finally committed on source token");
+	}
+
+	// ************************************************************************************************
+	// ********************************* ERC-7786 Custom Messages *************************************
+	// ************************************************************************************************
+
+	function customMessage() external payable {
+
+	}
+
+	function _onCustomMessage(bytes memory payload) internal returns (bytes4) {
+		print(0, "[6-FUN] _onMessage()");
+
+		// run relayer extensions
+		for(uint i=0; i<_extGatewaySendMessage.length; i++){
+			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(bytes memory payload)", payload );
+			_staticCall(_extGatewaySendMessage[i], encodedData);
+    }
+
+		return IERC7786Recipient.receiveMessage.selector;
+	}
+
+	function _onCustomMessageCallback(bytes memory payload) internal {
+
 	}
 
 	// ************************************************************************************************
