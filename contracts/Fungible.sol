@@ -253,7 +253,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// By doing this, this contract only interacts with the based networks. Be aware.
 		bytes memory recipient = LibERC7786ToEthAdapter.generateERC7930Record(toChain, toAddress);
-		print(0, "[1] sendMessage", toChain, toAddress);
+		print(0, "[1-FUN] sendMessage", toChain, toAddress);
 
 		// message content
 		Message memory message = Message({
@@ -277,7 +277,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// send message
     bytes32 id = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
 		require(id != bytes32(0), ErrorInGatewaySendingMessage());
-		print(id, "[3] id returned by sendMessage from gateway.");
+		print(id, "[3-FUN] id returned by sendMessage from gateway.");
 
 		// to really guarantee thaht this is the tx, we need to emit in the token
 		// if we emit in the gateway, we can get the worng event
@@ -288,7 +288,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	// TODO: Use EIP-712
 	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external override returns (bytes4) {
-		print(id, "[6] Fungible received message!!!");
+		print(id, "[6-FUN] Fungible received message!!!");
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 
@@ -306,7 +306,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		Message memory message = abi.decode(messageBytes, (Message));
 		bytes memory payload = message.payload;
 		Header memory header = message.header;
-		print(id, "[6] Fungible received message4!!!");
+		print(id, "[6-FUN] Fungible received message4!!!");
 
 		// We cannot validate message comes from MasterChain because token is unbound:
 		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
@@ -317,12 +317,12 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		} else if (header.op == MSG_UBD) {
 			return _onUnbind(payload);
 		}
-		print(id, "[6] Fungible received message5!!!");
+		print(id, "[6-FUN] Fungible received message5!!!");
 		
 		// verify sender is valid.
 		require(srcChainId == _masterChain, OnlyMasterChain(srcChainId));
 		require(srcAddress == _masterAddress, OnlyMasterChain(srcChainId));
-		print(id, "[6] Fungible received message6!!!");
+		print(id, "[6-FUN] Fungible received message6!!!");
 
 		if (header.op == MSG_SUP) {
 			return _onSupply(payload);
@@ -356,7 +356,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	function _onMessageCallback(bytes32 id, bytes4 selectorIfError) external override {
     require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 		require(pendingCallbacks[id].op != bytes32(0), UnexpectedCallback(id));
-		print(id, "[11] Source token was confirmed on status of message operation");
+		print(id, "[11-FUN] Source token was confirmed on status of message operation");
 
 		// get callback info and delete record
 		bytes32 op = pendingCallbacks[id].op;
@@ -364,8 +364,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		delete pendingCallbacks[id];
 
 		if (selectorIfError != bytes4(0)) {
-			print(id, "[11] Event emitted to listeners.");
-			print(id, "[11] Operation rolled back on receiver. Source changes wont be performed.");
+			print(id, "[11-FUN] Event emitted to listeners.");
+			print(id, "[11-FUN] Operation rolled back on receiver. Source changes wont be performed.");
 			emit FungibleMessageCallbackProcessed(id, selectorIfError);
 
 			// do not revert to allow tests catch the event
@@ -392,141 +392,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		}
 
 		emit FungibleMessageCallbackProcessed(id, selectorIfError);
-		print(id, "[11] FungibleMessageCallbackProcessed event emitted to listeners. Operation finally committed on source token");
-	}
-
-	// ************************************************************************************************
-	// ********************************* ERC-20X: 3. Token Perimeter **********************************
-	// ************************************************************************************************  
-	uint256[] knownChains;
-
-	function getChains() external view returns (uint256[] memory) {
-		return knownChains;
-	}
-
-	/**
-	 * @title FungibleBindPayload
-	 * @notice Message blueprint struct for cross-chain execution.
-	 */
-	struct FungibleBindPayload {
-		bool flag;
-		uint256 masterChain;
-		address masterAddress;
-	}
-
-	// bind
-	function bind(uint256 toChainId, address toChainAddress) external payable override {
-		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		print(0, "[0] bind", toChainId, toChainAddress);
-
-		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
-		require(toChainId != ZERO_VALUE, NonZeroValueRequired());
-
-		require(toChainId != CHAIN_ID, OnlyBindToOtherChain());
-		require(_masterChain == CHAIN_ID, OnlyBindFromMasterToken());
-		require(supplies[toChainId] == ZERO_VALUE, OnlyBindToSingletonChain());
-		require(addresses[toChainId] == ZERO_ADDRESS, OnlyBindToSingletonChain());
-
-		// send message to the binding chain
-    bytes memory packedPayload = abi.encode(FungibleBindPayload({
-			flag: true,
-			masterChain: _masterChain,
-			masterAddress: _masterAddress
-    }));
-		bytes32 id = _sendMessage(MSG_BND, toChainId, toChainAddress, packedPayload);
-
-		// if message sending was not reverted we can record info for callback processing
-		pendingCallbacks[id] = PendingCallbacks({
-			op: MSG_BND,
-			payload: abi.encode(toChainId, toChainAddress)
-    });
-	}
-
-	function _onBind(bytes memory payload) internal returns (bytes4) {
-		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
-		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
-		require(_totalSupply == ZERO_VALUE, OnlyBindToEmptyToken(_totalSupply));
-
-		// Unpack the byte envelope straight back into the struct format
-		print(0, "[7] token bound1");
-		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
-		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
-		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
-		console.log("[7] token bound2", payloadData.flag);
-		console.log("[7] token bound2", payloadData.masterChain);
-		console.log("[7] token bound2", payloadData.masterAddress);
-
-		return IERC7786Recipient.receiveMessage.selector;
-	}
-
-	function _onBindCallback(bytes memory payload) internal {
-		// resolve transaction
-		print(0, "[12] _onBindCallback");
-    (uint256 toChainId, address toChainAddress) = abi.decode(payload, (uint256, address));
-		console.log(toChainId);
-		console.log(toChainAddress);
-		knownChains.push(toChainId);
-		addresses[toChainId] = toChainAddress;
-	}
-
-	// unbind
-	function unbind(uint256 fromChainId) external payable override {
-		require(msg.sender == _owner, OnlyOwner(msg.sender));
-		require(fromChainId != ZERO_VALUE, NonZeroValueRequired());
-		require(_masterChain == CHAIN_ID, OnlyUnbindFromMasterChain());
-		require(fromChainId != CHAIN_ID, OnlyUnbindFromOtherChain());
-		require(supplies[fromChainId] != ZERO_VALUE, OnlyUnbindFromSlaveChain());
-		require(addresses[fromChainId] != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
-
-		// send message to the unbinding chain
-    bytes memory packedPayload = abi.encode(FungibleBindPayload({
-			flag: false,
-			masterChain: _masterChain,
-			masterAddress: _masterAddress
-    }));
-		bytes32 id = _sendMessage(MSG_UBD, fromChainId, addresses[fromChainId], packedPayload);
-
-		// if message sending was not reverted we can record info for callback processing
-		pendingCallbacks[id] = PendingCallbacks({
-			op: MSG_UBD,
-			payload: abi.encode(fromChainId)
-    });
-	}
-
-	function _onUnbind(bytes memory payload) internal returns (bytes4) {
-		print(0, "[8] _onUnbind");
-		require(_masterChain != ZERO_VALUE, OnlyUnbindFromSlaveChain());
-		require(_masterAddress != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
-		require(_totalSupply == ZERO_VALUE, OnlyUnbindFromSlaveChain());
-
-		// Unpack the byte envelope straight back into the struct format
-		print(0, "[8] token bound1");
-		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
-		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
-		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
-		console.log("[8] token bound2", payloadData.flag);
-		console.log("[8] token bound2", payloadData.masterChain);
-		console.log("[8] token bound2", payloadData.masterAddress);
-
-		return IERC7786Recipient.receiveMessage.selector;
-	}
-
-	function _onUnbindCallback(bytes memory payload) internal {
-		print(0, "[12] _onUnbindCallback");
-
-    (uint256 fromChainId) = abi.decode(payload, (uint256));
-		removeValueFromArray(knownChains, fromChainId);
-		addresses[fromChainId] = ZERO_ADDRESS;
-		supplies[fromChainId] = ZERO_VALUE;
-	}
-
-	// ************************************************************************************************
-	// ********************************** ERC-20X: 4. Address by Chain ********************************
-	// ************************************************************************************************
-	mapping(uint256 => address) public addresses;
-
-	function getChainAddress(uint256 _chainId) external view returns (address) {
-		return addresses[_chainId];
+		print(id, "[11-FUN] FungibleMessageCallbackProcessed event emitted to listeners. Operation finally committed on source token");
 	}
 
 	// ************************************************************************************************
@@ -579,6 +445,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		emit MasterChainUpdated(_masterChain, _masterAddress, _newMasterChain, _newMasterAddress);
 	}
 
+	// ************************************************************************************************
+	// *********************************** ERC-20X: 2. Network State **********************************
+	// ************************************************************************************************
 	/**
 	 * @title FungibleSyncPayload
 	 * @notice Message blueprint struct for cross-chain execution.
@@ -613,10 +482,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		_sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
 	}
 
-	function _onCloneStateCallback(bytes memory payload) internal {
-
-	}
-
 	function _onCloneState(bytes memory payload) internal returns (bytes4) {
 		require(knownChains.length == ZERO_VALUE, "Clone: can only be done once");
 
@@ -640,12 +505,146 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
+	function _onCloneStateCallback(bytes memory payload) internal {
+
+	}
+
 	// https://github.com/ZeframLou/token-migrator
 	// https://forum.openzeppelin.com/t/how-to-migrate-a-non-upgradeable-erc20-token-to-a-new-version/3406/8
 	// https://johnjvester.medium.com/bridging-the-gap-better-token-standards-for-cross-chain-assets-6a5793a215c3
 	/*function migratetoken(address newToken) external {
 
 	}*/
+
+	// ************************************************************************************************
+	// ********************************* ERC-20X: 3. Token Perimeter **********************************
+	// ************************************************************************************************  
+	uint256[] knownChains;
+
+	function getChains() external view returns (uint256[] memory) {
+		return knownChains;
+	}
+
+	mapping(uint256 => address) public addresses;
+
+	function getChainAddress(uint256 _chainId) external view returns (address) {
+		return addresses[_chainId];
+	}
+
+	/**
+	 * @title FungibleBindPayload
+	 * @notice Message blueprint struct for cross-chain execution.
+	 */
+	struct FungibleBindPayload {
+		bool flag;
+		uint256 masterChain;
+		address masterAddress;
+	}
+
+	// bind
+	function bind(uint256 toChainId, address toChainAddress) external payable override {
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+		print(0, "[0-BUS] bind", toChainId, toChainAddress);
+
+		require(toChainAddress != ZERO_ADDRESS, NonZeroAddressRequired());
+		require(toChainId != ZERO_VALUE, NonZeroValueRequired());
+
+		require(toChainId != CHAIN_ID, OnlyBindToOtherChain());
+		require(_masterChain == CHAIN_ID, OnlyBindFromMasterToken());
+		require(supplies[toChainId] == ZERO_VALUE, OnlyBindToSingletonChain());
+		require(addresses[toChainId] == ZERO_ADDRESS, OnlyBindToSingletonChain());
+
+		// send message to the binding chain
+    bytes memory packedPayload = abi.encode(FungibleBindPayload({
+			flag: true,
+			masterChain: _masterChain,
+			masterAddress: _masterAddress
+    }));
+		bytes32 id = _sendMessage(MSG_BND, toChainId, toChainAddress, packedPayload);
+
+		// if message sending was not reverted we can record info for callback processing
+		pendingCallbacks[id] = PendingCallbacks({
+			op: MSG_BND,
+			payload: abi.encode(toChainId, toChainAddress)
+    });
+	}
+
+	function _onBind(bytes memory payload) internal returns (bytes4) {
+		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
+		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
+		require(_totalSupply == ZERO_VALUE, OnlyBindToEmptyToken(_totalSupply));
+
+		// Unpack the byte envelope straight back into the struct format
+		print(0, "[7-BUS] token bound1");
+		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
+		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
+		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
+		console.log("[7-BUS] token bound2", payloadData.flag);
+		console.log("[7-BUS] token bound2", payloadData.masterChain);
+		console.log("[7-BUS] token bound2", payloadData.masterAddress);
+
+		return IERC7786Recipient.receiveMessage.selector;
+	}
+
+	function _onBindCallback(bytes memory payload) internal {
+		// resolve transaction
+		print(0, "[12-BUS] _onBindCallback");
+    (uint256 toChainId, address toChainAddress) = abi.decode(payload, (uint256, address));
+		console.log(toChainId);
+		console.log(toChainAddress);
+		knownChains.push(toChainId);
+		addresses[toChainId] = toChainAddress;
+	}
+
+	// unbind
+	function unbind(uint256 fromChainId) external payable override {
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+		require(fromChainId != ZERO_VALUE, NonZeroValueRequired());
+		require(_masterChain == CHAIN_ID, OnlyUnbindFromMasterChain());
+		require(fromChainId != CHAIN_ID, OnlyUnbindFromOtherChain());
+		require(supplies[fromChainId] != ZERO_VALUE, OnlyUnbindFromSlaveChain());
+		require(addresses[fromChainId] != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
+
+		// send message to the unbinding chain
+    bytes memory packedPayload = abi.encode(FungibleBindPayload({
+			flag: false,
+			masterChain: _masterChain,
+			masterAddress: _masterAddress
+    }));
+		bytes32 id = _sendMessage(MSG_UBD, fromChainId, addresses[fromChainId], packedPayload);
+
+		// if message sending was not reverted we can record info for callback processing
+		pendingCallbacks[id] = PendingCallbacks({
+			op: MSG_UBD,
+			payload: abi.encode(fromChainId)
+    });
+	}
+
+	function _onUnbind(bytes memory payload) internal returns (bytes4) {
+		require(_masterChain != ZERO_VALUE, OnlyUnbindFromSlaveChain());
+		require(_masterAddress != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
+		require(_totalSupply == ZERO_VALUE, OnlyUnbindFromSlaveChain());
+
+		// Unpack the byte envelope straight back into the struct format
+		print(0, "[0-BUS] token bound1");
+		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
+		_masterChain = payloadData.flag ? payloadData.masterChain : 0;
+		_masterAddress = payloadData.flag ? payloadData.masterAddress : ZERO_ADDRESS;
+		console.log("[0-BUS] token bound2", payloadData.flag);
+		console.log("[0-BUS] token bound2", payloadData.masterChain);
+		console.log("[0-BUS] token bound2", payloadData.masterAddress);
+
+		return IERC7786Recipient.receiveMessage.selector;
+	}
+
+	function _onUnbindCallback(bytes memory payload) internal {
+		print(0, "[12-BUS] _onUnbindCallback");
+
+    (uint256 fromChainId) = abi.decode(payload, (uint256));
+		removeValueFromArray(knownChains, fromChainId);
+		addresses[fromChainId] = ZERO_ADDRESS;
+		supplies[fromChainId] = ZERO_VALUE;
+	}
 
 	// ************************************************************************************************
 	// ********************************** ERC-20X: 4. Supply by Chain *********************************

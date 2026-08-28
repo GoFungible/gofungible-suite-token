@@ -59,7 +59,7 @@ export class ERC7786MockGatewayRelayer {
 				// Destructure event payload
 				const [id, senderBOA,  recipientBOA, payload, value, attributes] = event.args; 
 
-				console.log(`\n📨 ${id}; [4] Intercepted ERC-7786 message by relayer! Id: ${id}`);
+				console.log(`\n📨 ${id}; [4-REL] Intercepted ERC-7786 message by relayer! Id: ${id}`);
         /*
         console.log(`🌍 senderBOA: ${senderBOA}`);
         console.log(`🌍 recipientBOA: ${recipientBOA}`);
@@ -67,7 +67,7 @@ export class ERC7786MockGatewayRelayer {
         console.log(`🌍 value: ${value}`);
         console.log(`🌍 attributes: ${attributes}`);*/
 
-				console.log(`\n📨 ${id}; [4] Sending message ${id} to Destination Gateway ${destGatewayAddress}`);
+				console.log(`\n📨 ${id}; [4-REL] Sending message ${id} to Destination Gateway ${destGatewayAddress}`);
 
 				try {
 
@@ -75,7 +75,7 @@ export class ERC7786MockGatewayRelayer {
 						.connect(destGatewayAddress, destRelayer)
 						.sendRelayerMessageToToken(id, senderBOA,  recipientBOA, payload, value, attributes);
 
-					console.log(`✅ ${id}; [7] ERC-7786 Message: SUCESSFULL operation on destination gateway. Hash: ${tx1?.hash}`);
+					console.log(`✅ ${id}; [7-REL] ERC-7786 Message: SUCESSFULL operation on destination gateway. Hash: ${tx1?.hash}`);
 
 					// ************************************************************************************************
 					// ***************** Sending sucessfull operation callback notification to source *****************
@@ -85,7 +85,7 @@ export class ERC7786MockGatewayRelayer {
 						.connect(sourceGatewayAddress, sourceRelayer)
 						.onRelayerCallback(id, senderBOA, "0x00000000");
 
-					console.log(`✅ ${id}; [9] ERC-7786 Message: SUCESSFULL callback sent to source gateway. Hash: ${tx2?.hash}`);
+					console.log(`✅ ${id}; [9-REL] ERC-7786 Message: SUCESSFULL callback sent to source gateway. Hash: ${tx2?.hash}`);
 				} 
 
 				// ************************************************************************************************
@@ -101,27 +101,27 @@ export class ERC7786MockGatewayRelayer {
 				// - The remaining bytes. This is the ABI-encoded error message. Hex representation of "Error message"
 				catch (error:any) {
 
-					console.error(`❌ ${id}; [9] Destination gateway notifies FAILED to execute message:`, error);
+					console.error(`❌ ${id}; [9-REL] Destination gateway notifies FAILED to execute message:`, error);
 
 					const rawHexData = error.data || error.error?.data || error.receipt?.data;
-					console.error(`❌ ${id}; [9] Error receipt: ${rawHexData}`);
+					console.error(`❌ ${id}; [9-REL] Error receipt: ${rawHexData}`);
 					const errorSelector: string = rawHexData.slice(0, 10);
-					console.error(`❌ ${id}; [9] Error selector: ${errorSelector}` );
+					console.error(`❌ ${id}; [9-REL] Error selector: ${errorSelector}` );
 
 					const decoded = universalInterface.parseError(rawHexData);
-				  console.error(`❌ ${id}; [9] Reverted with Name: ${decoded?.name}`);
-				  console.error(`❌ ${id}; [9] Reverted with Selector: ${decoded?.selector}`);
-				  console.error(`❌ ${id}; [9] Reverted with Signature: ${decoded?.signature}`);
-				  console.error(`❌ ${id}; [9] Reverted with Fragment: ${decoded?.fragment}`);
+				  console.error(`❌ ${id}; [9-REL] Reverted with Name: ${decoded?.name}`);
+				  console.error(`❌ ${id}; [9-REL] Reverted with Selector: ${decoded?.selector}`);
+				  console.error(`❌ ${id}; [9-REL] Reverted with Signature: ${decoded?.signature}`);
+				  console.error(`❌ ${id}; [9-REL] Reverted with Fragment: ${decoded?.fragment}`);
 					console.error(decoded?.fragment);
 
-					console.error(`❌ ${id}; [9] ERC-7786 Message: Sending FAILED callback to source gateway.`);
+					console.error(`❌ ${id}; [9-REL] ERC-7786 Message: Sending FAILED callback to source gateway.`);
 
 					const tx = await IGatewayReceiver__factory
 						.connect(sourceGatewayAddress, sourceRelayer)
 						.onRelayerCallback(id, senderBOA, errorSelector);
 
-					console.error(`❌ ${id}; [9] ERC-7786 Message: FAILED callback sent to source gateway. Hash: ${tx?.hash}`);
+					console.error(`❌ ${id}; [9-REL] ERC-7786 Message: FAILED callback sent to source gateway. Hash: ${tx?.hash}`);
 
 				}
 				

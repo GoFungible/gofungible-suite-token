@@ -75,17 +75,17 @@ describe("Deploy Resources", function () {
 	// ****************************************************************** Stages for crosschain message **********************************************************
 	// ***********************************************************************************************************************************************************
 	// [0] this token operation							// sendCustomMessage()									// Business Logic
-	// [1] this token sendMessage						// _sendMessage()																// FungibleToken
-	// [2] local gateway request						// sendMessage()																				// Gateway1
-	// [3] id provision to This token				// id =																					// FungibleToken
-	// [4] relayer request									// on()																													// Relayer
-	// [5] remote gateway request						// sendRelayerMessageToToken()													// Gateway2
-	// [6] remote token receive message			// receiveMessage()															// FungibleToken
+	// [1] this token sendMessage						// _sendMessage()																			// FungibleToken
+	// [2] local gateway request						// sendMessage()																												// Gateway1 (ERC-77886)
+	// [3] id provision to This token				// id =																								// FungibleToken
+	// [4] relayer request									// on()																																													// Relayer
+	// [5] remote gateway request						// sendRelayerMessageToToken()																					// Gateway2 (ERC-77886)
+	// [6] remote token receive message			// receiveMessage()																		// FungibleToken
 	// [7] remote token receive operation		// _onCustomMessage()										// Business Logic
-	// [8] remote gateway response					// sendRelayerMessageToToken()													// Gateway2
-	// [9] relayer response									// on()																													// Relayer
-	// [10] local gateway response					// sendMessage()																				// Gateway1
-	// [11] this token message callback			// _onMessageCallback()													// FungibleToken
+	// [8] remote gateway response					// sendRelayerMessageToToken()																					// Gateway2
+	// [9] relayer response									// on()																																													// Relayer
+	// [10] local gateway response					// sendMessage()																												// Gateway1 (ERC-77886)
+	// [11] this token message callback			// _onMessageCallback()																// FungibleToken
 	// [12] this token operation callback		// _onCustomMessageCallback()						// Business Logic
 	// ***********************************************************************************************************************************************************
 	// ****************************************************************** (0) this token operation ***************************************************************

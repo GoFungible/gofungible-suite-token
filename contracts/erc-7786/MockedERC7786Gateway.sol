@@ -60,13 +60,13 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		// State & Identifier updates
 		_nonce++;
 		console.log(_nonce);
-		print(0, "[3] nonce: ", _nonce);
+		print(0, "[3-GAT] nonce: ", _nonce);
 		id = keccak256(abi.encodePacked(block.timestamp, msg.sender, _nonce));
-		print(id, "[3] created id");
+		print(id, "[3-GAT] created id");
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		print(id, "[3] sending Message 2 to", receiverChainId, receiverAddress);
+		print(id, "[3-GAT] sending Message 2 to", receiverChainId, receiverAddress);
 
 		// create Binary Interoperable Address for sender
 		bytes memory senderBOA = LibERC7786ToEthAdapter.generateERC7930Record(block.chainid, msg.sender);
@@ -75,7 +75,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		if (receiverChainId == block.chainid) {
 
 			bytes4 response = IERC7786Recipient(receiverAddress).receiveMessage(id, senderBOA, payload);
-			console.log("[9] Message delivered within the chain", block.chainid);
+			console.log("[9-GAT] Message delivered within the chain", block.chainid);
 
 			// Verification
 			require(response == IERC7786Recipient.receiveMessage.selector, "ERC7786: invalid receiver response");
@@ -85,9 +85,9 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		else {
 
 			// Emitting log safely at the end of the call execution sequence
-			print(id, "[3] sending Message 4 to", receiverChainId, receiverAddress);
+			print(id, "[3-GAT] sending Message 4 to", receiverChainId, receiverAddress);
 			emit MessageSent(id, senderBOA, recipientBOA, payload, msg.value, attributes);
-			print(id, "[3] MessageSent event fired!!!");
+			print(id, "[3-GAT] MessageSent event fired!!!");
 		}
 
 		return id;
@@ -107,7 +107,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
-		print(id, "[5] executeRelayedMessage chainId", receiverChainId, receiverAddress);
+		print(id, "[5-GAT] executeRelayedMessage chainId", receiverChainId, receiverAddress);
 
 		return IERC7786Recipient(receiverAddress).receiveMessage(id, senderBOA, payload);
 	}
@@ -118,13 +118,13 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 	// invoked by relayer to notify SUCESS or FAILURE
 	function onRelayerCallback(bytes32 id, bytes memory senderBOA, bytes4 selectorIfError) external returns (bytes4)  {
-		print(id, "[10] Message response received by gateway Result");
+		print(id, "[10-GAT] Message response received by gateway Result");
 		console.logBytes4(selectorIfError);
 
 		// notifies token _onMessageCallback
 		(uint256 senderChainId, address senderAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
 		IFungible(senderAddress)._onMessageCallback(id, selectorIfError);
-		print(id, "[10] Fungible notified about the message result");
+		print(id, "[10-GAT] Fungible notified about the message result");
 	}
 
 	function print(bytes32 id, string memory message) public {
