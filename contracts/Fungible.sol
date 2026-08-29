@@ -705,7 +705,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// done by 2 accounts of 1 holders between chains within the perimeter
-	function bridge(uint256 inChain, address inAddress, uint256 amount) external payable override {
+	function bridge(uint256 inChain, address inAddress, uint256 amount) external payable nonReentrant override {
 		 _transferX(inChain, inAddress, amount);
 	}
 
@@ -772,7 +772,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// if destination, update ERC-20
 		if (CHAIN_ID == inChain) {
 			print(0, "[6-FUN] add money ", amount);
-			console.log(_balances[inAddress]);
 			_balances[inAddress] += amount;
 			console.log(_totalSupply);
 			_totalSupply += amount;
@@ -786,6 +785,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			supplies[inChain] += amount;
 		}
 
+		print(0, "[6-FUN] end _onSupply");
 		return IERC7786Recipient.receiveMessage.selector;
 	}
 
@@ -803,12 +803,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// if source, update ERC-20
 		if (CHAIN_ID == outChain) {
 			print(0, "[12-BUS] remove money ", amount);
-			console.log(outAddress);
-			console.log(_balances[outAddress]);
 			_balances[outAddress] -= amount;
 			_totalSupply -= amount;
-			console.log(_balances[outAddress]);
-			console.log(_totalSupply);
 		}
 
 		// if MasterChain, update supplies
