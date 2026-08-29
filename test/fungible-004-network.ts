@@ -11,6 +11,7 @@ describe("ERC-20X Supply", function () {
 	let owner2: JsonRpcSigner, relayer2: JsonRpcSigner, addr21: JsonRpcSigner, addr22: JsonRpcSigner, addr23: JsonRpcSigner, addrs2: JsonRpcSigner[];
 	let fungibleMaster1: Fungible, fungibleSingleton1: Fungible, otherMaster1: Fungible, otherSlave1: Fungible, otherSingletonFat1: Fungible, mockedERC7786Gateway1: MockedERC7786Gateway;
 	let fungibleMaster2: Fungible, fungibleSingleton2: Fungible, otherMaster2: Fungible, otherSlave2: Fungible, otherSingletonFat2: Fungible, mockedERC7786Gateway2: MockedERC7786Gateway;
+	let relayer;
 
 	/********************************************************************************************************/
 	/************************************************** hooks ***********************************************/
@@ -69,12 +70,13 @@ describe("ERC-20X Supply", function () {
 		console.log(`MockedERC7786Gateway2 deployed on ${await mockedERC7786Gateway2.chainId()} at ${mockedERC7786GatewayAddress2}`);
 
 		// launch relayer
-		const relayer = await new ERC7786MockGatewayRelayer(
+		relayer = await new ERC7786MockGatewayRelayer(
 			relayer1, relayer2, 
 			"http://127.0.0.1:8545", "http://127.0.0.1:8546", 
 			mockedERC7786GatewayAddress1, mockedERC7786GatewayAddress2
-		).init();
-		relayer.listenAndRelay();
+		);
+		await relayer.init();
+		await relayer.listenAndRelay();
 
 		console.log(`Initialized network`);
 
@@ -266,6 +268,7 @@ describe("ERC-20X Supply", function () {
 	});
 	
 	after(async() => {
+		await relayer!.destroy();
 		console.log(`--------- End Test Suite ${this.title}  --------`);
 	});
 
