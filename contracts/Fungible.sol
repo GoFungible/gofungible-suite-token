@@ -327,12 +327,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		if (header.op == MSG_SUP) {
 			return _onSupply(payload);
 
-		} else if (header.op == MSG_SUC) {
-			return _onSupply(payload);
-
-		} else if (header.op == MSG_SUM) {
-			return _onSupply(payload);
-
 		} else if (header.op == MSG_CLO) {
 			return _onCloneState(payload);
 
@@ -378,12 +372,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		} else if (op == MSG_SUP) {
 			_onSupplyCallback(payload);
-
-		} else if (op == MSG_SUC) {
-			_onSupplyCCallback(payload);
-
-		} else if (op == MSG_SUM) {
-			_onSupplyMCallback(payload);
 
 		} else if (op == MSG_CLO) {
 			_onCloneStateCallback(payload);
@@ -712,22 +700,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		if (inChain == CHAIN_ID) {
 			return _transfer(msg.sender, inAddress, amount);
 		} else {
-			return _transferX(MSG_SUP, inChain, inAddress, amount);
+			return _transferX(inChain, inAddress, amount);
 		}
 	}
 
 	// done by 2 accounts of 1 holders between chains within the perimeter
 	function bridge(uint256 inChain, address inAddress, uint256 amount) external returns (bool) {
-		return _transferX(MSG_SUP, inChain, inAddress, amount);
-	}
-
-	// done from master to other chain
-	function expand(uint256 inChain, address inAddress, uint256 amount) external returns (bool) {
-		return _transferX(MSG_SUM, inChain, inAddress, amount);
+		return _transferX(inChain, inAddress, amount);
 	}
 
 	// Performs supply transfer to an account of another chain
-	function _transferX(bytes32 op, uint256 inChain, address inAddress, uint256 amount) internal returns (bool) {
+	// all transferX go throught MasterChain. This prevents inconsistent state whereas maintaining same number of messages.
+	function _transferX(uint256 inChain, address inAddress, uint256 amount) internal returns (bool) {
 		
 		// run INBLOCK extensions
 		for(uint i=0; i<_extTrnInBlock.length; i++){
@@ -759,11 +743,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			amount: amount
     });
     bytes memory packedPayload = abi.encode(payload);
-		bytes32 id = _sendMessage(op, inChain, inAddress, packedPayload);
+		bytes32 id = _sendMessage(MSG_SUP, inChain, inAddress, packedPayload);
 
 		// if message sending was not reverted we can record info for callback processing
 		pendingCallbacks[id] = PendingCallbacks({
-			op: op,
+			op: MSG_SUP,
 			payload: packedPayload
     });
 
@@ -782,13 +766,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint256 amount = payloadData.amount;
 
 		// if destination, update ERC-20
-		if (inChain == CHAIN_ID) {
+		if (CHAIN_ID == inChain) {
 			_totalSupply += amount;
 			_balances[inAddress] += amount;
 		}
 
 		// if MasterChain, update supplies
-		if (_masterChain == CHAIN_ID) {
+		if (CHAIN_ID == _masterChain) {
 			supplies[inChain] += amount;
 			supplies[outChain] -= amount;
 		}
@@ -798,33 +782,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _onSupplyCallback(bytes memory payload) internal {
 		print(0, "[12-BUS] _onSupplyCallback");
-		
-		// notifies MasterChain
-		bytes32 id = _sendMessage(MSG_SUM, _masterChain, _masterAddress, payload);
-		require(id != bytes32(0), "");
-	}
 
-	function _onSupplyCCallback(bytes memory payload) internal {
-		print(0, "[12-BUS] _onSupplyCallback");
-		
-		// Unpack the byte envelope straight back into the struct format
-		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
-		address outAddress = payloadData.outAddress;
-		uint256 amount = payloadData.amount;
-
-		_balances[outAddress] -= amount;
-		_totalSupply -= amount;
-
-		// run relayer extensions
-		for(uint i=0; i<_extGatewaySyncSupply.length; i++){
-			//bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", fromChain, toChain, amount );
-			//_staticCall(_extGatewaySyncSupply[i], encodedData);
-    }
-	}
-
-	function _onSupplyMCallback(bytes memory payload) internal {
-		print(0, "[12-BUS] _onSupplyMCallback");
-		
 		// Unpack the byte envelope straight back into the struct format
 		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
 		uint256 outChain = payloadData.outChain;
@@ -832,16 +790,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint256 inChain = payloadData.inChain;
 		uint256 amount = payloadData.amount;
 
-		supplies[outChain] += amount;
-		supplies[inChain] -= amount;
-		_balances[outAddress] -= amount;
-		_totalSupply -= amount;
+		// if source, update ERC-20
+		if (CHAIN_ID == outChain) {
+			_balances[outAddress] -= amount;
+			_totalSupply -= amount;
+		}
 
-		// run relayer extensions
-		for(uint i=0; i<_extGatewaySyncSupply.length; i++){
-			//bytes memory encodedData = abi.encodeWithSignature( "_afterSupplyReceived(uint256 toChain, address toAddress, uint256 amount)", fromChain, toChain, amount );
-			//_staticCall(_extGatewaySyncSupply[i], encodedData);
-    }
+		// if MasterChain, update supplies
+		if (CHAIN_ID == _masterChain) {
+			supplies[inChain] += amount;
+			supplies[outChain] -= amount;
+		}
+		
 	}
 
 	// *************************************************************************************************

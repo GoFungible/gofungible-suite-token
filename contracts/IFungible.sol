@@ -14,8 +14,6 @@ abstract contract IFungible {
 	bytes32 constant MSG_UBD = "UBD";
 	bytes32 constant MSG_CLO = "CLO";
 	bytes32 constant MSG_SUP = "SUP";
-	bytes32 constant MSG_SUC = "SUC";
-	bytes32 constant MSG_SUM = "SUM";
 
 	// ************************************************************************************************
 	// ******************************************** Errors ********************************************
