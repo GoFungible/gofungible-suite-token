@@ -149,36 +149,34 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************* Bridge ***********************************************/
 	/********************************************************************************************************/
-	it("FROM. Only owner should be able to bridge", async() => {
-		const fungibleSingleton2Address1 = await fungibleSingleton2.getAddress();
-		expect(await fungibleMaster1.connect(addr11).bridge(2222, fungibleSingleton2Address1, 500_000_000)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyOwner");
+	it("FROM. Only can bridge throught MasterChain", async() => {
+		//expect(await fungibleMaster1.bridge(2222, fungibleSingleton2Address1, 500_000_000)).to.not.be.reverted;
 	});
 
-	it("FROM. Only Master Token should be able to bridge", async() => {
-
+	it("FROM. Only accounts with enought funds can bridge", async() => {
+		await expect(fungibleMaster1.connect(addr11).bridge(2222, fungibleSingleton2, 500_000_000)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyTransferXWithFunds");
 	});
 
-	it("TO. Only can bridge to bound token token", async() => {
-
+	it("TO. Only can bridge to bound token", async() => {
+		await expect(fungibleMaster1.bridge(3333, fungibleSingleton2, 500_000_000)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyTransferXBoundTokens");
 	});
 
-	it("FROM. should be able to bridge if all conditiosn match", async() => {
-		const fungibleMaster1Address1 = await fungibleMaster1.getAddress();
-		const fungibleSingleton2Address1 = await fungibleSingleton2.getAddress();
-
+	it("OK. Should be able to bridge if all conditiosn match", async() => {
 		expect(await fungibleMaster1.totalSupply()).to.equal(ethers.parseEther("1000000000"));
 		expect(await fungibleMaster1.balanceOf(owner1)).to.equal(ethers.parseEther("1000000000"));
 		expect(await fungibleSingleton2.totalSupply()).to.equal(0);
 		expect(await fungibleSingleton2.balanceOf(owner2)).to.equal(0);
 
-		/*expect(await fungibleMaster1.bridge(2222, fungibleSingleton2Address1, 500_000_000)).to.not.be.reverted;
-
+		expect(await fungibleMaster1.bridge(2222, fungibleSingleton2, 500_000_000)).to.not.be.reverted;
+		//await expect(fungibleMaster1.bridge(2222, fungibleSingleton2Address, 500_000_000).then(tx => tx.wait())).to.not.be.rejected;
+		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(NO_SELECTOR);
+		
 		expect(await fungibleMaster1.totalSupply()).to.equal(ethers.parseEther("500000000"));
 		expect(await fungibleMaster1.balanceOf(owner1)).to.equal(ethers.parseEther("500000000"));
-		expect(await fungibleSingleton2.totalSupply()).to.equal(ethers.parseEther("500000000"));
-		expect(await fungibleSingleton2.balanceOf(owner2)).to.equal(ethers.parseEther("500000000"));
+		//expect(await fungibleSingleton2.totalSupply()).to.equal(ethers.parseEther("500000000"));
+		//expect(await fungibleSingleton2.balanceOf(owner2)).to.equal(ethers.parseEther("500000000"));
 
-		expect(await fungibleMaster1.bridge(2222, fungibleSingleton2Address1, 500_000_000)).to.not.be.reverted;
+		/*expect(await fungibleMaster1.bridge(2222, fungibleSingleton2Address1, 500_000_000)).to.not.be.reverted;
 
 		expect(await fungibleMaster1.totalSupply()).to.equal(ethers.parseEther("500000000"));
 		expect(await fungibleMaster1.balanceOf(owner1)).to.equal(ethers.parseEther("500000000"));

@@ -104,8 +104,8 @@ describe("Deploy Token", function () {
 		await expect(fungibleContract.setAsMasterChain()).to.not.be.reverted;
 		await expect(fungibleContract.transferMasterChain(1337)).to.not.be.reverted;
 		await expect(() => fungibleContract.getChainSupply(0)).to.not.throw();
-		await expect(fungibleContract.bridge(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWithCustomError(fungibleContract, "GatewayRequired");
-		await expect(fungibleContract.pay(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWithCustomError(fungibleContract, "GatewayRequired");
+		await expect(fungibleContract.bridge(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWithCustomError(fungibleContract, "OnlyTransferXBoundTokens");
+		await expect(fungibleContract.pay(25, addr1.address, ethers.parseUnits("10", 18))).to.be.revertedWithCustomError(fungibleContract, "OnlyTransferXBoundTokens");
 
 		// extensions functions
 		await expect(fungibleContract.addResource(45, 1, fungibleAddress, 0, 10, 10)).to.not.be.reverted;

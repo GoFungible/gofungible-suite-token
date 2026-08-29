@@ -696,22 +696,29 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	address[] public _extTrnOutLog;
 
 	// done by accounts of 2 holders between chains within the perimeter
-	function pay(uint256 inChain, address inAddress, uint256 amount) external returns (bool) {
+	function pay(uint256 inChain, address inAddress, uint256 amount) external payable nonReentrant override {
 		if (inChain == CHAIN_ID) {
-			return _transfer(msg.sender, inAddress, amount);
+			_transfer(msg.sender, inAddress, amount);
 		} else {
-			return _transferX(inChain, inAddress, amount);
+			_transferX(inChain, inAddress, amount);
 		}
 	}
 
 	// done by 2 accounts of 1 holders between chains within the perimeter
-	function bridge(uint256 inChain, address inAddress, uint256 amount) external returns (bool) {
-		return _transferX(inChain, inAddress, amount);
+	function bridge(uint256 inChain, address inAddress, uint256 amount) external payable override {
+		 _transferX(inChain, inAddress, amount);
 	}
 
 	// Performs supply transfer to an account of another chain
-	// all transferX go throught MasterChain. This prevents inconsistent state whereas maintaining same number of messages.
-	function _transferX(uint256 inChain, address inAddress, uint256 amount) internal returns (bool) {
+	// To prevents inconsistent state, whereas maintaining the same number of messages (gas), all transferX must go throught MasterChain.
+	function _transferX(uint256 inChain, address inAddress, uint256 amount) internal {
+		require(CHAIN_ID == _masterChain || inChain == _masterChain, OnlyTransferXThroughtMasterChain(inChain));
+		console.log("pepe");
+		console.log(addresses[inChain]);
+		require(addresses[inChain] != ZERO_ADDRESS, OnlyTransferXBoundTokens(inChain));
+		amount = amount * 10 ** _decimals;
+		require(balanceOf(msg.sender) > amount, OnlyTransferXWithFunds(amount));
+		console.log("pepe2");
 		
 		// run INBLOCK extensions
 		for(uint i=0; i<_extTrnInBlock.length; i++){
@@ -735,14 +742,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     }
 
 		// update remote chain
-    FungibleSupplyPayload memory payload = FungibleSupplyPayload({
+    bytes memory packedPayload = abi.encode(FungibleSupplyPayload({
 			outChain: CHAIN_ID,
-			outAddress: address(this),
+			outAddress: msg.sender,
 			inChain: inChain,
 			inAddress: inAddress,
 			amount: amount
-    });
-    bytes memory packedPayload = abi.encode(payload);
+    }));
 		bytes32 id = _sendMessage(MSG_SUP, inChain, inAddress, packedPayload);
 
 		// if message sending was not reverted we can record info for callback processing
@@ -750,8 +756,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			op: MSG_SUP,
 			payload: packedPayload
     });
-
-		return true;
 	}
 
 	// Receives supply transfer
@@ -767,14 +771,19 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// if destination, update ERC-20
 		if (CHAIN_ID == inChain) {
-			_totalSupply += amount;
+			print(0, "[6-FUN] add money ", amount);
+			console.log(_balances[inAddress]);
 			_balances[inAddress] += amount;
+			console.log(_totalSupply);
+			_totalSupply += amount;
+			console.log(_totalSupply);
 		}
 
 		// if MasterChain, update supplies
 		if (CHAIN_ID == _masterChain) {
-			supplies[inChain] += amount;
+			print(0, "[6-FUN] move money ", amount);
 			supplies[outChain] -= amount;
+			supplies[inChain] += amount;
 		}
 
 		return IERC7786Recipient.receiveMessage.selector;
@@ -788,20 +797,29 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		uint256 outChain = payloadData.outChain;
 		address outAddress = payloadData.outAddress;
 		uint256 inChain = payloadData.inChain;
+		//address inAddress = payloadData.inAddress;
 		uint256 amount = payloadData.amount;
 
 		// if source, update ERC-20
 		if (CHAIN_ID == outChain) {
+			print(0, "[12-BUS] remove money ", amount);
+			console.log(outAddress);
+			console.log(_balances[outAddress]);
 			_balances[outAddress] -= amount;
 			_totalSupply -= amount;
+			console.log(_balances[outAddress]);
+			console.log(_totalSupply);
 		}
 
 		// if MasterChain, update supplies
 		if (CHAIN_ID == _masterChain) {
-			supplies[inChain] += amount;
+			print(0, "[12-BUS] move money ", amount);
 			supplies[outChain] -= amount;
+			supplies[inChain] += amount;
 		}
 		
+		print(0, "[12-BUS] end _onSupplyCallback");
+
 	}
 
 	// *************************************************************************************************

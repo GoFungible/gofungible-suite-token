@@ -29,20 +29,23 @@ abstract contract IFungible {
   error UnexpectedCallback(bytes32 id);
   error GatewayRequired(address sender);
 
-  error OnlyBindFromMasterToken();												//
-  error OnlyBindToOtherChain();														//
-  error OnlyBindToUnboundChain(uint256 chainId);					//
-  error OnlyBindToSingletonChain();												//
-  error OnlyBindToEmptyToken(uint256 totalSupply);				//
-  error OnlyUnbindFromOtherChain();												//
-  error OnlyUnbindFromMasterChain();											//
-  error OnlyUnbindFromSlaveChain();												//
+  error OnlyBindFromMasterToken();															//
+  error OnlyBindToOtherChain();																	//
+  error OnlyBindToUnboundChain(uint256 chainId);								//
+  error OnlyBindToSingletonChain();															//
+  error OnlyBindToEmptyToken(uint256 totalSupply);							//
+  error OnlyUnbindFromOtherChain();															//
+  error OnlyUnbindFromMasterChain();														//
+  error OnlyUnbindFromSlaveChain();															//
+  error OnlyTransferXBoundTokens(uint256 chainId);							//
+  error OnlyTransferXThroughtMasterChain(uint256 chainId);			//
+  error OnlyTransferXWithFunds(uint256 amount);									//
 
-  error OnlyMasterChain(uint256 chain);										//  _masterChain matches CHAIN_ID
-  error OnlySlaveChain(uint256 chain);										//  _masterChain no matches CHAIN_ID
-  error OnlySingletonChain(uint256 chain);								//  _masterChain is unassigned
+  error OnlyMasterChain(uint256 chain);													//  _masterChain matches CHAIN_ID
+  error OnlySlaveChain(uint256 chain);													//  _masterChain no matches CHAIN_ID
+  error OnlySingletonChain(uint256 chain);											//  _masterChain is unassigned
 
-	error ErrorInGatewaySendingMessage();										// error in close gateway
+	error ErrorInGatewaySendingMessage();													// error in close gateway
 	error ErrorDeliveringMessage(bytes32 errorSelector);
 
 	// ************************************************************************************************
