@@ -131,7 +131,6 @@ describe("ERC-20X Supply", function () {
 	});
 
 	afterEach(async() => {
-		//await helpers.logICOStatus(ico);
 		console.log('--------------------');
 	});
 	
@@ -161,7 +160,7 @@ describe("ERC-20X Supply", function () {
 		await expect(fungibleMaster1.bridge(3333, fungibleSingleton2, 500_000_000)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyTransferXBoundTokens");
 	});
 
-	it.skip("OK. Should be able to bridge if all conditiosn match", async() => {
+	it("OK. Should be able to bridge if all conditiosn match", async() => {
 		expect(await fungibleMaster1.totalSupply()).to.equal(ethers.parseEther("1000000000"));
 		expect(await fungibleMaster1.balanceOf(owner1)).to.equal(ethers.parseEther("1000000000"));
 		expect(await fungibleSingleton2.totalSupply()).to.equal(0);
@@ -172,7 +171,7 @@ describe("ERC-20X Supply", function () {
 		
 		expect(await fungibleMaster1.totalSupply()).to.equal(ethers.parseEther("500000000"));
 		expect(await fungibleMaster1.balanceOf(owner1)).to.equal(ethers.parseEther("500000000"));
-		//expect(await fungibleSingleton2.totalSupply()).to.equal(ethers.parseEther("500000000"));
+		expect(await fungibleSingleton2.totalSupply()).to.equal(ethers.parseEther("500000000"));
 		//expect(await fungibleSingleton2.balanceOf(owner2)).to.equal(ethers.parseEther("500000000"));
 
 		/*expect(await fungibleMaster1.bridge(2222, fungibleSingleton2Address1, 500_000_000)).to.not.be.reverted;
