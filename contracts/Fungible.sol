@@ -749,7 +749,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			inAddress: inAddress,
 			amount: amount
     }));
-		bytes32 id = _sendMessage(MSG_SUP, inChain, inAddress, packedPayload);
+		bytes32 id = _sendMessage(MSG_SUP, inChain, addresses[inChain], packedPayload);
 
 		// if message sending was not reverted we can record info for callback processing
 		pendingCallbacks[id] = PendingCallbacks({

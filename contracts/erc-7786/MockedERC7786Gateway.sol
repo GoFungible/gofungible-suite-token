@@ -106,6 +106,7 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		// console.log(string(abi.encodePacked(id, " | ", " gateway receive Message 1")));
 
 		// TODO: HERE IS A CAIP-350.
+		print(id, "[5-GAT] executeRelayedMessage");
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
 		print(id, "[5-GAT] executeRelayedMessage chainId", receiverChainId, receiverAddress);
 
