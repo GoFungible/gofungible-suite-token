@@ -67,6 +67,8 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		// TODO: HERE IS A CAIP-350.
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
 		print(id, "[3-GAT] sending Message 2 to", receiverChainId, receiverAddress);
+		console.log(receiverChainId);
+		console.log(receiverAddress);
 
 		// create Binary Interoperable Address for sender
 		bytes memory senderBOA = LibERC7786ToEthAdapter.generateERC7930Record(block.chainid, msg.sender);
@@ -109,6 +111,8 @@ contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 		print(id, "[5-GAT] executeRelayedMessage");
 		(uint256 receiverChainId, address receiverAddress) = LibERC7786ToEthAdapter.parseERC7930Record(recipientBOA);
 		print(id, "[5-GAT] executeRelayedMessage chainId", receiverChainId, receiverAddress);
+		console.log(receiverChainId);
+		console.log(receiverAddress);
 
 		return IERC7786Recipient(receiverAddress).receiveMessage(id, senderBOA, payload);
 	}

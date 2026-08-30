@@ -320,8 +320,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		print(id, "[6-FUN] Fungible received message5!!!");
 		
 		// verify sender is valid.
-		require(srcChainId == _masterChain, OnlyMasterChain(srcChainId));
-		require(srcAddress == _masterAddress, OnlyMasterChain(srcChainId));
+		require(srcChainId == _masterChain || addresses[srcChainId] != ZERO_ADDRESS, OnlyMessageWithinThePerimenter(srcChainId));
+		require(srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
 		print(id, "[6-FUN] Fungible received message6!!!");
 
 		if (header.op == MSG_SUP) {
@@ -712,13 +712,20 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// Performs supply transfer to an account of another chain
 	// To prevents inconsistent state, whereas maintaining the same number of messages (gas), all transferX must go throught MasterChain.
 	function _transferX(uint256 inChain, address inAddress, uint256 amount) internal {
+		// sending to master chain or sending from master chain
 		require(CHAIN_ID == _masterChain || inChain == _masterChain, OnlyTransferXThroughtMasterChain(inChain));
-		console.log("pepe");
-		console.log(addresses[inChain]);
-		require(addresses[inChain] != ZERO_ADDRESS, OnlyTransferXBoundTokens(inChain));
+		print(0, "[0-BUS] _transferX Ok Chain", inChain, inAddress);
+
+		// calculate toChain and toAddress
+		uint256 toChain = inChain;
+		address toAddress = inChain == _masterChain ? _masterAddress : addresses[inChain];
+		require(toAddress != ZERO_ADDRESS, OnlyTransferXBoundTokens(inChain));
+		print(0, "[0-BUS] _transferX OK Address", inChain, inAddress);
+
+		// account must have the money
 		amount = amount * 10 ** _decimals;
 		require(balanceOf(msg.sender) > amount, OnlyTransferXWithFunds(amount));
-		console.log("pepe2");
+		print(0, "[0-BUS] _transferX after validations", inChain, inAddress);
 		
 		// run INBLOCK extensions
 		for(uint i=0; i<_extTrnInBlock.length; i++){
@@ -749,7 +756,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			inAddress: inAddress,
 			amount: amount
     }));
-		bytes32 id = _sendMessage(MSG_SUP, inChain, addresses[inChain], packedPayload);
+		print(0, "[0-BUS] _transferX before send", toChain, toAddress);
+		bytes32 id = _sendMessage(MSG_SUP, toChain, toAddress, packedPayload);
+		print(id, "[0-BUS] _transferX id returned", toChain, toAddress);
 
 		// if message sending was not reverted we can record info for callback processing
 		pendingCallbacks[id] = PendingCallbacks({

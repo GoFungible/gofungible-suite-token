@@ -160,8 +160,8 @@ describe("ERC-20X Supply", function () {
 		await expect(fungibleMaster1.bridge(3333, fungibleSingleton2, 500_000_000)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyTransferXBoundTokens");
 	});
 
-	it("OK. Should be able to bridge if all conditiosn match", async() => {
-		
+	it("OK. Should be able to bridge if all conditiosn met", async() => {
+		// owner1 has 1000_000_000 on chain 1111 on fungibleMaster1
 		expect(await fungibleMaster1.totalSupply()).to.equal(ethers.parseEther("1000000000"));
 		expect(await fungibleMaster1.balanceOf(owner1)).to.equal(ethers.parseEther("1000000000"));
 
@@ -184,17 +184,16 @@ describe("ERC-20X Supply", function () {
 		expect(await fungibleSingleton2.balanceOf(addr21)).to.equal(ethers.parseEther("500000000"));
 
 		// addr21 bridges back 250_000_000 from 2222 (fungibleSingleton2) to addr11 on chain 1111 (fungibleMaster1)
+		console.log("this is a test1 from account: ", addr11);
 		expect(await fungibleSingleton2.connect(addr21).bridge(1111, addr11, 250_000_000)).to.not.be.reverted;
 		expect(await waitForContractEvent({ contract: fungibleSingleton2, eventName: "FungibleMessageCallbackProcessed" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(NO_SELECTOR);
 
 		// now, owner has 500_000_000 on 1111, addr21 has 250_000_000 on 2222 and addr11 has 250_000_000 on 1111
-		/*
 		expect(await fungibleMaster1.totalSupply()).to.equal(ethers.parseEther("750000000"));
 		expect(await fungibleMaster1.balanceOf(owner1)).to.equal(ethers.parseEther("500000000"));
 		expect(await fungibleMaster1.balanceOf(addr11)).to.equal(ethers.parseEther("250000000"));
 		expect(await fungibleSingleton2.totalSupply()).to.equal(ethers.parseEther("250000000"));
 		expect(await fungibleSingleton2.balanceOf(addr21)).to.equal(ethers.parseEther("250000000"));
-		*/
 	});
 
 	/********************************************************************************************************/

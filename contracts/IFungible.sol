@@ -41,6 +41,7 @@ abstract contract IFungible {
   error OnlyTransferXThroughtMasterChain(uint256 chainId);			//
   error OnlyTransferXWithFunds(uint256 amount);									//
 
+  error OnlyMessageWithinThePerimenter(uint256 chain);					//  
   error OnlyMasterChain(uint256 chain);													//  _masterChain matches CHAIN_ID
   error OnlySlaveChain(uint256 chain);													//  _masterChain no matches CHAIN_ID
   error OnlySingletonChain(uint256 chain);											//  _masterChain is unassigned
