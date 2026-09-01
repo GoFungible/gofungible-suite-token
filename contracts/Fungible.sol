@@ -459,77 +459,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// *********************************** ERC-20X: 2. Network State **********************************
-	// ************************************************************************************************
-	/**
-	 * @title FungibleSyncPayload
-	 * @notice Message blueprint struct for cross-chain execution.
-	 */
-	struct FungibleStatePayload {
-		string name;
-		string symbol;
-		uint8 decimals;
-		uint256[] chains;
-		uint256[] supplies;       				// The total amount of tokens being moved
-	}
-
-	function _cloneState(uint256 toChain, address toAddress) internal {
-		require(msg.sender == _owner, OnlyOwner(msg.sender));
-
-		uint256[] memory suppliesList = new uint256[](knownChains.length);
-		for(uint i=0; i<knownChains.length; i++) {
-			suppliesList[i] = supplies[knownChains[i]];
-		}
-
-    // Build your application's data package
-    FungibleStatePayload memory payload = FungibleStatePayload({
-			name: _name,
-			symbol: _symbol,
-			decimals: _decimals,
-			chains: knownChains,
-			supplies: suppliesList
-    });
-
-    bytes memory packedPayload = abi.encode(payload);
-
-		_sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
-	}
-
-	function _onCloneState(bytes memory payload) internal returns (bytes4) {
-		require(knownChains.length == ZERO_VALUE, "Clone: can only be done once");
-
-		// Unpack the byte envelope straight back into the struct format
-		FungibleStatePayload memory payloadData = abi.decode(payload, (FungibleStatePayload));
-
-		// metadata
-		_name = payloadData.name;
-		_symbol = payloadData.symbol;
-		_decimals = payloadData.decimals;
-
-		// create knownChains
-		knownChains = payloadData.chains;
-		
-		// create supplies
-		for(uint i=0; i<knownChains.length; i++) {
-			supplies[knownChains[i]] = payloadData.supplies[i];
-		}
-
-		return IERC7786Recipient.receiveMessage.selector;
-
-	}
-
-	function _onCloneStateCallback(bytes memory payload) internal {
-
-	}
-
-	// https://github.com/ZeframLou/token-migrator
-	// https://forum.openzeppelin.com/t/how-to-migrate-a-non-upgradeable-erc20-token-to-a-new-version/3406/8
-	// https://johnjvester.medium.com/bridging-the-gap-better-token-standards-for-cross-chain-assets-6a5793a215c3
-	/*function migratetoken(address newToken) external {
-
-	}*/
-
-	// ************************************************************************************************
 	// ********************************* ERC-20X: 3. Token Perimeter **********************************
 	// ************************************************************************************************  
 	uint256[] knownChains;
@@ -653,6 +582,77 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		addresses[fromChainId] = ZERO_ADDRESS;
 		supplies[fromChainId] = ZERO_VALUE;
 	}
+
+	// ************************************************************************************************
+	// *********************************** ERC-20X: 2. Network State **********************************
+	// ************************************************************************************************
+	/**
+	 * @title FungibleSyncPayload
+	 * @notice Message blueprint struct for cross-chain execution.
+	 */
+	struct FungibleStatePayload {
+		string name;
+		string symbol;
+		uint8 decimals;
+		uint256[] chains;
+		uint256[] supplies;       				// The total amount of tokens being moved
+	}
+
+	function _cloneState(uint256 toChain, address toAddress) internal {
+		require(msg.sender == _owner, OnlyOwner(msg.sender));
+
+		uint256[] memory suppliesList = new uint256[](knownChains.length);
+		for(uint i=0; i<knownChains.length; i++) {
+			suppliesList[i] = supplies[knownChains[i]];
+		}
+
+    // Build your application's data package
+    FungibleStatePayload memory payload = FungibleStatePayload({
+			name: _name,
+			symbol: _symbol,
+			decimals: _decimals,
+			chains: knownChains,
+			supplies: suppliesList
+    });
+
+    bytes memory packedPayload = abi.encode(payload);
+
+		_sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
+	}
+
+	function _onCloneState(bytes memory payload) internal returns (bytes4) {
+		require(knownChains.length == ZERO_VALUE, "Clone: can only be done once");
+
+		// Unpack the byte envelope straight back into the struct format
+		FungibleStatePayload memory payloadData = abi.decode(payload, (FungibleStatePayload));
+
+		// metadata
+		_name = payloadData.name;
+		_symbol = payloadData.symbol;
+		_decimals = payloadData.decimals;
+
+		// create knownChains
+		knownChains = payloadData.chains;
+		
+		// create supplies
+		for(uint i=0; i<knownChains.length; i++) {
+			supplies[knownChains[i]] = payloadData.supplies[i];
+		}
+
+		return IERC7786Recipient.receiveMessage.selector;
+
+	}
+
+	function _onCloneStateCallback(bytes memory payload) internal {
+
+	}
+
+	// https://github.com/ZeframLou/token-migrator
+	// https://forum.openzeppelin.com/t/how-to-migrate-a-non-upgradeable-erc20-token-to-a-new-version/3406/8
+	// https://johnjvester.medium.com/bridging-the-gap-better-token-standards-for-cross-chain-assets-6a5793a215c3
+	/*function migratetoken(address newToken) external {
+
+	}*/
 
 	// ************************************************************************************************
 	// ********************************** ERC-20X: 4. Supply by Chain *********************************
