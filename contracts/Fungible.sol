@@ -18,17 +18,15 @@ import "./erc-20/IExtTransferOUTLog.sol";
 // gateway (relayers)
 import "./erc-7786/IERC7786GatewaySource.sol";
 import "./erc-7786/IERC7786Recipient.sol";
-import "./erc-7786/IExtRelayerMessage.sol";
-import "./erc-7786/IExtRelayerSupply.sol";
 import {LibERC7786ToEthAdapter} from "./erc-7786/LibERC7786ToEthAdapter.sol";
 import "./erc-7841/ERC7841Message.sol";
+import "./erc-7786/IExtMsgINBlockX.sol";
+import "./erc-7786/IExtMsgINUpdateX.sol";
+import "./erc-7786/IExtMsgINLogX.sol";
 
 // erc-20n (multichain token)
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
-import "./erc-20n/IExtTransferINBlockX.sol";
-import "./erc-20n/IExtTransferINUpdateX.sol";
-import "./erc-20n/IExtTransferINLogX.sol";
-import "./erc-20n/IExtTransferOUTLogX.sol";
+
 
 import "hardhat/console.sol";
 
@@ -301,11 +299,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     bytes32 id = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
 		require(id != bytes32(0), ErrorInGatewaySendingMessage());
 		print(id, "[3-FUN] id returned by sendMessage from gateway.");
-
-		for(uint i=0; i<_extMsgOutLog.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(bytes memory payload)", packedPayload );
-			_staticCall(_extMsgOutLog[i], encodedData);
-    }
 
 		// to really guarantee thaht this is the tx, we need to emit in the token
 		// if we emit in the gateway, we can get the worng event
@@ -829,7 +822,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		EXT_OWNERSHIP_PROVIDER,
 
 		EXT_GATEWAY,
-		EXT_GATEWAY_SEND_MESSAGE,
 
 		EXT_TRX_IN_BLOCK,
 		EXT_TRX_IN_UPDATE,
@@ -838,8 +830,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		EXT_MSG_IN_BLOCKX,
 		EXT_MSG_IN_UPDATE,
-		EXT_MSG_IN_LOG,
-		EXT_MSG_OUT_LOG 
+		EXT_MSG_IN_LOG
 	}
 
 	struct PendingResource {
@@ -920,8 +911,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 			_extMsgInUpdate.push(resourceAddress);
 		} else if (resourceType == uint(ExtensionType.EXT_MSG_IN_LOG)) {
 			_extMsgInLog.push(resourceAddress);
-		} else if (resourceType == uint(ExtensionType.EXT_MSG_OUT_LOG)) {
-			_extMsgOutLog.push(resourceAddress);
 		}
 
 		// remove resource from the pending list

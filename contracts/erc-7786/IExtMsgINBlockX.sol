@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-interface IExtTransferINBlockX {
+interface IExtMsgINBlockX {
 
 	/**
 	 * @dev Hook that is called before any token transfer

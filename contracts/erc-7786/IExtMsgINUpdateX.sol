@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
-interface IExtTransferOUTLogX {
+interface IExtMsgINUpdateX {
 
 	/**
 	 * @dev Hook that is called before any token transfer
@@ -9,6 +9,6 @@ interface IExtTransferOUTLogX {
 	 * @param toAddress Address sending tokens (address(0) for mints)
 	 * @param amount Amount of tokens being transferred (ERC20)
 	 */
-	function _afterTransferLog(uint256 toChain, address toAddress, uint256 amount) external;
+	function _beforeTransferUpdate(uint256 toChain, address toAddress, uint256 amount) external returns (uint256);
 		
 }
