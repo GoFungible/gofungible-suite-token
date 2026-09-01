@@ -235,12 +235,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// Gateway Extensions
 	address private _extGateway;
 
-	address[] public _extGatewaySendMessage;
-
-	address[] public _extGatewaySendSupply;
-
-	address[] public _extGatewaySyncSupply;
-
   function gateway() view external returns(address) {
 		return _extGateway;
 	}
@@ -248,6 +242,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ************************************ ERC-7786 Messages *****************************************
 	// ************************************************************************************************
+
+	// PendingCallbacks
+	struct PendingCallbacks {
+		bytes32 op;
+		bytes payload;
+	}
+	mapping(bytes32 => PendingCallbacks) public pendingCallbacks;
+
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bytes32) {
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(_extGateway));
 
@@ -272,12 +274,38 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		});
 		bytes memory packedMessage = abi.encode(message);
 
+		// run INBLOCK extensions
+		/*for(uint i=0; i<_extMsgOutBlock.length; i++) {
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportINBlockX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
+			bytes memory resultBytes = _staticCall(_extMsgOutBlock[i], encodedData);
+			bool isBlocked = abi.decode(resultBytes, (bool));
+      require(!isBlocked, "Extension: Transfer blocked by Extension");
+    }
+
+		// run INUPDATE extensions
+		for(uint i=0; i<_extMsgOutUpdate.length; i++) {
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportINUpdateX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
+			bytes memory resultBytes = _delegateCall(_extMsgInUpdate[i], encodedData);
+			amount = abi.decode(resultBytes, (uint256));
+    }
+
+		// run INLOG extensions
+		for(uint i=0; i<_extMsgOutLog.length; i++) {
+			bytes memory encodedData = abi.encodeWithSignature( "extTransportINLogX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
+			_staticCall(_extMsgOutLog[i], encodedData);
+    }*/
+
 		bytes[] memory attributes = new bytes[](0);
 
 		// send message
     bytes32 id = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
 		require(id != bytes32(0), ErrorInGatewaySendingMessage());
 		print(id, "[3-FUN] id returned by sendMessage from gateway.");
+
+		for(uint i=0; i<_extMsgOutLog.length; i++){
+			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(bytes memory payload)", packedPayload );
+			_staticCall(_extMsgOutLog[i], encodedData);
+    }
 
 		// to really guarantee thaht this is the tx, we need to emit in the token
 		// if we emit in the gateway, we can get the worng event
@@ -323,7 +351,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		require(srcChainId == _masterChain || addresses[srcChainId] != ZERO_ADDRESS, OnlyMessageWithinThePerimenter(srcChainId));
 		require(srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
 		print(id, "[6-FUN] Fungible received message6!!!");
-
+		
 		if (header.op == MSG_SUP) {
 			return _onSupply(payload);
 
@@ -333,14 +361,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		} else {
 			return _onCustomMessage(payload);
 		}
-	}
 
-	// PendingCallbacks
-	struct PendingCallbacks {
-		bytes32 op;
-		bytes payload;
 	}
-	mapping(bytes32 => PendingCallbacks) public pendingCallbacks;
 
 	function _onMessageCallback(bytes32 id, bytes4 selectorIfError) external override nonReentrant {
     require(msg.sender == _extGateway, OnlyGateway(msg.sender));
@@ -394,12 +416,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	function _onCustomMessage(bytes memory payload) internal returns (bytes4) {
 		print(0, "[6-FUN] _onMessage()");
-
-		// run relayer extensions
-		for(uint i=0; i<_extGatewaySendMessage.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "_afterMessageReceived(bytes memory payload)", payload );
-			_staticCall(_extGatewaySendMessage[i], encodedData);
-    }
 
 		return IERC7786Recipient.receiveMessage.selector;
 	}
@@ -587,7 +603,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// *********************************** ERC-20X: 2. Network State **********************************
 	// ************************************************************************************************
 	/**
-	 * @title FungibleSyncPayload
+	 * @title FungibleStatePayload
 	 * @notice Message blueprint struct for cross-chain execution.
 	 */
 	struct FungibleStatePayload {
@@ -675,7 +691,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************* ERC-20X: 5. TransferX ************************************
 	// ************************************************************************************************
 	/**
-	 * @title FungibleSyncPayload
+	 * @title FungibleSupplyPayload
 	 * @notice Message blueprint struct for cross-chain execution.
 	 */
 	struct FungibleSupplyPayload {
@@ -687,13 +703,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ERC-20X Extensions
-	address[] public _extTrnInBlock;
+	address[] public _extMsgInBlock;
 
-	address[] public _extTrnInUpdate;
+	address[] public _extMsgInUpdate;
 
-	address[] public _extTrnInLog;
+	address[] public _extMsgInLog;
 
-	address[] public _extTrnOutLog;
+	address[] public _extMsgOutLog;
 
 	// done by accounts of 2 holders between chains within the perimeter
 	function pay(uint256 inChain, address inAddress, uint256 amount) external payable nonReentrant override {
@@ -726,27 +742,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		amount = amount * 10 ** _decimals;
 		require(balanceOf(msg.sender) > amount, OnlyTransferXWithFunds(amount));
 		print(0, "[0-BUS] _transferX after validations", inChain, inAddress);
-		
-		// run INBLOCK extensions
-		for(uint i=0; i<_extTrnInBlock.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "extTransportINBlockX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
-			bytes memory resultBytes = _staticCall(_extTrnInBlock[i], encodedData);
-			bool isBlocked = abi.decode(resultBytes, (bool));
-      require(!isBlocked, "Extension: Transfer blocked by Extension");
-    }
-
-		// run INUPDATE extensions
-		for(uint i=0; i<_extTrnInUpdate.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "extTransportINUpdateX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
-			bytes memory resultBytes = _delegateCall(_extTrnInUpdate[i], encodedData);
-			amount = abi.decode(resultBytes, (uint256));
-    }
-
-		// run INLOG extensions
-		for(uint i=0; i<_extTrnInLog.length; i++){
-			bytes memory encodedData = abi.encodeWithSignature( "extTransportINLogX(uint256 from, address to, uint256 amount)", inChain, inAddress, amount );
-			_staticCall(_extTrnInLog[i], encodedData);
-    }
 
 		// update remote chain
     bytes memory packedPayload = abi.encode(FungibleSupplyPayload({
@@ -835,18 +830,16 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		EXT_GATEWAY,
 		EXT_GATEWAY_SEND_MESSAGE,
-		EXT_GATEWAY_SEND_SUPPLY,
-		EXT_GATEWAY_SEND_SYNC_SUPPLY,
 
 		EXT_TRX_IN_BLOCK,
 		EXT_TRX_IN_UPDATE,
 		EXT_TRX_IN_LOG,
 		EXT_TRX_OUT_LOG,
 
-		EXT_TRN_IN_BLOCKX,
-		EXT_TRN_IN_UPDATE,
-		EXT_TRN_IN_LOG,
-		EXT_TRN_OUT_LOG 
+		EXT_MSG_IN_BLOCKX,
+		EXT_MSG_IN_UPDATE,
+		EXT_MSG_IN_LOG,
+		EXT_MSG_OUT_LOG 
 	}
 
 	struct PendingResource {
@@ -909,12 +902,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// gateway
 		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY)) {
 			_extGateway = address(resourceAddress);
-		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_MESSAGE)) {
-			_extGatewaySendMessage.push(resourceAddress);
-		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_SUPPLY)) {
-			_extGatewaySendSupply.push(resourceAddress);
-		} else if (resourceType == uint(ExtensionType.EXT_GATEWAY_SEND_SYNC_SUPPLY)) {
-			_extGatewaySyncSupply.push(resourceAddress);
 
 		// transfer
 		} else if (resourceType == uint(ExtensionType.EXT_TRX_IN_BLOCK)) {
@@ -926,15 +913,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		} else if (resourceType == uint(ExtensionType.EXT_TRX_OUT_LOG)) {
 			_extTrxOutLog.push(resourceAddress);
 
-		// transfern
-		} else if (resourceType == uint(ExtensionType.EXT_TRN_IN_BLOCKX)) {
-			_extTrnInBlock.push(resourceAddress);
-		} else if (resourceType == uint(ExtensionType.EXT_TRN_IN_UPDATE)) {
-			_extTrnInUpdate.push(resourceAddress);
-		} else if (resourceType == uint(ExtensionType.EXT_TRN_IN_LOG)) {
-			_extTrnInLog.push(resourceAddress);
-		} else if (resourceType == uint(ExtensionType.EXT_TRN_OUT_LOG)) {
-			_extTrnOutLog.push(resourceAddress);
+		// message
+		} else if (resourceType == uint(ExtensionType.EXT_MSG_IN_BLOCKX)) {
+			_extMsgInBlock.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_MSG_IN_UPDATE)) {
+			_extMsgInUpdate.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_MSG_IN_LOG)) {
+			_extMsgInLog.push(resourceAddress);
+		} else if (resourceType == uint(ExtensionType.EXT_MSG_OUT_LOG)) {
+			_extMsgOutLog.push(resourceAddress);
 		}
 
 		// remove resource from the pending list
@@ -1002,7 +989,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	// ************************************************************************************************
 	// ************************************ Extensions: 3. Config *************************************
 	// ************************************************************************************************
-	
+
   // Key-value store for extensions configuration
   mapping(bytes32 => bytes32) private configStore;
 
@@ -1040,5 +1027,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
         }
     }
 	}
+
+	// ************************************************************************************************
+	// ************************************ Extensions: 4. Execute ************************************
+	// ************************************************************************************************
+	/*function _runBeforeExtensions() internal {
+
+
+	}*/
 
 }
