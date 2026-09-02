@@ -342,8 +342,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		print(id, "[6-FUN] Fungible received message5!!!");
 		
 		// verify sender is valid.
-		require(srcChainId == _masterChain || addresses[srcChainId] != ZERO_ADDRESS, OnlyMessageWithinThePerimenter(srcChainId));
-		require(srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
+		require(srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
 		print(id, "[6-FUN] Fungible received message6!!!");
 		
 		if (header.op == MSG_SUP) {
