@@ -335,17 +335,20 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
 		if (header.op == MSG_BND) {
-			return _onBind(payload);
-		} else if (header.op == MSG_UBD) {
-			return _onUnbind(payload);
+			_onBind(payload);
+			return IERC7786Recipient.receiveMessage.selector;
 		}
-		print(id, "[6-FUN] Fungible received message5!!!");
 		
 		// verify sender is valid.
+		print(id, "[6-FUN] Fungible received message5!!!");
 		require(srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
 		print(id, "[6-FUN] Fungible received message6!!!");
 		
-		if (header.op == MSG_SUP) {
+		// run operation
+		if (header.op == MSG_UBD) {
+			_onUnbind(payload);
+
+		} else if (header.op == MSG_SUP) {
 			_onSupply(payload);
 
 		} else if (header.op == MSG_CLO) {
@@ -518,7 +521,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     });
 	}
 
-	function _onBind(bytes memory payload) internal returns (bytes4) {
+	function _onBind(bytes memory payload) internal {
 		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
 		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
 		require(_totalSupply == ZERO_VALUE, OnlyBindToEmptyToken(_totalSupply));
@@ -527,8 +530,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		FungibleBindPayload memory payloadData = abi.decode(payload, (FungibleBindPayload));
 		_masterChain = payloadData.masterChain;
 		_masterAddress = payloadData.masterAddress;
-
-		return IERC7786Recipient.receiveMessage.selector;
 	}
 
 	function _onBindCallback(bytes memory payload) internal {
@@ -564,7 +565,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     });
 	}
 
-	function _onUnbind(bytes memory payload) internal returns (bytes4) {
+	function _onUnbind(bytes memory payload) internal {
 		require(_masterChain != ZERO_VALUE, OnlyUnbindFromSlaveChain());
 		require(_masterAddress != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
 		require(_totalSupply == ZERO_VALUE, OnlyUnbindFromSlaveChain());
@@ -579,8 +580,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		print(0, "[0-BUS] token bound1");
 		_masterChain = 0;
 		_masterAddress = ZERO_ADDRESS;
-
-		return IERC7786Recipient.receiveMessage.selector;
 	}
 
 	function _onUnbindCallback(bytes memory payload) internal {
