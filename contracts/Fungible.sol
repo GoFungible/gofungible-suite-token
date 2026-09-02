@@ -671,14 +671,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return supplies[_chainId];
 	}
 
-	/*function getSuppliesChecksum() public view returns (bytes32) {
-		bytes32 checksum;
-		for (uint256 i = 0; i < knownChains.length; i++) {
-			checksum = keccak256(abi.encodePacked(checksum, knownChains[i], supplies[knownChains[i]]));
-		}
-		return checksum;
-	}*/
-
 	// ************************************************************************************************
 	// ************************************* ERC-20X: 5. TransferX ************************************
 	// ************************************************************************************************
