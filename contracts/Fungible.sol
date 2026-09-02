@@ -327,6 +327,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		Message memory message = abi.decode(messageBytes, (Message));
 		bytes memory payload = message.payload;
 		Header memory header = message.header;
+		
 		print(id, "[6-FUN] Fungible received message4!!!");
 
 		// We cannot validate message comes from MasterChain because token is unbound:
@@ -346,14 +347,16 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		print(id, "[6-FUN] Fungible received message6!!!");
 		
 		if (header.op == MSG_SUP) {
-			return _onSupply(payload);
+			_onSupply(payload);
 
 		} else if (header.op == MSG_CLO) {
-			return _onCloneState(payload);
+			_onCloneState(payload);
 
 		} else {
-			return _onCustomMessage(payload);
+			_onCustomMessage(payload);
 		}
+
+		return IERC7786Recipient.receiveMessage.selector;
 
 	}
 
@@ -407,10 +410,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function _onCustomMessage(bytes memory payload) internal returns (bytes4) {
+	function _onCustomMessage(bytes memory payload) internal {
 		print(0, "[6-FUN] _onMessage()");
-
-		return IERC7786Recipient.receiveMessage.selector;
 	}
 
 	function _onCustomMessageCallback(bytes memory payload) internal {
@@ -696,11 +697,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ERC-20X Extensions
-	address[] public _extMsgInBlock;
+	address[] public _extMsgOutBlock;
 
-	address[] public _extMsgInUpdate;
-
-	address[] public _extMsgInLog;
+	address[] public _extMsgOutUpdate;
 
 	address[] public _extMsgOutLog;
 
@@ -756,7 +755,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// Receives supply transfer
-	function _onSupply(bytes memory payload) internal returns (bytes4) {
+	function _onSupply(bytes memory payload) internal {
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
@@ -783,7 +782,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		}
 
 		print(0, "[6-FUN] end _onSupply");
-		return IERC7786Recipient.receiveMessage.selector;
 	}
 
 	function _onSupplyCallback(bytes memory payload) internal {
@@ -906,11 +904,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 		// message
 		} else if (resourceType == uint(ExtensionType.EXT_MSG_IN_BLOCKX)) {
-			_extMsgInBlock.push(resourceAddress);
+			_extMsgOutBlock.push(resourceAddress);
 		} else if (resourceType == uint(ExtensionType.EXT_MSG_IN_UPDATE)) {
-			_extMsgInUpdate.push(resourceAddress);
+			_extMsgOutUpdate.push(resourceAddress);
 		} else if (resourceType == uint(ExtensionType.EXT_MSG_IN_LOG)) {
-			_extMsgInLog.push(resourceAddress);
+			_extMsgOutLog.push(resourceAddress);
 		}
 
 		// remove resource from the pending list
