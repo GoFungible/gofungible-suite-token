@@ -294,6 +294,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
     }*/
 
 		bytes[] memory attributes = new bytes[](0);
+		//attributes[0] = abi.encodeWithSignature("minGasLimit(uint256)", 200000);
 
 		// send message
     bytes32 id = IERC7786GatewaySource(_extGateway).sendMessage(recipient, packedMessage, attributes);
@@ -305,6 +306,48 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		emit FungibleMessageSent(id, operation, toChain, toAddress, packedPayload);
 
 		return id;
+	}
+
+	function _onMessageCallback(bytes32 id, bytes4 selectorIfError) external override nonReentrant {
+    require(msg.sender == _extGateway, OnlyGateway(msg.sender));
+		require(pendingCallbacks[id].op != bytes32(0), UnexpectedCallback(id));
+		print(id, "[11-FUN] Source token was confirmed on status of message operation");
+
+		// get callback info and delete record
+		bytes32 op = pendingCallbacks[id].op;
+		bytes memory payload = pendingCallbacks[id].payload;
+		delete pendingCallbacks[id];
+
+		if (selectorIfError != bytes4(0)) {
+			print(id, "[11-FUN] Event emitted to listeners.");
+			print(id, "[11-FUN] Operation rolled back on receiver. Source changes wont be performed.");
+			emit FungibleMessageCallbackProcessed(id, selectorIfError);
+
+			// do not revert to allow tests catch the event
+			// TODO: review this
+			// revert ErrorDeliveringMessage(selectorIfError);
+
+			return;
+		}
+
+		if (op == MSG_BND) {
+			_onBindCallback(payload);
+
+		} else if (op == MSG_UBD) {
+			_onUnbindCallback(payload);
+
+		} else if (op == MSG_SUP) {
+			_onSupplyCallback(payload);
+
+		} else if (op == MSG_CLO) {
+			_onCloneStateCallback(payload);
+
+		} else {
+			_onCustomMessageCallback(payload);
+		}
+
+		emit FungibleMessageCallbackProcessed(id, selectorIfError);
+		print(id, "[11-FUN] FungibleMessageCallbackProcessed event emitted to listeners. Operation finally committed on source token");
 	}
 
 	// TODO: Use EIP-712
@@ -362,46 +405,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 
 	}
 
-	function _onMessageCallback(bytes32 id, bytes4 selectorIfError) external override nonReentrant {
-    require(msg.sender == _extGateway, OnlyGateway(msg.sender));
-		require(pendingCallbacks[id].op != bytes32(0), UnexpectedCallback(id));
-		print(id, "[11-FUN] Source token was confirmed on status of message operation");
+	function _onMessageRollback(bytes32 id) external nonReentrant {
 
-		// get callback info and delete record
-		bytes32 op = pendingCallbacks[id].op;
-		bytes memory payload = pendingCallbacks[id].payload;
-		delete pendingCallbacks[id];
 
-		if (selectorIfError != bytes4(0)) {
-			print(id, "[11-FUN] Event emitted to listeners.");
-			print(id, "[11-FUN] Operation rolled back on receiver. Source changes wont be performed.");
-			emit FungibleMessageCallbackProcessed(id, selectorIfError);
 
-			// do not revert to allow tests catch the event
-			// TODO: review this
-			// revert ErrorDeliveringMessage(selectorIfError);
-
-			return;
-		}
-
-		if (op == MSG_BND) {
-			_onBindCallback(payload);
-
-		} else if (op == MSG_UBD) {
-			_onUnbindCallback(payload);
-
-		} else if (op == MSG_SUP) {
-			_onSupplyCallback(payload);
-
-		} else if (op == MSG_CLO) {
-			_onCloneStateCallback(payload);
-
-		} else {
-			_onCustomMessageCallback(payload);
-		}
-
-		emit FungibleMessageCallbackProcessed(id, selectorIfError);
-		print(id, "[11-FUN] FungibleMessageCallbackProcessed event emitted to listeners. Operation finally committed on source token");
 	}
 
 	// ************************************************************************************************
