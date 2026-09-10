@@ -3,8 +3,9 @@ pragma solidity 0.8.30;
 
 import "../erc-7786/IERC7786GatewaySource.sol";
 import "../erc-7786/IERC7786Recipient.sol";
+import "./IGatewayReceiver.sol";
 
-contract MaliciusERC7786Gateway is IERC7786GatewaySource {
+contract MaliciusERC7985Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 	function sendMessage(
 			bytes calldata recipient, // Binary Interoperable Address

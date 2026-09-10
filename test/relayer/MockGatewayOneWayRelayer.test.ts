@@ -1,7 +1,7 @@
-import { ERC7786MockGatewayRelayer } from "./ERC7786MockGatewayRelayer";
+import { MockGatewayTwoWayRelayer } from "./MockGatewayTwoWayRelayer";
 
 describe("Cross-Chain End-to-End Test", () => {
-  let relayer: ERC7786MockGatewayRelayer;
+  let relayer: MockGatewayTwoWayRelayer;
 
   /*before(async () => {
     // ... code to deploy your SourceBridge on node1 and DestBridge on node2 ...

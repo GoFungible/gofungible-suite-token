@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.30;
 
+import "./IGatewayReceiver.sol";
 import "../erc-7786/IERC7786GatewaySource.sol";
 
 import "../erc-7786/IERC7786Recipient.sol";
@@ -10,8 +11,8 @@ import {LibERC7786ToEthAdapter} from "../erc-7786/LibERC7786ToEthAdapter.sol";
 
 import "hardhat/console.sol";
 
-// Look at how ERC-7786 handles EVM gas limits and execution timeouts within the gateway. 
-contract MockedERC7786Gateway is IERC7786GatewaySource {
+// Look at how ERC-7985 handles EVM gas limits and execution timeouts within the gateway. 
+contract MockedERC7985Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 	constructor() {
 		console.log("deployed gateway on ", block.chainid);
@@ -116,6 +117,21 @@ contract MockedERC7786Gateway is IERC7786GatewaySource {
 		console.log(receiverAddress);
 
 		return IERC7786Recipient(receiverAddress).receiveMessage(id, senderBOA, payload);
+	}
+
+	// ************************************************************************************************
+	// ************************ Response: Relayer -> Gateway -> Token1 (ERC-7786) *********************
+	// ************************************************************************************************
+
+	// invoked by relayer to notify SUCESS or FAILURE
+	function onRelayerCallback(bytes32 id, bytes memory senderBOA, bytes4 selectorIfError) external returns (bytes4)  {
+		print(id, "[10-GAT] Message response received by gateway Result");
+		console.logBytes4(selectorIfError);
+
+		// notifies token onMessageCallback
+		(uint256 senderChainId, address senderAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
+		IERC7786x(senderAddress).onMessageCallback(id, selectorIfError);
+		print(id, "[10-GAT] Fungible notified about the message result");
 	}
 
 	function print(bytes32 id, string memory message) public {

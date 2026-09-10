@@ -14,6 +14,7 @@ abstract contract IFungible {
 	bytes32 constant MSG_UBD = "UBD";
 	bytes32 constant MSG_CLO = "CLO";
 	bytes32 constant MSG_SUP = "SUP";
+	bytes32 constant MSG_RES = "RES";
 
 	// ************************************************************************************************
 	// ******************************************** Errors ********************************************
@@ -63,18 +64,6 @@ abstract contract IFungible {
 		// If you want a custom error message, you can uncomment the line below:
 		// require(msg.value == 0, "No Ether allowed");
 	}
-
-
-
-
-	// here the operation is completed by the source
-	function _onMessageCallback(bytes32 sendId, bytes4 selectorIfError) external virtual;
-
-	event FungibleMessageSent(bytes32 indexed sendId, bytes32 operation, uint256 toChain, address toAddress, bytes packedPayload);
-
-	event FungibleMessageReceived(bytes32 indexed sendId);
-	
-	event FungibleMessageCallbackProcessed(bytes32 indexed sendId, bytes4 selectorIfError);
 
 	// ************************************************************************************************
 	// ********************************************* Modifiers ****************************************

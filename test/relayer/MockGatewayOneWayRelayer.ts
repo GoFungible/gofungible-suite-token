@@ -2,7 +2,7 @@ import { ethers, JsonRpcSigner, WebSocketProvider } from "ethers";
 import { IERC7786GatewaySource__factory, IGatewayReceiver__factory } from "../../typechain-types";
 import { universalInterface } from "../_testhelper";
 
-export class ERC7786MockGatewayRelayer {
+export class MockGatewayOneWayRelayer {
   private relayer1: JsonRpcSigner;						// needs relayer to send messages
   private relayer2: JsonRpcSigner;						// needs relayer to send messages
   private provider1: WebSocketProvider;			// needs WebSocketProvider to listen event continuously. JsonRpcProvider just polls
@@ -20,7 +20,7 @@ export class ERC7786MockGatewayRelayer {
   }
 
   async init() {
-		console.log(`Initialized ERC7786MockGatewayRelayer`);
+		console.log(`Initialized MockGatewayRelayer`);
 		return this;
 	}
 
@@ -81,16 +81,6 @@ export class ERC7786MockGatewayRelayer {
 					.sendRelayerMessageToToken(id, senderBOA,  recipientBOA, payload, value, attributes);
 
 				console.log(`✅ ${id}; [7-REL] ERC-7786 Message: SUCESSFULL operation on destination gateway. Hash: ${tx1?.hash}`);
-
-				// ************************************************************************************************
-				// ***************** Sending sucessfull operation callback notification to source *****************
-				// ************************************************************************************************			
-				// case of sucessfull call
-				const tx2 = await IGatewayReceiver__factory
-					.connect(sourceGatewayAddress, sourceRelayer)
-					.onRelayerCallback(id, senderBOA, "0x00000000");
-
-				console.log(`✅ ${id}; [9-REL] ERC-7786 Message: SUCESSFULL callback sent to source gateway. Hash: ${tx2?.hash}`);
 			} 
 
 			// ************************************************************************************************
@@ -121,13 +111,6 @@ export class ERC7786MockGatewayRelayer {
 				console.error(decoded?.fragment);
 
 				console.error(`❌ ${id}; [9-REL] ERC-7786 Message: Sending FAILED callback to source gateway.`);
-
-				const tx = await IGatewayReceiver__factory
-					.connect(sourceGatewayAddress, sourceRelayer)
-					.onRelayerCallback(id, senderBOA, errorSelector);
-
-				console.error(`❌ ${id}; [9-REL] ERC-7786 Message: FAILED callback sent to source gateway. Hash: ${tx?.hash}`);
-
 			}
 			
 		};

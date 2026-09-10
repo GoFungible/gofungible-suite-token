@@ -16,10 +16,10 @@ import "./erc-20/IExtTransferINLog.sol";
 import "./erc-20/IExtTransferOUTLog.sol";
 
 // gateway (relayers)
+import "./erc-7841/ERC7841Message.sol";
 import "./erc-7786/IERC7786GatewaySource.sol";
 import "./erc-7786/IERC7786Recipient.sol";
 import {LibERC7786ToEthAdapter} from "./erc-7786/LibERC7786ToEthAdapter.sol";
-import "./erc-7841/ERC7841Message.sol";
 import "./erc-7786/IExtMsgINBlockX.sol";
 import "./erc-7786/IExtMsgINUpdateX.sol";
 import "./erc-7786/IExtMsgINLogX.sol";
@@ -27,10 +27,11 @@ import "./erc-7786/IExtMsgINLogX.sol";
 // erc-20n (multichain token)
 import "gofungible-erc-20-multichain-supply-extension/contracts/IERC20x.sol";
 
+import "gofungible-crosschain-atomic-messaging/contracts/IERC7786x.sol";
 
 import "hardhat/console.sol";
 
-contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
+contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ IERC7786x {
 
 	// ************************************************************************************************
 	// ******************************************** Token *********************************************
@@ -238,14 +239,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 	}
 
 	// ************************************************************************************************
-	// ************************************ ERC-7786 Messages *****************************************
+	// ********************************** ERC-7786 Messages - Sender **********************************
 	// ************************************************************************************************
-
 	// PendingCallbacks
-	struct PendingCallbacks {
-		bytes32 op;
-		bytes payload;
-	}
 	mapping(bytes32 => PendingCallbacks) public pendingCallbacks;
 
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bytes32) {
@@ -308,62 +304,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		return id;
 	}
 
-	// TODO: Use EIP-712
-	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external override nonReentrant returns (bytes4) {
-		print(id, "[6-FUN] Fungible received message!!!");
-		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
-		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
-
-		emit FungibleMessageReceived(id);
-
-		// Validate sender from gateway data
-		(uint256 srcChainId, address srcAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
-		// TODO
-		// require....
-
-		// Acknowdledge message
-		emit MessageReceived(id, srcChainId, srcAddress, messageBytes);
-
-		// get message info
-		Message memory message = abi.decode(messageBytes, (Message));
-		bytes memory payload = message.payload;
-		Header memory header = message.header;
-		
-		print(id, "[6-FUN] Fungible received message4!!!");
-
-		// We cannot validate message comes from MasterChain because token is unbound:
-		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
-		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
-		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
-		if (header.op == MSG_BND) {
-			_onBind(payload);
-			return IERC7786Recipient.receiveMessage.selector;
-		}
-		
-		// verify sender is valid.
-		print(id, "[6-FUN] Fungible received message5!!!");
-		require(srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
-		print(id, "[6-FUN] Fungible received message6!!!");
-		
-		// run operation
-		if (header.op == MSG_UBD) {
-			_onUnbind(payload);
-
-		} else if (header.op == MSG_SUP) {
-			_onSupply(payload);
-
-		} else if (header.op == MSG_CLO) {
-			_onCloneState(payload);
-
-		} else {
-			_onCustomMessage(payload);
-		}
-
-		return IERC7786Recipient.receiveMessage.selector;
-
-	}
-
-	function _onMessageCallback(bytes32 id, bytes4 selectorIfError) external override nonReentrant {
+	function onMessageCallback(bytes32 id, bytes4 selectorIfError) external nonReentrant {
     require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 		require(pendingCallbacks[id].op != bytes32(0), UnexpectedCallback(id));
 		print(id, "[11-FUN] Source token was confirmed on status of message operation");
@@ -405,9 +346,99 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, IERC7786Recipient {
 		print(id, "[11-FUN] FungibleMessageCallbackProcessed event emitted to listeners. Operation finally committed on source token");
 	}
 
-	function _onMessageRollback(bytes32 id) external nonReentrant {
+	function retry(bytes32 id) external {
+
+	}
+
+	function rollback(bytes32 id) external {
+
+	}
+
+	// ************************************************************************************************
+	// ********************************** ERC-7786 Messages - Receiver ********************************
+	// ************************************************************************************************
+	// ExecutedMessages
+	mapping(bytes32 => ExecutedMessages) public executedMessages;
+
+	// TODO: Use EIP-712
+	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external override nonReentrant returns (bytes4) {
+		print(id, "[6-FUN] Fungible received message!!!");
+		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
+		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
+
+		emit FungibleMessageReceived(id);
+
+		// Validate sender from gateway data
+		(uint256 srcChainId, address srcAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
+		// TODO
+		// require....
+
+		// Acknowdledge message
+		//_cloneStateemit MessageReceived(id, srcChainId, srcAddress, messageBytes);
+
+		// get message info
+		Message memory message = abi.decode(messageBytes, (Message));
+		bytes memory payload = message.payload;
+		Header memory header = message.header;
+		
+		print(id, "[6-FUN] Fungible received message4!!!");
+
+		// We cannot validate message comes from MasterChain because token is unbound:
+		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
+		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
+		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
+		if (header.op == MSG_BND) {
+			_onBind(payload);
+			return IERC7786Recipient.receiveMessage.selector;
+		}
+		
+		// verify sender is valid.
+		print(id, "[6-FUN] Fungible received message5!!!");
+		require(srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
+		print(id, "[6-FUN] Fungible received message6!!!");
+		
+		// run operation
+		if (header.op == MSG_UBD) {
+			_onUnbind(payload);
+
+		} else if (header.op == MSG_SUP) {
+			_onSupply(payload);
+
+		} else if (header.op == MSG_CLO) {
+			_onCloneState(payload);
+
+		} else {
+			_onCustomMessage(payload);
+		}
+
+		executedMessages[id] = ExecutedMessages({
+			op: header.op,
+			payload: messageBytes
+    });
+
+		return IERC7786Recipient.receiveMessage.selector;
+
+	}
+
+	struct FungibleResponsePayload {
+		bytes32 id;
+	}
+	function _sendResponse(bytes32 id, uint256 toChain, address toAddress) internal {
+    bytes memory packedPayload = abi.encode(FungibleResponsePayload({
+			id: id
+    }));
+		bytes32 respId = _sendMessage(MSG_RES, toChain, toAddress, packedPayload);
+		print(id, "[0-RES] ");
+		console.logBytes32(respId);
+	}
+
+	function onMessageRollback(bytes32 id) external nonReentrant {
 
 
+
+	}
+
+	function prune(bytes32 id) external {
 
 	}
 

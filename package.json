@@ -18,6 +18,7 @@
     "hardhat:node2": "npx hardhat node --port 8546"
   },
   "dependencies": {
+    "gofungible-crosschain-atomic-messaging": "github:GoFungible/gofungible-crosschain-atomic-messaging",
     "gofungible-erc-20-multichain-supply-extension": "github:GoFungible/gofungible-erc-20-multichain-supply-extension"
   },
   "devDependencies": {

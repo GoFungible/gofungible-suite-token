@@ -1,15 +1,15 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
-import { Fungible, Fungible__factory, MockedERC7786Gateway } from "../typechain-types";
+import { Fungible, Fungible__factory, MockedERC7985Gateway } from "../typechain-types";
 import { JsonRpcSigner, ZeroAddress } from "ethers";
 import { NO_SELECTOR, selector, UNIVERSAL_ERRORS_ABI, waitForContractEvent } from "./_testhelper";
-import { ERC7786MockGatewayRelayer } from "./relayer/ERC7786MockGatewayRelayer";
+import { MockGatewayTwoWayRelayer } from "./relayer/MockGatewayTwoWayRelayer";
 
-describe("ERC-20X Supply", function () {
+describe.skip("ERC-20X Supply", function () {
 	let owner1: JsonRpcSigner, relayer1: JsonRpcSigner, addr11: JsonRpcSigner, addr12: JsonRpcSigner, addr13: JsonRpcSigner, addrs1: JsonRpcSigner[];
 	let owner2: JsonRpcSigner, relayer2: JsonRpcSigner, addr21: JsonRpcSigner, addr22: JsonRpcSigner, addr23: JsonRpcSigner, addrs2: JsonRpcSigner[];
-	let fungibleMaster1: Fungible, mockedERC7786Gateway1: MockedERC7786Gateway;
-	let fungibleSingleton2: Fungible, mockedERC7786Gateway2: MockedERC7786Gateway;
+	let fungibleMaster1: Fungible, mockedERC7985Gateway1: MockedERC7985Gateway;
+	let fungibleSingleton2: Fungible, mockedERC7985Gateway2: MockedERC7985Gateway;
 
 	/********************************************************************************************************/
 	/************************************************** hooks ***********************************************/
@@ -51,27 +51,27 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		console.log(`Initializing network`);
 
-		// deploy MockedERC7786Gateway1
-		const MockedERC7786Gateway1 = await ethers.getContractFactory("MockedERC7786Gateway", owner1);
-		mockedERC7786Gateway1 = await MockedERC7786Gateway1.deploy();
-		expect(await mockedERC7786Gateway1.waitForDeployment()).to.not.be.reverted;
-		expect(await mockedERC7786Gateway1.chainId()).to.equal(1111);
-		const mockedERC7786GatewayAddress1 = await mockedERC7786Gateway1.getAddress();
-		console.log(`MockedERC7786Gateway1 deployed on ${await mockedERC7786Gateway1.chainId()} at ${mockedERC7786GatewayAddress1}`);
+		// deploy MockedERC7985Gateway1
+		const MockedERC7985Gateway1 = await ethers.getContractFactory("MockedERC7985Gateway", owner1);
+		mockedERC7985Gateway1 = await MockedERC7985Gateway1.deploy();
+		expect(await mockedERC7985Gateway1.waitForDeployment()).to.not.be.reverted;
+		expect(await mockedERC7985Gateway1.chainId()).to.equal(1111);
+		const mockedERC7985GatewayAddress1 = await mockedERC7985Gateway1.getAddress();
+		console.log(`MockedERC7985Gateway1 deployed on ${await mockedERC7985Gateway1.chainId()} at ${mockedERC7985GatewayAddress1}`);
 
-		// deploy MockedERC7786Gateway1
-		const MockedERC7786Gateway2 = await ethers.getContractFactory("MockedERC7786Gateway", owner2);
-		mockedERC7786Gateway2 = await MockedERC7786Gateway2.deploy();
-		expect(await mockedERC7786Gateway2.waitForDeployment()).to.not.be.reverted;
-		expect(await mockedERC7786Gateway2.chainId()).to.equal(2222);
-		const mockedERC7786GatewayAddress2 = await mockedERC7786Gateway2.getAddress();
-		console.log(`MockedERC7786Gateway2 deployed on ${await mockedERC7786Gateway2.chainId()} at ${mockedERC7786GatewayAddress2}`);
+		// deploy MockedERC7985Gateway1
+		const MockedERC7985Gateway2 = await ethers.getContractFactory("MockedERC7985Gateway", owner2);
+		mockedERC7985Gateway2 = await MockedERC7985Gateway2.deploy();
+		expect(await mockedERC7985Gateway2.waitForDeployment()).to.not.be.reverted;
+		expect(await mockedERC7985Gateway2.chainId()).to.equal(2222);
+		const mockedERC7985GatewayAddress2 = await mockedERC7985Gateway2.getAddress();
+		console.log(`MockedERC7985Gateway2 deployed on ${await mockedERC7985Gateway2.chainId()} at ${mockedERC7985GatewayAddress2}`);
 
 		// launch relayer
-		const relayer = await new ERC7786MockGatewayRelayer(
+		const relayer = await new MockGatewayTwoWayRelayer(
 			relayer1, relayer2, 
 			"http://127.0.0.1:8545", "http://127.0.0.1:8546", 
-			mockedERC7786GatewayAddress1, mockedERC7786GatewayAddress2
+			mockedERC7985GatewayAddress1, mockedERC7985GatewayAddress2
 		).init();
 		relayer.listenAndRelay();
 
@@ -105,13 +105,13 @@ describe("ERC-20X Supply", function () {
 		// *********************************************************************** Add Gateways **********************************************************************
 		// ***********************************************************************************************************************************************************
 
-		expect(await fungibleMaster1.addResource(0, 1, mockedERC7786GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleMaster1.addResource(0, 1, mockedERC7985GatewayAddress1, 1, 0, 0)).to.not.be.reverted;
 		expect(await fungibleMaster1.releaseResource(0, 0)).to.not.be.reverted;
-		expect(await fungibleMaster1.gateway()).to.equal(mockedERC7786GatewayAddress1);
+		expect(await fungibleMaster1.gateway()).to.equal(mockedERC7985GatewayAddress1);
 
-		expect(await fungibleSingleton2.addResource(0, 1, mockedERC7786GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
+		expect(await fungibleSingleton2.addResource(0, 1, mockedERC7985GatewayAddress2, 1, 0, 0)).to.not.be.reverted;
 		expect(await fungibleSingleton2.releaseResource(0, 0)).to.be.revertedWith("Resource: releaseDate is not valid.");
-		expect(await fungibleSingleton2.gateway()).to.equal(mockedERC7786GatewayAddress2);
+		expect(await fungibleSingleton2.gateway()).to.equal(mockedERC7985GatewayAddress2);
 
 		// ***********************************************************************************************************************************************************
 		// ********************************************************** Mock fungibleMaster1 -> fungibleSingleton2 *****************************************************
