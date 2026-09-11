@@ -78,7 +78,7 @@ export class MockGatewayOneWayRelayer {
 
 				const tx1 = await IGatewayReceiver__factory
 					.connect(destGatewayAddress, destRelayer)
-					.sendRelayerMessageToToken(id, senderBOA,  recipientBOA, payload, value, attributes);
+					.sendRelayerMessageToToken(id, senderBOA,  recipientBOA, payload);
 
 				console.log(`✅ ${id}; [7-REL] ERC-7786 Message: SUCESSFULL operation on destination gateway. Hash: ${tx1?.hash}`);
 			} 

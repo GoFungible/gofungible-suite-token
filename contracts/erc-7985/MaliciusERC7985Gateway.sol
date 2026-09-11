@@ -22,7 +22,7 @@ contract MaliciusERC7985Gateway is IERC7786GatewaySource, IGatewayReceiver {
 	/**
 	 * @notice Entrypoint invoked by your off-chain Ethers.js relayer script.
 	 */
-	function sendRelayerMessageToToken(bytes32 sendId, bytes memory sender, bytes memory recipient, bytes memory payload, uint256 value, bytes[] memory attributes) external returns (bytes4) {
+	function sendRelayerMessageToToken(bytes32 sendId, bytes memory sender, bytes memory recipient, bytes memory payload) external returns (bytes4) {
 
 
 		// Execute push delivery to the recipient target contract
