@@ -17,9 +17,10 @@ abstract contract IFungible {
 	bytes32 constant MSG_CLO = "CLO";		// clone
 	bytes32 constant MSG_SUP = "SUP";		// supply
 
+	bytes32 constant MSG_MSG = "MSG";		// custom msg
+
 	bytes32 constant MSG_RET = "RET";		// retry
-	bytes32 constant MSG_RBC = "RBC";		// rollback
-	bytes32 constant MSG_PRU = "PRU";		// prune
+	bytes32 constant MSG_ROL = "ROL";		// rollback
 
 	// ************************************************************************************************
 	// ******************************************** Errors ********************************************

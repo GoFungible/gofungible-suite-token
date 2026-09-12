@@ -326,20 +326,13 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 			return;
 		}
 
-		if (op == MSG_BND) {
-			_onBindCallback(payload);
-
-		} else if (op == MSG_UBD) {
-			_onUnbindCallback(payload);
-
-		} else if (op == MSG_SUP) {
-			_onSupplyCallback(payload);
-
-		} else if (op == MSG_CLO) {
-			_onCloneStateCallback(payload);
-
+		// do operations
+		if (op == MSG_ROL) {
+			_undoSenderOperation(op, payload);
+		} else if (op == MSG_RET) {
+			_doSenderOperation(op, payload);
 		} else {
-			_onCustomMessageCallback(payload);
+			_doSenderOperation(op, payload);
 		}
 
 		emit FungibleMessageCallbackProcessed(id, selectorIfError);
@@ -347,10 +340,31 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 	}
 
 	function retry(bytes32 id) external {
-
+		PendingCallbacks memory pendingCallback = pendingCallbacks[id];
+		_sendMessage(pendingCallback.op, pendingCallback.toChain, pendingCallback.toAddress, pendingCallback.payload);
 	}
 
 	function rollback(bytes32 id) external {
+
+	}
+
+	function _doSenderOperation(bytes32 op, bytes memory payload) internal {
+
+		if (op == MSG_BND) {
+			_onBindCallback(payload);
+		} else if (op == MSG_UBD) {
+			_onUnbindCallback(payload);
+		} else if (op == MSG_SUP) {
+			_onSupplyCallback(payload);
+		} else if (op == MSG_CLO) {
+			_onCloneStateCallback(payload);
+		} else if (op == MSG_MSG) {
+			_onCustomMessageCallback(payload);
+		}
+
+	}
+
+	function _undoSenderOperation(bytes32 op, bytes memory payload) internal {
 
 	}
 
@@ -373,42 +387,26 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		// TODO
 		// require....
 
-		// Acknowdledge message
-		//_cloneStateemit MessageReceived(id, srcChainId, srcAddress, messageBytes);
-
 		// get message info
 		Message memory message = abi.decode(messageBytes, (Message));
-		bytes memory payload = message.payload;
 		Header memory header = message.header;
-		
-		print(id, "[6-FUN] Fungible received message4!!!");
-
-		// We cannot validate message comes from MasterChain because token is unbound:
+				
+		// We cannot validate message comes from MasterChain for MSG_BND because token is unbound:
 		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
-		if (header.op == MSG_BND) {
-			_onBind(payload);
-			return IERC7786Recipient.receiveMessage.selector;
-		}
-		
 		// verify sender is valid.
 		print(id, "[6-FUN] Fungible received message5!!!");
-		require(srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
+		require(header.op == MSG_BND || srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
 		print(id, "[6-FUN] Fungible received message6!!!");
 		
-		// run operation
-		if (header.op == MSG_UBD) {
-			_onUnbind(payload);
-
-		} else if (header.op == MSG_SUP) {
-			_onSupply(payload);
-
-		} else if (header.op == MSG_CLO) {
-			_onCloneState(payload);
-
+		// do operations
+		if (header.op == MSG_ROL) {
+			_undoReceiverOperation(header.op, message.payload);
+		} else if (header.op == MSG_RET) {
+			_doReceiverOperation(header.op, message.payload);
 		} else {
-			_onCustomMessage(payload);
+			_doReceiverOperation(header.op, message.payload);
 		}
 
 		// only when not reverted, we memorize it
@@ -419,7 +417,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
     });
 
 		return IERC7786Recipient.receiveMessage.selector;
-
 	}
 
 	struct FungibleResponsePayload {
@@ -442,6 +439,26 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 
 	function prune(bytes32 id) external {
 		delete executedMessages[id];
+	}
+
+	function _doReceiverOperation(bytes32 op, bytes memory payload) internal {
+
+		if (op == MSG_BND) {
+			_onBind(payload);
+		} else if (op == MSG_UBD) {
+			_onUnbind(payload);
+		} else if (op == MSG_SUP) {
+			_onSupply(payload);
+		} else if (op == MSG_CLO) {
+			_onCloneState(payload);
+		} else if (op == MSG_MSG) {
+			_onCustomMessage(payload);
+		}
+
+	}
+
+	function _undoReceiverOperation(bytes32 op, bytes memory payload) internal {
+
 	}
 
 	// ************************************************************************************************
