@@ -45,8 +45,6 @@ struct Metadata {
 /// @title Message type
 /// @notice A cross-chain message
 struct Header {
-    /// @notice Message payload 
-    /// @dev It may be ABI-encoded function calls, info about bridged assets, 
-    ///     or arbitrary message data
+    /// @notice Operation requested
     bytes32 op;
 }

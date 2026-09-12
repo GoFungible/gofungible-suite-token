@@ -244,6 +244,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 	// PendingCallbacks
 	mapping(bytes32 => PendingCallbacks) public pendingCallbacks;
 
+	function retry(bytes32 id) external {
+		PendingCallbacks memory pendingCallback = pendingCallbacks[id];
+    bytes memory packedId = abi.encode(id);
+		_sendMessage(MSG_RET, pendingCallback.toChain, pendingCallback.toAddress, packedId);
+	}
+
+	function rollback(bytes32 id) external {
+		PendingCallbacks memory pendingCallback = pendingCallbacks[id];
+    bytes memory packedId = abi.encode(id);
+		_sendMessage(MSG_ROL, pendingCallback.toChain, pendingCallback.toAddress, packedId);
+	}
+
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bytes32) {
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(_extGateway));
 
@@ -339,15 +351,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		print(id, "[11-FUN] FungibleMessageCallbackProcessed event emitted to listeners. Operation finally committed on source token");
 	}
 
-	function retry(bytes32 id) external {
-		PendingCallbacks memory pendingCallback = pendingCallbacks[id];
-		_sendMessage(pendingCallback.op, pendingCallback.toChain, pendingCallback.toAddress, pendingCallback.payload);
-	}
-
-	function rollback(bytes32 id) external {
-
-	}
-
 	function _doSenderOperation(bytes32 op, bytes memory payload) internal {
 
 		if (op == MSG_BND) {
@@ -387,6 +390,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 	// ************************************************************************************************
 	// ExecutedMessages
 	mapping(bytes32 => ExecutedMessages) public executedMessages;
+
+	function prune(bytes32 id) external {
+		delete executedMessages[id];
+	}
 
 	// TODO: Use EIP-712
 	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external override nonReentrant returns (bytes4) {
@@ -449,10 +456,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 
 
 
-	}
-
-	function prune(bytes32 id) external {
-		delete executedMessages[id];
 	}
 
 	function _doReceiverOperation(bytes32 op, bytes memory payload) internal {
