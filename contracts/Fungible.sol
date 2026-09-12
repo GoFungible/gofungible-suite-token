@@ -328,7 +328,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 
 		// do operations
 		if (op == MSG_ROL) {
-			_undoSenderOperation(op, payload);
+			_undoSenderOperation(id);
 		} else if (op == MSG_RET) {
 			_doSenderOperation(op, payload);
 		} else {
@@ -357,14 +357,28 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		} else if (op == MSG_SUP) {
 			_doSupplySender(payload);
 		} else if (op == MSG_CLO) {
-			_doCloneStateSender(payload);
+			_doCloneSender(payload);
 		} else if (op == MSG_MSG) {
 			_doMessageSender(payload);
 		}
 
 	}
 
-	function _undoSenderOperation(bytes32 op, bytes memory payload) internal {
+	function _undoSenderOperation(bytes32 id) internal {
+
+		bytes32 op = executedMessages[id].op;
+
+		if (op == MSG_BND) {
+			_undoBindSender(id);
+		} else if (op == MSG_UBD) {
+			_undoUnbindSender(id);
+		} else if (op == MSG_SUP) {
+			_undoSupplySender(id);
+		} else if (op == MSG_CLO) {
+			_undoCloneSender(id);
+		} else if (op == MSG_MSG) {
+			_undoMessageSender(id);
+		}
 
 	}
 
@@ -402,7 +416,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		
 		// do operations
 		if (header.op == MSG_ROL) {
-			_undoReceiverOperation(header.op, message.payload);
+			_undoReceiverOperation(id);
 		} else if (header.op == MSG_RET) {
 			_doReceiverOperation(header.op, message.payload);
 		} else {
@@ -452,12 +466,26 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		} else if (op == MSG_CLO) {
 			_doCloneReceiver(payload);
 		} else if (op == MSG_MSG) {
-			_doCustomReceiver(payload);
+			_doMessageReceiver(payload);
 		}
 
 	}
 
-	function _undoReceiverOperation(bytes32 op, bytes memory payload) internal {
+	function _undoReceiverOperation(bytes32 id) internal {
+
+		bytes32 op = executedMessages[id].op;
+
+		if (op == MSG_BND) {
+			_undoBindReceiver(id);
+		} else if (op == MSG_UBD) {
+			_undoUnbindReceiver(id);
+		} else if (op == MSG_SUP) {
+			_undoSupplyReceiver(id);
+		} else if (op == MSG_CLO) {
+			_undoCloneReceiver(id);
+		} else if (op == MSG_MSG) {
+			_undoMessageReceiver(id);
+		}
 
 	}
 
@@ -469,11 +497,19 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 
 	}
 
-	function _doCustomReceiver(bytes memory payload) internal {
+	function _doMessageReceiver(bytes memory payload) internal {
 		print(0, "[6-FUN] _onMessage()");
 	}
 
+	function _undoMessageReceiver(bytes32 id) internal {
+
+	}
+
 	function _doMessageSender(bytes memory payload) internal {
+
+	}
+
+	function _undoMessageSender(bytes32 id) internal {
 
 	}
 
@@ -591,6 +627,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		_masterAddress = payloadData.masterAddress;
 	}
 
+	function _undoBindReceiver(bytes32 id) internal {
+
+	}
+
 	function _doBindSender(bytes memory payload) internal {
 		// resolve transaction
 		print(0, "[12-BUS] _doBindSender");
@@ -599,6 +639,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		console.log(toChainAddress);
 		knownChains.push(toChainId);
 		addresses[toChainId] = toChainAddress;
+	}
+
+	function _undoBindSender(bytes32 id) internal {
+
 	}
 
 	// unbind
@@ -643,6 +687,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		_masterAddress = ZERO_ADDRESS;
 	}
 
+	function _undoUnbindReceiver(bytes32 id) internal {
+
+	}
+
 	function _doUnbindSender(bytes memory payload) internal {
 		print(0, "[12-BUS] _doUnbindSender");
 
@@ -650,6 +698,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		removeValueFromArray(knownChains, fromChainId);
 		addresses[fromChainId] = ZERO_ADDRESS;
 		supplies[fromChainId] = ZERO_VALUE;
+	}
+
+	function _undoUnbindSender(bytes32 id) internal {
+
 	}
 
 	// ************************************************************************************************
@@ -712,7 +764,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 
 	}
 
-	function _doCloneStateSender(bytes memory payload) internal {
+	function _undoCloneReceiver(bytes32 id) internal {
+
+	}
+
+	function _doCloneSender(bytes memory payload) internal {
+
+	}
+
+	function _undoCloneSender(bytes32 id) internal {
 
 	}
 
@@ -837,6 +897,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		print(0, "[6-FUN] end _doSupplyReceiver");
 	}
 
+	function _undoSupplyReceiver(bytes32 id) internal {
+
+	}
+
 	function _doSupplySender(bytes memory payload) internal {
 		print(0, "[12-BUS] _doSupplySender");
 
@@ -863,6 +927,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		}
 		
 		print(0, "[12-BUS] end _doSupplySender");
+
+	}
+
+	function _undoSupplySender(bytes32 id) internal {
 
 	}
 
