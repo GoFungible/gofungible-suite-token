@@ -411,8 +411,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 			_onCustomMessage(payload);
 		}
 
+		// only when not reverted, we memorize it
 		executedMessages[id] = ExecutedMessages({
 			op: header.op,
+			senderBOA: senderBOA,
 			payload: messageBytes
     });
 
@@ -439,7 +441,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 	}
 
 	function prune(bytes32 id) external {
-
+		delete executedMessages[id];
 	}
 
 	// ************************************************************************************************
@@ -555,6 +557,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		// if message sending was not reverted we can record info for callback processing
 		pendingCallbacks[id] = PendingCallbacks({
 			op: MSG_BND,
+			toChain: toChainId,
+			toAddress: toChainAddress,
 			payload: abi.encode(toChainId, toChainAddress)
     });
 	}
@@ -599,6 +603,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		// if message sending was not reverted we can record info for callback processing
 		pendingCallbacks[id] = PendingCallbacks({
 			op: MSG_UBD,
+			toChain: fromChainId,
+			toAddress: addresses[fromChainId],
 			payload: abi.encode(fromChainId)
     });
 	}
@@ -778,6 +784,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		// if message sending was not reverted we can record info for callback processing
 		pendingCallbacks[id] = PendingCallbacks({
 			op: MSG_SUP,
+			toChain: toChain,
+			toAddress: toAddress,
 			payload: packedPayload
     });
 	}
