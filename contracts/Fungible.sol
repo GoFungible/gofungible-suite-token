@@ -351,15 +351,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 	function _doSenderOperation(bytes32 op, bytes memory payload) internal {
 
 		if (op == MSG_BND) {
-			_onBindCallback(payload);
+			_doBindSender(payload);
 		} else if (op == MSG_UBD) {
-			_onUnbindCallback(payload);
+			_doUnbindSender(payload);
 		} else if (op == MSG_SUP) {
-			_onSupplyCallback(payload);
+			_doSupplySender(payload);
 		} else if (op == MSG_CLO) {
-			_onCloneStateCallback(payload);
+			_doCloneStateSender(payload);
 		} else if (op == MSG_MSG) {
-			_onCustomMessageCallback(payload);
+			_doMessageSender(payload);
 		}
 
 	}
@@ -444,15 +444,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 	function _doReceiverOperation(bytes32 op, bytes memory payload) internal {
 
 		if (op == MSG_BND) {
-			_onBind(payload);
+			_doBindReceiver(payload);
 		} else if (op == MSG_UBD) {
-			_onUnbind(payload);
+			_doUnbindReceiver(payload);
 		} else if (op == MSG_SUP) {
-			_onSupply(payload);
+			_doSupplyReceiver(payload);
 		} else if (op == MSG_CLO) {
-			_onCloneState(payload);
+			_doCloneReceiver(payload);
 		} else if (op == MSG_MSG) {
-			_onCustomMessage(payload);
+			_doCustomReceiver(payload);
 		}
 
 	}
@@ -469,11 +469,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 
 	}
 
-	function _onCustomMessage(bytes memory payload) internal {
+	function _doCustomReceiver(bytes memory payload) internal {
 		print(0, "[6-FUN] _onMessage()");
 	}
 
-	function _onCustomMessageCallback(bytes memory payload) internal {
+	function _doMessageSender(bytes memory payload) internal {
 
 	}
 
@@ -580,7 +580,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
     });
 	}
 
-	function _onBind(bytes memory payload) internal {
+	function _doBindReceiver(bytes memory payload) internal {
 		require(_masterChain == ZERO_VALUE, OnlyBindToSingletonChain());
 		require(_masterAddress == ZERO_ADDRESS, OnlyBindToSingletonChain());
 		require(_totalSupply == ZERO_VALUE, OnlyBindToEmptyToken(_totalSupply));
@@ -591,9 +591,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		_masterAddress = payloadData.masterAddress;
 	}
 
-	function _onBindCallback(bytes memory payload) internal {
+	function _doBindSender(bytes memory payload) internal {
 		// resolve transaction
-		print(0, "[12-BUS] _onBindCallback");
+		print(0, "[12-BUS] _doBindSender");
     (uint256 toChainId, address toChainAddress) = abi.decode(payload, (uint256, address));
 		console.log(toChainId);
 		console.log(toChainAddress);
@@ -626,7 +626,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
     });
 	}
 
-	function _onUnbind(bytes memory payload) internal {
+	function _doUnbindReceiver(bytes memory payload) internal {
 		require(_masterChain != ZERO_VALUE, OnlyUnbindFromSlaveChain());
 		require(_masterAddress != ZERO_ADDRESS, OnlyUnbindFromSlaveChain());
 		require(_totalSupply == ZERO_VALUE, OnlyUnbindFromSlaveChain());
@@ -643,8 +643,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		_masterAddress = ZERO_ADDRESS;
 	}
 
-	function _onUnbindCallback(bytes memory payload) internal {
-		print(0, "[12-BUS] _onUnbindCallback");
+	function _doUnbindSender(bytes memory payload) internal {
+		print(0, "[12-BUS] _doUnbindSender");
 
     (uint256 fromChainId) = abi.decode(payload, (uint256));
 		removeValueFromArray(knownChains, fromChainId);
@@ -689,7 +689,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		_sendMessage(MSG_CLO, toChain, toAddress, packedPayload);
 	}
 
-	function _onCloneState(bytes memory payload) internal returns (bytes4) {
+	function _doCloneReceiver(bytes memory payload) internal returns (bytes4) {
 		require(knownChains.length == ZERO_VALUE, "Clone: can only be done once");
 
 		// Unpack the byte envelope straight back into the struct format
@@ -712,7 +712,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 
 	}
 
-	function _onCloneStateCallback(bytes memory payload) internal {
+	function _doCloneStateSender(bytes memory payload) internal {
 
 	}
 
@@ -808,7 +808,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 	}
 
 	// Receives supply transfer
-	function _onSupply(bytes memory payload) internal {
+	function _doSupplyReceiver(bytes memory payload) internal {
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
@@ -834,11 +834,11 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 			supplies[inChain] += amount;
 		}
 
-		print(0, "[6-FUN] end _onSupply");
+		print(0, "[6-FUN] end _doSupplyReceiver");
 	}
 
-	function _onSupplyCallback(bytes memory payload) internal {
-		print(0, "[12-BUS] _onSupplyCallback");
+	function _doSupplySender(bytes memory payload) internal {
+		print(0, "[12-BUS] _doSupplySender");
 
 		// Unpack the byte envelope straight back into the struct format
 		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
@@ -862,7 +862,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 			supplies[inChain] += amount;
 		}
 		
-		print(0, "[12-BUS] end _onSupplyCallback");
+		print(0, "[12-BUS] end _doSupplySender");
 
 	}
 
