@@ -10,11 +10,16 @@ abstract contract IFungible {
 	// ************************************************************************************************
   uint256 constant ZERO_VALUE = 0;
   address constant ZERO_ADDRESS = address(0);
-	bytes32 constant MSG_BND = "BND";
-	bytes32 constant MSG_UBD = "UBD";
-	bytes32 constant MSG_CLO = "CLO";
-	bytes32 constant MSG_SUP = "SUP";
-	bytes32 constant MSG_RES = "RES";
+	bytes32 constant MSG_RES = "RES";		// response
+
+	bytes32 constant MSG_BND = "BND";		// bind
+	bytes32 constant MSG_UBD = "UBD";		// unbind
+	bytes32 constant MSG_CLO = "CLO";		// clone
+	bytes32 constant MSG_SUP = "SUP";		// supply
+
+	bytes32 constant MSG_RET = "RET";		// retry
+	bytes32 constant MSG_RBC = "RBC";		// rollback
+	bytes32 constant MSG_PRU = "PRU";		// prune
 
 	// ************************************************************************************************
 	// ******************************************** Errors ********************************************
