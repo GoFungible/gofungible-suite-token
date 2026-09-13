@@ -409,6 +409,7 @@ describe("ERC-20X Supply", function () {
 	/**************************************** Bind - Receiver Test Cases ************************************/
 	/********************************************************************************************************/
 	it("TO. Should only bind to SingletonToken.", async() => {
+
 		let checkEvent = waitForRelayerEvent(relayer, 'TransactionError', 'OnlyBindToSingletonChain');
 		const [id1] = (await fungibleMaster1.bind(2222, fungibleMaster2, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
 		await checkEvent;
@@ -432,14 +433,20 @@ describe("ERC-20X Supply", function () {
 		checkEvent = waitForRelayerEvent(relayer, 'TransactionError', 'OnlyBindToSingletonChain');
 		const [id6] = (await fungibleMaster2.bind(1111, otherSlave1, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster2.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
 		await checkEvent;
+
 	});
 
-	/*it.skip("TO. Should only bind to Empty Tokens.", async() => {
+	it.skip("TO. Should only bind to Empty Tokens.", async() => {
+
+		let checkEvent = waitForRelayerEvent(relayer, 'TransactionError', 'OnlyBindToEmptyToken');
 		const [id1] = (await fungibleMaster1.bind(2222, otherSingletonFat2, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster1.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
-		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id1==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToEmptyTokenError));
+		await checkEvent;
+		
+		checkEvent = waitForRelayerEvent(relayer, 'TransactionError', 'OnlyBindToEmptyToken');
 		const [id2] = (await fungibleMaster2.bind(1111, otherSingletonFat1, { gasLimit: 500000n }).then(tx => tx.wait()))?.logs.map(log => fungibleMaster2.interface.parseLog(log)).filter(l => l?.name === 'FungibleMessageSent').map(l => l?.args[0]) ?? [];
-		expect(await waitForContractEvent({ contract: fungibleMaster2, eventName: "FungibleMessageCallbackProcessed", filterPredicate: (_id) => id2==_id }).then(([id , selectorIfError]) => selectorIfError)).to.equal(selector(OnlyBindToEmptyTokenError));
-	});*/
+		await checkEvent;
+
+	});
 
 	/*it.skip("OK. Should be able to bind if conditions met.", async() => {
 		expect(await fungibleMaster1.bind(2222, fungibleSingleton2)).to.not.be.reverted;
