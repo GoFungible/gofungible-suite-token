@@ -287,20 +287,20 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************ Addresses *********************************************/
 	/********************************************************************************************************/
-	/*it.skip("Should be able to get cross addresses", async() => {
+	it.skip("Should be able to get cross addresses", async() => {
 		//const fungible1 = await ethers.getContractAt('Fungible', fungibleAddress1);
 		//fungible1.getAllRemoteSupplies();
-	});*/
+	});
 
 	/********************************************************************************************************/
 	/**************************************** Bind - Sender Test Cases **************************************/
 	/********************************************************************************************************/
-	/*it.skip("FROM. Only owner can bind.", async() => {
+	it.skip("FROM. Only owner can bind.", async() => {
 		await expect(fungibleMaster1.connect(addr13).bind(2222, fungibleSingleton2.getAddress())).to.be.revertedWithCustomError(fungibleMaster1, "OnlyOwner");
 		await expect(fungibleMaster2.connect(addr13).bind(1111, fungibleSingleton1.getAddress())).to.be.revertedWithCustomError(fungibleMaster2, "OnlyOwner");
-	});*/
+	});
 
-	/*it.skip("FROM. Should only bind from MasterToken.", async() => {
+	it.skip("FROM. Should only bind from MasterToken.", async() => {
 		await expect(fungibleSingleton1.bind(2222, fungibleMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
 		await expect(fungibleSingleton1.bind(2222, fungibleSingleton2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
 		await expect(fungibleSingleton1.bind(2222, otherMaster2)).to.be.revertedWithCustomError(fungibleSingleton1, "OnlyBindFromMasterToken");
@@ -336,9 +336,9 @@ describe("ERC-20X Supply", function () {
 		await expect(otherSingletonFat2.bind(1111, otherMaster1)).to.be.revertedWithCustomError(otherSingletonFat2, "OnlyBindFromMasterToken");
 		await expect(otherSingletonFat2.bind(1111, otherSlave1)).to.be.revertedWithCustomError(otherSingletonFat2, "OnlyBindFromMasterToken");	
 		await expect(otherSingletonFat2.bind(1111, otherSingletonFat1)).to.be.revertedWithCustomError(otherSingletonFat2, "OnlyBindFromMasterToken");
-	});*/
+	});
 
-	/*it.skip("FROM. Can only bind to other chain", async() => {
+	it.skip("FROM. Can only bind to other chain", async() => {
 		await expect(fungibleMaster1.bind(1111, fungibleMaster1.getAddress())).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToOtherChain");
 		await expect(fungibleMaster1.bind(1111, fungibleSingleton1)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToOtherChain");
 		await expect(fungibleMaster1.bind(1111, otherMaster1)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyBindToOtherChain");
@@ -398,12 +398,12 @@ describe("ERC-20X Supply", function () {
 		await expect(otherSingletonFat2.bind(2222, otherMaster2)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindToOtherChain");
 		await expect(otherSingletonFat2.bind(2222, otherSlave2)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindToOtherChain");
 		await expect(otherSingletonFat2.bind(2222, otherSingletonFat2)).to.be.revertedWithCustomError(otherSlave2, "OnlyBindToOtherChain");
-	});*/
+	});
 
-	/*it.skip("TO. Should only bind to Unbound chains.", async() => {
+	it.skip("TO. Should only bind to Unbound chains.", async() => {
 		await expect(otherMaster1.bind(2222, fungibleSingleton2)).to.be.revertedWithCustomError(otherMaster1, "OnlyBindToUnboundChain");
 		await expect(otherMaster2.bind(1111, fungibleSingleton1)).to.be.revertedWithCustomError(otherMaster2, "OnlyBindToUnboundChain");
-	});*/
+	});
 
 	/********************************************************************************************************/
 	/**************************************** Bind - Receiver Test Cases ************************************/
