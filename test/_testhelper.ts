@@ -1,6 +1,7 @@
 import { BigNumberish, ethers } from 'ethers';
 import { keccak256 } from "@ethersproject/keccak256";
 import { toUtf8Bytes } from "@ethersproject/strings";
+import { expect } from 'chai';
 
 // location
 export let STORAGE1 = keccak256(toUtf8Bytes("diamond.standard.app.storage"));
@@ -112,6 +113,29 @@ export function waitForContractEvent({
   });
 }
 
+
+/**
+ * Custom helper that works with any object exposing its own .once method
+ */
+export async function waitForRelayerEvent(
+  relayerInstance: any, 
+  eventName: string, 
+  expectedError: string
+): Promise<void> {
+  
+  return new Promise<void>((resolve, reject) => {
+    // Invoke the .once method directly off your custom relayer instance
+    relayerInstance.once(eventName, (payload: any) => {
+      try {
+        expect(payload).to.have.property('error');
+        expect(payload.error).to.equal(expectedError);
+        resolve();
+      } catch (err) {
+        reject(err); // Rejects and correctly fails the unit test
+      }
+    });
+  });
+}
 
 export type Bytes4 = `0x${string}`;
 

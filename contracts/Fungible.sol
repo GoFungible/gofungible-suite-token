@@ -521,7 +521,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 	}
 
 	function _doBindSender(bytes memory idPayload) internal {
-		// resolve transaction
+		// extract id
     bytes32 id = abi.decode(idPayload, (bytes32));
 
 		// get transaction data
@@ -529,17 +529,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		uint256 toChainId = pendingCallback.toChain;
 		address toChainAddress = pendingCallback.toAddress;
 
-		// complete bind
+		// complete bind operation
 		print(0, "[12-BUS] _doBindSender");
-    //(uint256 toChainId, address toChainAddress) = abi.decode(, (uint256, address));
-		console.log(toChainId);
-		console.log(toChainAddress);
 		knownChains.push(toChainId);
 		addresses[toChainId] = toChainAddress;
 
+		// delete pending operation
 		delete pendingCallbacks[id];
 
-		// notify completion
+		// notify operation completion
 		emit FungibleBindOperationCompleted(toChainId, toChainAddress);
 	}
 

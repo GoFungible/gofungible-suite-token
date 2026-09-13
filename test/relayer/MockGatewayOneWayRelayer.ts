@@ -1,6 +1,7 @@
 import { ethers, JsonRpcSigner, WebSocketProvider } from "ethers";
 import { IERC7786GatewaySource__factory, IGatewayReceiver__factory } from "../../typechain-types";
 import { universalInterface } from "../_testhelper";
+import { EventEmitter } from "stream";
 
 export class MockGatewayOneWayRelayer {
   private relayer1: JsonRpcSigner;						// needs relayer to send messages
@@ -43,6 +44,14 @@ export class MockGatewayOneWayRelayer {
 	}
 
 	private listeners: { source: any; dest: any } = { source: null, dest: null };
+
+
+  private events = new EventEmitter();
+
+	public once(event: string, listener: (...args: any[]) => void) {
+    this.events.once(event, listener);
+    return this;
+  }
 
 	private async relay(
 		sourceRelayer: JsonRpcSigner, sourceProvider: WebSocketProvider, sourceGatewayAddress: string, 
@@ -111,6 +120,14 @@ export class MockGatewayOneWayRelayer {
 				console.error(decoded?.fragment);
 
 				console.error(`❌ ${id}; [9-REL] ERC-7786 Message: Sending FAILED callback to source gateway.`);
+
+				this.events.emit('TransactionError', { 
+					msgId: id, 
+					error: decoded?.name
+				});
+
+				console.error(`❌ ${id}; [9-REL] ERC-7786 Message: Event issued.`);
+
 			}
 			
 		};
