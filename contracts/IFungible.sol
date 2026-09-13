@@ -10,17 +10,18 @@ abstract contract IFungible {
 	// ************************************************************************************************
   uint256 constant ZERO_VALUE = 0;
   address constant ZERO_ADDRESS = address(0);
-	bytes32 constant MSG_RES = "RES";		// response
 
-	bytes32 constant MSG_BND = "BND";		// bind
-	bytes32 constant MSG_UBD = "UBD";		// unbind
-	bytes32 constant MSG_CLO = "CLO";		// clone
-	bytes32 constant MSG_SUP = "SUP";		// supply
+	bytes32 constant MSG_BND1 = "BND1";
+	bytes32 constant MSG_BND2 = "BND2";
 
-	bytes32 constant MSG_MSG = "MSG";		// custom msg
+	bytes32 constant MSG_UBN1 = "UBN1";
+	bytes32 constant MSG_UBN2 = "UBN2";
 
-	bytes32 constant MSG_RET = "RET";		// retry
-	bytes32 constant MSG_ROL = "ROL";		// rollback
+	bytes32 constant MSG_SUP = "SUP";
+	bytes32 constant MSG_SUL1 = "SUL1";
+	bytes32 constant MSG_SUL2 = "SUL2";
+
+	bytes32 constant MSG_CLO = "CLO";
 
 	// ************************************************************************************************
 	// ******************************************** Errors ********************************************
@@ -36,6 +37,14 @@ abstract contract IFungible {
   error UnexpectedCallback(bytes32 id);
   error GatewayRequired(address sender);
 
+	error ErrorInGatewaySendingMessage();													// error in close gateway
+	error ErrorDeliveringMessage(bytes32 errorSelector);
+
+  error OnlyMessageWithinThePerimenter(uint256 chain);					//  
+  error OnlyMasterChain(uint256 chain);													//  _masterChain matches CHAIN_ID
+  error OnlySlaveChain(uint256 chain);													//  _masterChain no matches CHAIN_ID
+  error OnlySingletonChain(uint256 chain);											//  _masterChain is unassigned
+
   error OnlyBindFromMasterToken();															//
   error OnlyBindToOtherChain();																	//
   error OnlyBindToUnboundChain(uint256 chainId);								//
@@ -47,14 +56,6 @@ abstract contract IFungible {
   error OnlyTransferXBoundTokens(uint256 chainId);							//
   error OnlyTransferXThroughtMasterChain(uint256 chainId);			//
   error OnlyTransferXWithFunds(uint256 amount);									//
-
-  error OnlyMessageWithinThePerimenter(uint256 chain);					//  
-  error OnlyMasterChain(uint256 chain);													//  _masterChain matches CHAIN_ID
-  error OnlySlaveChain(uint256 chain);													//  _masterChain no matches CHAIN_ID
-  error OnlySingletonChain(uint256 chain);											//  _masterChain is unassigned
-
-	error ErrorInGatewaySendingMessage();													// error in close gateway
-	error ErrorDeliveringMessage(bytes32 errorSelector);
 
 	// ************************************************************************************************
 	// ********************************************* Defaut *******************************************

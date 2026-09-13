@@ -31,7 +31,7 @@ import "gofungible-crosschain-atomic-messaging/contracts/IERC7786x.sol";
 
 import "hardhat/console.sol";
 
-contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ IERC7786x {
+contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 
 	// ************************************************************************************************
 	// ******************************************** Token *********************************************
@@ -239,23 +239,8 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 	}
 
 	// ************************************************************************************************
-	// ********************************** ERC-7786 Messages - Sender **********************************
+	// ************************************** ERC-7786 Messages ***************************************
 	// ************************************************************************************************
-	// PendingCallbacks
-	mapping(bytes32 => PendingCallbacks) public pendingCallbacks;
-
-	function retry(bytes32 id) external {
-		PendingCallbacks memory pendingCallback = pendingCallbacks[id];
-    bytes memory packedId = abi.encode(id);
-		_sendMessage(MSG_RET, pendingCallback.toChain, pendingCallback.toAddress, packedId);
-	}
-
-	function rollback(bytes32 id) external {
-		PendingCallbacks memory pendingCallback = pendingCallbacks[id];
-    bytes memory packedId = abi.encode(id);
-		_sendMessage(MSG_ROL, pendingCallback.toChain, pendingCallback.toAddress, packedId);
-	}
-
   function _sendMessage(bytes32 operation, uint256 toChain, address toAddress, bytes memory packedPayload) internal returns (bytes32) {
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(_extGateway));
 
@@ -311,97 +296,18 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 
 		// to really guarantee thaht this is the tx, we need to emit in the token
 		// if we emit in the gateway, we can get the worng event
-		emit FungibleMessageSent(id, operation, toChain, toAddress, packedPayload);
+		//emit FungibleMessageSent(id, operation, toChain, toAddress, packedPayload);
 
 		return id;
 	}
 
-	function onMessageCallback(bytes32 id, bytes4 selectorIfError) external nonReentrant {
-    require(msg.sender == _extGateway, OnlyGateway(msg.sender));
-		require(pendingCallbacks[id].op != bytes32(0), UnexpectedCallback(id));
-		print(id, "[11-FUN] Source token was confirmed on status of message operation");
-
-		// get callback info and delete record
-		bytes32 op = pendingCallbacks[id].op;
-		bytes memory payload = pendingCallbacks[id].payload;
-		delete pendingCallbacks[id];
-
-		if (selectorIfError != bytes4(0)) {
-			print(id, "[11-FUN] Event emitted to listeners.");
-			print(id, "[11-FUN] Operation rolled back on receiver. Source changes wont be performed.");
-			emit FungibleMessageCallbackProcessed(id, selectorIfError);
-
-			// do not revert to allow tests catch the event
-			// TODO: review this
-			// revert ErrorDeliveringMessage(selectorIfError);
-
-			return;
-		}
-
-		// do operations
-		if (op == MSG_ROL) {
-			_undoSenderOperation(id);
-		} else if (op == MSG_RET) {
-			_doSenderOperation(op, payload);
-		} else {
-			_doSenderOperation(op, payload);
-		}
-
-		emit FungibleMessageCallbackProcessed(id, selectorIfError);
-		print(id, "[11-FUN] FungibleMessageCallbackProcessed event emitted to listeners. Operation finally committed on source token");
-	}
-
-	function _doSenderOperation(bytes32 op, bytes memory payload) internal {
-
-		if (op == MSG_BND) {
-			_doBindSender(payload);
-		} else if (op == MSG_UBD) {
-			_doUnbindSender(payload);
-		} else if (op == MSG_SUP) {
-			_doSupplySender(payload);
-		} else if (op == MSG_CLO) {
-			_doCloneSender(payload);
-		} else if (op == MSG_MSG) {
-			_doMessageSender(payload);
-		}
-
-	}
-
-	function _undoSenderOperation(bytes32 id) internal {
-
-		bytes32 op = executedMessages[id].op;
-
-		if (op == MSG_BND) {
-			_undoBindSender(id);
-		} else if (op == MSG_UBD) {
-			_undoUnbindSender(id);
-		} else if (op == MSG_SUP) {
-			_undoSupplySender(id);
-		} else if (op == MSG_CLO) {
-			_undoCloneSender(id);
-		} else if (op == MSG_MSG) {
-			_undoMessageSender(id);
-		}
-
-	}
-
-	// ************************************************************************************************
-	// ********************************** ERC-7786 Messages - Receiver ********************************
-	// ************************************************************************************************
-	// ExecutedMessages
-	mapping(bytes32 => ExecutedMessages) public executedMessages;
-
-	function prune(bytes32 id) external {
-		delete executedMessages[id];
-	}
-
 	// TODO: Use EIP-712
-	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external override nonReentrant returns (bytes4) {
+	function receiveMessage(bytes32 id, bytes calldata senderBOA, bytes calldata messageBytes) external nonReentrant returns (bytes4) {
 		print(id, "[6-FUN] Fungible received message!!!");
 		require(_extGateway != ZERO_ADDRESS, GatewayRequired(msg.sender));
 		require(msg.sender == _extGateway, OnlyGateway(msg.sender));
 
-		emit FungibleMessageReceived(id);
+		//emit FungibleMessageReceived(id);
 
 		// Validate sender from gateway data
 		(uint256 srcChainId, address srcAddress) = LibERC7786ToEthAdapter.parseERC7930Record(senderBOA);
@@ -417,79 +323,47 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
 		// verify sender is valid.
+		if (header.op == MSG_BND1) {
+			_doBindReceiver(message.payload);
+			return IERC7786Recipient.receiveMessage.selector;
+		}
+
 		print(id, "[6-FUN] Fungible received message5!!!");
-		require(header.op == MSG_BND || srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
+		require(srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
 		print(id, "[6-FUN] Fungible received message6!!!");
 		
-		// do operations
-		if (header.op == MSG_ROL) {
-			_undoReceiverOperation(id);
-		} else if (header.op == MSG_RET) {
-			_doReceiverOperation(header.op, message.payload);
-		} else {
-			_doReceiverOperation(header.op, message.payload);
-		}
+		// do bind operations
+		if (header.op == MSG_BND2) {
+			_doBindSender(message.payload);
 
-		// only when not reverted, we memorize it
-		executedMessages[id] = ExecutedMessages({
-			op: header.op,
-			senderBOA: senderBOA,
-			payload: messageBytes
-    });
+		// do unbind operations
+		} else if (header.op == MSG_UBN1) {
+			_doUnbindReceiver(message.payload);
+		} else if (header.op == MSG_UBN2) {
+			_doUnbindSender(message.payload);
+
+		// do supply operations
+		} else if (header.op == MSG_SUP) {
+			_doSupplyReceiver(message.payload);
+
+			// only when not reverted, we memorize it
+			receiverSupplies[id] = ReceiverSupplies({
+				op: header.op,
+				senderBOA: senderBOA,
+				payload: messageBytes
+			});
+
+		} else if (header.op == MSG_SUL1) {
+			_undoSupplyReceiver(id);
+		} else if (header.op == MSG_SUL2) {
+			_undoSupplySender(id);
+
+		// do custom messages
+		} else {
+
+		}
 
 		return IERC7786Recipient.receiveMessage.selector;
-	}
-
-	struct FungibleResponsePayload {
-		bytes32 id;
-	}
-	function _sendResponse(bytes32 id, uint256 toChain, address toAddress) internal {
-    bytes memory packedPayload = abi.encode(FungibleResponsePayload({
-			id: id
-    }));
-		bytes32 respId = _sendMessage(MSG_RES, toChain, toAddress, packedPayload);
-		print(id, "[0-RES] ");
-		console.logBytes32(respId);
-	}
-
-	function onMessageRollback(bytes32 id) external nonReentrant {
-
-
-
-	}
-
-	function _doReceiverOperation(bytes32 op, bytes memory payload) internal {
-
-		if (op == MSG_BND) {
-			_doBindReceiver(payload);
-		} else if (op == MSG_UBD) {
-			_doUnbindReceiver(payload);
-		} else if (op == MSG_SUP) {
-			_doSupplyReceiver(payload);
-		} else if (op == MSG_CLO) {
-			_doCloneReceiver(payload);
-		} else if (op == MSG_MSG) {
-			_doMessageReceiver(payload);
-		}
-
-	}
-
-	function _undoReceiverOperation(bytes32 id) internal {
-
-		bytes32 op = executedMessages[id].op;
-
-		if (op == MSG_BND) {
-			_undoBindReceiver(id);
-		} else if (op == MSG_UBD) {
-			_undoUnbindReceiver(id);
-		} else if (op == MSG_SUP) {
-			_undoSupplyReceiver(id);
-		} else if (op == MSG_CLO) {
-			_undoCloneReceiver(id);
-		} else if (op == MSG_MSG) {
-			_undoMessageReceiver(id);
-		}
-
 	}
 
 	// ************************************************************************************************
@@ -504,15 +378,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		print(0, "[6-FUN] _onMessage()");
 	}
 
-	function _undoMessageReceiver(bytes32 id) internal {
-
-	}
-
 	function _doMessageSender(bytes memory payload) internal {
-
-	}
-
-	function _undoMessageSender(bytes32 id) internal {
 
 	}
 
@@ -567,7 +433,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 	}
 
 	// ************************************************************************************************
-	// ********************************* ERC-20X: 3. Token Perimeter **********************************
+	// ************************** ERC-20X: 3. Token Perimeter. Addresses ******************************
 	// ************************************************************************************************  
 	uint256[] knownChains;
 
@@ -581,6 +447,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		return addresses[_chainId];
 	}
 
+	// ************************************************************************************************
+	// **************************** ERC-20X: 3. Token Perimeter. Bind *********************************
+	// ************************************************************************************************  
 	/**
 	 * @title FungibleBindPayload
 	 * @notice Message blueprint struct for cross-chain execution.
@@ -608,15 +477,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 			masterChain: _masterChain,
 			masterAddress: _masterAddress
     }));
-		bytes32 id = _sendMessage(MSG_BND, toChainId, toChainAddress, packedPayload);
-
-		// if message sending was not reverted we can record info for callback processing
-		pendingCallbacks[id] = PendingCallbacks({
-			op: MSG_BND,
-			toChain: toChainId,
-			toAddress: toChainAddress,
-			payload: abi.encode(toChainId, toChainAddress)
-    });
+		bytes32 id = _sendMessage(MSG_BND1, toChainId, toChainAddress, packedPayload);
 	}
 
 	function _doBindReceiver(bytes memory payload) internal {
@@ -630,10 +491,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		_masterAddress = payloadData.masterAddress;
 	}
 
-	function _undoBindReceiver(bytes32 id) internal {
-
-	}
-
 	function _doBindSender(bytes memory payload) internal {
 		// resolve transaction
 		print(0, "[12-BUS] _doBindSender");
@@ -644,10 +501,9 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		addresses[toChainId] = toChainAddress;
 	}
 
-	function _undoBindSender(bytes32 id) internal {
-
-	}
-
+	// ************************************************************************************************
+	// *************************** ERC-20X: 3. Token Perimeter. Unbind ********************************
+	// ************************************************************************************************  
 	// unbind
 	function unbind(uint256 fromChainId) external payable nonReentrant override {
 		require(msg.sender == _owner, OnlyOwner(msg.sender));
@@ -662,15 +518,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 			masterChain: _masterChain,
 			masterAddress: _masterAddress
     }));
-		bytes32 id = _sendMessage(MSG_UBD, fromChainId, addresses[fromChainId], packedPayload);
-
-		// if message sending was not reverted we can record info for callback processing
-		pendingCallbacks[id] = PendingCallbacks({
-			op: MSG_UBD,
-			toChain: fromChainId,
-			toAddress: addresses[fromChainId],
-			payload: abi.encode(fromChainId)
-    });
+		bytes32 id = _sendMessage(MSG_UBN1, fromChainId, addresses[fromChainId], packedPayload);
 	}
 
 	function _doUnbindReceiver(bytes memory payload) internal {
@@ -690,10 +538,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		_masterAddress = ZERO_ADDRESS;
 	}
 
-	function _undoUnbindReceiver(bytes32 id) internal {
-
-	}
-
 	function _doUnbindSender(bytes memory payload) internal {
 		print(0, "[12-BUS] _doUnbindSender");
 
@@ -701,10 +545,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		removeValueFromArray(knownChains, fromChainId);
 		addresses[fromChainId] = ZERO_ADDRESS;
 		supplies[fromChainId] = ZERO_VALUE;
-	}
-
-	function _undoUnbindSender(bytes32 id) internal {
-
 	}
 
 	// ************************************************************************************************
@@ -767,15 +607,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 
 	}
 
-	function _undoCloneReceiver(bytes32 id) internal {
-
-	}
-
 	function _doCloneSender(bytes memory payload) internal {
-
-	}
-
-	function _undoCloneSender(bytes32 id) internal {
 
 	}
 
@@ -831,6 +663,15 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		 _transferX(inChain, inAddress, amount);
 	}
 
+	// SenderSupplies
+	struct SenderSupplies {
+		bytes32 op;
+		uint256 toChain;
+		address toAddress;
+		bytes payload;
+	}
+	mapping(bytes32 => SenderSupplies) public senderSupplies;
+
 	// Performs supply transfer to an account of another chain
 	// To prevents inconsistent state, whereas maintaining the same number of messages (gas), all transferX must go throught MasterChain.
 	function _transferX(uint256 inChain, address inAddress, uint256 amount) internal {
@@ -862,13 +703,21 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x, /*IERC7786Recipient,*/ 
 		print(id, "[0-BUS] _transferX id returned", toChain, toAddress);
 
 		// if message sending was not reverted we can record info for callback processing
-		pendingCallbacks[id] = PendingCallbacks({
+		senderSupplies[id] = SenderSupplies({
 			op: MSG_SUP,
 			toChain: toChain,
 			toAddress: toAddress,
 			payload: packedPayload
     });
 	}
+
+	// ReceiverSupplies
+	struct ReceiverSupplies {
+		bytes32 op;
+		bytes senderBOA;
+		bytes payload;
+	}
+	mapping(bytes32 => ReceiverSupplies) public receiverSupplies;
 
 	// Receives supply transfer
 	function _doSupplyReceiver(bytes memory payload) internal {
