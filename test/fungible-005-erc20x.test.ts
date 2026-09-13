@@ -3,7 +3,7 @@ import hre, { ethers } from "hardhat";
 import { Fungible, Fungible__factory, MockedERC7985Gateway } from "../typechain-types";
 import { JsonRpcSigner, ZeroAddress } from "ethers";
 import { NO_SELECTOR, selector, UNIVERSAL_ERRORS_ABI, waitForContractEvent } from "./_testhelper";
-import { MockGatewayTwoWayRelayer } from "./relayer/MockGatewayTwoWayRelayer";
+import { MockGatewayOneWayRelayer } from "./relayer/MockGatewayOneWayRelayer";
 
 describe.skip("ERC-20X Supply", function () {
 	let owner1: JsonRpcSigner, relayer1: JsonRpcSigner, addr11: JsonRpcSigner, addr12: JsonRpcSigner, addr13: JsonRpcSigner, addrs1: JsonRpcSigner[];
@@ -68,7 +68,7 @@ describe.skip("ERC-20X Supply", function () {
 		console.log(`MockedERC7985Gateway2 deployed on ${await mockedERC7985Gateway2.chainId()} at ${mockedERC7985GatewayAddress2}`);
 
 		// launch relayer
-		const relayer = await new MockGatewayTwoWayRelayer(
+		const relayer = await new MockGatewayOneWayRelayer(
 			relayer1, relayer2, 
 			"http://127.0.0.1:8545", "http://127.0.0.1:8546", 
 			mockedERC7985GatewayAddress1, mockedERC7985GatewayAddress2

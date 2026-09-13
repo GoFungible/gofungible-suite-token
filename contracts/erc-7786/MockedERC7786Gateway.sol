@@ -2,6 +2,7 @@
 pragma solidity 0.8.30;
 
 import "../erc-7786/IERC7786GatewaySource.sol";
+import "../erc-7786/IGatewayReceiver.sol";
 
 import "../erc-7786/IERC7786Recipient.sol";
 import "gofungible-crosschain-atomic-messaging/contracts/IERC7786x.sol";
@@ -11,7 +12,7 @@ import {LibERC7786ToEthAdapter} from "../erc-7786/LibERC7786ToEthAdapter.sol";
 import "hardhat/console.sol";
 
 // Look at how ERC-7786 handles EVM gas limits and execution timeouts within the gateway. 
-contract MockedERC7786Gateway is IERC7786GatewaySource {
+contract MockedERC7786Gateway is IERC7786GatewaySource, IGatewayReceiver {
 
 	constructor() {
 		console.log("deployed gateway on ", block.chainid);
