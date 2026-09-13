@@ -5,7 +5,7 @@ import { JsonRpcSigner, ZeroAddress } from "ethers";
 import { NO_SELECTOR, selector, UNIVERSAL_ERRORS_ABI, waitForContractEvent } from "./_testhelper";
 import { MockGatewayOneWayRelayer } from "./relayer/MockGatewayOneWayRelayer";
 
-describe.skip("ERC-20X Supply", function () {
+describe("ERC-20X Supply", function () {
 	let owner1: JsonRpcSigner, relayer1: JsonRpcSigner, addr11: JsonRpcSigner, addr12: JsonRpcSigner, addr13: JsonRpcSigner, addrs1: JsonRpcSigner[];
 	let owner2: JsonRpcSigner, relayer2: JsonRpcSigner, addr21: JsonRpcSigner, addr22: JsonRpcSigner, addr23: JsonRpcSigner, addrs2: JsonRpcSigner[];
 	let fungibleMaster1: Fungible, mockedERC7985Gateway1: MockedERC7985Gateway;
@@ -141,26 +141,26 @@ describe.skip("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************ Supplies **********************************************/
 	/********************************************************************************************************/
-	it("Should be able to get cross supplies", async() => {
+	/*it.skip("Should be able to get cross supplies", async() => {
 
-	});
+	});*/
 
 	/********************************************************************************************************/
 	/************************************************* Bridge ***********************************************/
 	/********************************************************************************************************/
-	it("FROM. Only can bridge throught MasterChain", async() => {
+	/*it.skip("FROM. Only can bridge throught MasterChain", async() => {
 		await expect(fungibleSingleton2.bridge(3333, fungibleMaster1, 500_000_000)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyTransferXThroughtMasterChain");
-	});
+	});*/
 
-	it("FROM. Only accounts with enought funds can bridge", async() => {
+	/*it.skip("FROM. Only accounts with enought funds can bridge", async() => {
 		await expect(fungibleMaster1.connect(addr11).bridge(2222, fungibleSingleton2, 500_000_000)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyTransferXWithFunds");
-	});
+	});*/
 
-	it("TO. Only can bridge to bound token", async() => {
+	/*it.skip("TO. Only can bridge to bound token", async() => {
 		await expect(fungibleMaster1.bridge(3333, fungibleSingleton2, 500_000_000)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyTransferXBoundTokens");
-	});
+	});*/
 
-	it("OK. Should be able to bridge if all conditiosn met", async() => {
+	/*it.skip("OK. Should be able to bridge if all conditiosn met", async() => {
 		// owner1 has 1000_000_000 on chain 1111 on fungibleMaster1
 		expect(await fungibleMaster1.totalSupply()).to.equal(ethers.parseEther("1000000000"));
 		expect(await fungibleMaster1.balanceOf(owner1)).to.equal(ethers.parseEther("1000000000"));
@@ -194,17 +194,17 @@ describe.skip("ERC-20X Supply", function () {
 		expect(await fungibleMaster1.balanceOf(addr11)).to.equal(ethers.parseEther("250000000"));
 		expect(await fungibleSingleton2.totalSupply()).to.equal(ethers.parseEther("250000000"));
 		expect(await fungibleSingleton2.balanceOf(addr21)).to.equal(ethers.parseEther("250000000"));
-	});
+	});*/
 
 	/********************************************************************************************************/
 	/************************************************** Pay *************************************************/
 	/********************************************************************************************************/
-	it("Any holder should be able to pay within same network", async() => {
+	/*it.skip("Any holder should be able to pay within same network", async() => {
 
-	});
+	});*/
 
-	it("Any holder should be able to pay cross-network", async() => {
+	/*it.skip("Any holder should be able to pay cross-network", async() => {
 
-	});
+	});*/
 
 });

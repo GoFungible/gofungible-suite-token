@@ -317,44 +317,43 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		// get message info
 		Message memory message = abi.decode(messageBytes, (Message));
 		Header memory header = message.header;
-				
+
+		print(id, "[6-FUN] Fungible received message5!!!");
+		console.logBytes32(header.op);
+
+		if (!(
+			(header.op == MSG_BND1)	||																																							// no slave yet
+			(_masterChain == CHAIN_ID && _masterAddress == address(this)) ||																				// is master chain
+			(srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress)			// receive from master chain
+		)) {
+			revert OnlyMessageWithinThePerimenter(srcChainId);
+		}
+		print(id, "[6-FUN] Fungible received message6!!!");
+		
+		// do bind operations
 		// We cannot validate message comes from MasterChain for MSG_BND because token is unbound:
 		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
 		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
-		// verify sender is valid.
 		if (header.op == MSG_BND1) {
 			_doBindReceiver(message.payload);
-			return IERC7786Recipient.receiveMessage.selector;
-		}
+			_sendResponse(id, MSG_BND2, srcChainId, srcAddress, messageBytes);
 
-		print(id, "[6-FUN] Fungible received message5!!!");
-		require(srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress, OnlyMessageWithinThePerimenter(srcChainId));
-		print(id, "[6-FUN] Fungible received message6!!!");
-		
-		// do bind operations
-		if (header.op == MSG_BND2) {
+		} else if (header.op == MSG_BND2) {
 			_doBindSender(message.payload);
 
-		// do unbind operations
 		} else if (header.op == MSG_UBN1) {
 			_doUnbindReceiver(message.payload);
+
 		} else if (header.op == MSG_UBN2) {
 			_doUnbindSender(message.payload);
 
-		// do supply operations
 		} else if (header.op == MSG_SUP) {
 			_doSupplyReceiver(message.payload);
 
-			// only when not reverted, we memorize it
-			receiverSupplies[id] = ReceiverSupplies({
-				op: header.op,
-				senderBOA: senderBOA,
-				payload: messageBytes
-			});
-
 		} else if (header.op == MSG_SUL1) {
 			_undoSupplyReceiver(id);
+
 		} else if (header.op == MSG_SUL2) {
 			_undoSupplySender(id);
 
@@ -364,6 +363,28 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		}
 
 		return IERC7786Recipient.receiveMessage.selector;
+	}
+
+	// messages requiring response
+	struct PendingCallbacks {
+		bytes32 op;
+		uint256 toChain;
+		address toAddress;
+		bytes payload;
+	}
+	mapping(bytes32 => PendingCallbacks) public pendingCallbacks;
+
+	struct FungibleResponsePayload {
+		bytes32 id;
+	}
+	function _sendResponse(bytes32 id, bytes32 op, uint256 toChain, address toAddress, bytes calldata opPayload) internal {
+		// send response message containing id
+    bytes memory idPayload = abi.encode(FungibleResponsePayload({
+			id: id
+    }));
+		bytes32 respId = _sendMessage(op, toChain, toAddress, idPayload);
+		print(id, "[0-RES] ");
+		console.logBytes32(respId);
 	}
 
 	// ************************************************************************************************
@@ -478,6 +499,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 			masterAddress: _masterAddress
     }));
 		bytes32 id = _sendMessage(MSG_BND1, toChainId, toChainAddress, packedPayload);
+
+		// store op data
+		pendingCallbacks[id] = PendingCallbacks({
+			op: MSG_BND1,
+			toChain: toChainId,
+			toAddress: toChainAddress,
+			payload: packedPayload
+		});		
 	}
 
 	function _doBindReceiver(bytes memory payload) internal {
@@ -491,14 +520,27 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		_masterAddress = payloadData.masterAddress;
 	}
 
-	function _doBindSender(bytes memory payload) internal {
+	function _doBindSender(bytes memory idPayload) internal {
 		// resolve transaction
+    bytes32 id = abi.decode(idPayload, (bytes32));
+
+		// get transaction data
+		PendingCallbacks memory pendingCallback = pendingCallbacks[id];
+		uint256 toChainId = pendingCallback.toChain;
+		address toChainAddress = pendingCallback.toAddress;
+
+		// complete bind
 		print(0, "[12-BUS] _doBindSender");
-    (uint256 toChainId, address toChainAddress) = abi.decode(payload, (uint256, address));
+    //(uint256 toChainId, address toChainAddress) = abi.decode(, (uint256, address));
 		console.log(toChainId);
 		console.log(toChainAddress);
 		knownChains.push(toChainId);
 		addresses[toChainId] = toChainAddress;
+
+		delete pendingCallbacks[id];
+
+		// notify completion
+		emit FungibleBindOperationCompleted(toChainId, toChainAddress);
 	}
 
 	// ************************************************************************************************
@@ -710,14 +752,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 			payload: packedPayload
     });
 	}
-
-	// ReceiverSupplies
-	struct ReceiverSupplies {
-		bytes32 op;
-		bytes senderBOA;
-		bytes payload;
-	}
-	mapping(bytes32 => ReceiverSupplies) public receiverSupplies;
 
 	// Receives supply transfer
 	function _doSupplyReceiver(bytes memory payload) internal {
