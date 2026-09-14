@@ -458,7 +458,6 @@ describe("ERC-20X Supply", function () {
 
 		expect(await fungibleMaster2.bind(1111, fungibleSingleton1)).to.not.be.reverted;
 		expect(await waitForContractEvent({ contract: fungibleMaster2, eventName: "FungibleBindOperationCompleted" }).then(([toChainId, toAddress]) => toChainId+toAddress)).to.equal(1111+(await fungibleSingleton1.getAddress()));
-		//expect(await waitForContractEvent({ contract: fungibleMaster2, eventName: "FungibleMessageCallbackProcessed" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(NO_SELECTOR);
 		expect(await fungibleMaster2.getChains()).to.include(1111n);
 		expect(await fungibleMaster2.getChainAddress(1111)).to.equals(fungibleSingleton1);
 		expect(await fungibleSingleton1.getMasterChain()).to.equal(2222);
@@ -468,43 +467,47 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************** Unbind **********************************************/
 	/********************************************************************************************************/
-	/*it.skip("FROM. Only owner can unbind.", async() => {
+	it("FROM. Only owner can unbind.", async() => {
 		await expect(otherMaster1.connect(addr13).unbind(2222)).to.be.revertedWithCustomError(otherMaster1, "OnlyOwner");
 		await expect(otherMaster2.connect(addr13).unbind(1111)).to.be.revertedWithCustomError(otherMaster1, "OnlyOwner");
-	});*/
+	});
 
-	/*it.skip("FROM. Should only unbind from MasterChain token.", async() => {
+	it("FROM. Should only unbind from MasterChain token.", async() => {
 		await expect(otherSlave2.unbind(1111)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromMasterChain");
 		await expect(otherSlave1.unbind(2222)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromMasterChain");
-	});*/
+	});
 
-	/*it.skip("FROM. Should only unbind from other token.", async() => {
+	it("FROM. Should only unbind from other token.", async() => {
 		await expect(otherMaster1.unbind(1111)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromOtherChain");
 		await expect(otherMaster2.unbind(2222)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromOtherChain");
-	});*/
+	});
 
-	/*it.skip("FROM. Should only unbind from bound token.", async() => {
-		await expect(otherMaster1.unbind(3333)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromOtherChain");
-		await expect(otherMaster2.unbind(3333)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromOtherChain");
-	});*/
+	it("FROM. Should only unbind from bound token.", async() => {
+		await expect(otherMaster1.unbind(3333)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromSlaveChain");
+		await expect(otherMaster2.unbind(3333)).to.be.revertedWithCustomError(otherMaster1, "OnlyUnbindFromSlaveChain");
+	});
 
-	/*it.skip("TO. Should only unbind Slave empty tokens.", async() => {
+	it("TO. Should only unbind Slave empty tokens.", async() => {
 
-	});*/
+	});
 
-	/*it.skip("OK. Should be able to unbind if conditions met.", async() => {
-		await expect(otherMaster1.unbind(2222)).to.not.be.reverted;
+	it("OK. Should be able to unbind if conditions met.", async() => {
+		expect(await otherMaster1.getChainAddress(2222)).to.equals(otherSlave2);
+		expect(await otherMaster1.unbind(2222)).to.not.be.reverted;
+		expect(await waitForContractEvent({ contract: otherMaster1, eventName: "FungibleUnbindOperationCompleted" }).then(([toChainId, toAddress]) => toChainId+toAddress)).to.equal(2222+(await otherSlave2.getAddress()));
 		expect(await otherMaster1.getChains()).to.not.include(2222n);
 		expect(await otherMaster1.getChainAddress(2222)).to.equals(ZeroAddress);
 		expect(await otherSlave2.getMasterChain()).to.equal(0);
 		expect(await otherSlave2.getMasterAddress()).to.equal(ZeroAddress);
 
-		await expect(otherMaster2.unbind(1111)).to.not.be.reverted;
+		expect(await otherMaster2.getChainAddress(1111)).to.equals(otherSlave1);
+		expect(await otherMaster2.unbind(1111)).to.not.be.reverted;
+		expect(await waitForContractEvent({ contract: otherMaster2, eventName: "FungibleUnbindOperationCompleted" }).then(([toChainId, toAddress]) => toChainId+toAddress)).to.equal(1111+(await otherSlave1.getAddress()));
 		expect(await otherMaster2.getChains()).to.not.include(1111n);
 		expect(await otherMaster2.getChainAddress(1111)).to.equals(ZeroAddress);
 		expect(await otherSlave1.getMasterChain()).to.equal(0);
 		expect(await otherSlave1.getMasterAddress()).to.equal(ZeroAddress);
-	});*/
+	});
 
 	/********************************************************************************************************/
 	/******************************************** Transfer MasterChain **************************************/

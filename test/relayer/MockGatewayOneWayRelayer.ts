@@ -73,7 +73,7 @@ export class MockGatewayOneWayRelayer {
 			// Destructure event payload
 			const [id, senderBOA,  recipientBOA, payload, value, attributes] = event.args; 
 
-			console.log(`\n📨 ${id}; [4-REL] Intercepted ERC-7786 message by relayer! Id: ${id}`);
+			console.log(`\n📨 ${id}; [4-REL] Intercepted ERC-7786 message Id: ${id}  by relayer! `);
 			/*
 			console.log(`🌍 senderBOA: ${senderBOA}`);
 			console.log(`🌍 recipientBOA: ${recipientBOA}`);
@@ -81,7 +81,11 @@ export class MockGatewayOneWayRelayer {
 			console.log(`🌍 value: ${value}`);
 			console.log(`🌍 attributes: ${attributes}`);*/
 
-			console.log(`\n📨 ${id}; [4-REL] Sending message ${id} to Destination Gateway ${destGatewayAddress}`);
+			const network = await destRelayer.provider.getNetwork();
+			console.log("pepe");
+			console.log(network);
+
+			console.log(`\n📨 ${id}; [4-REL] Sending message ${id} to Destination Gateway ${destGatewayAddress} on chain ${network?.chainId}`);
 
 			try {
 
@@ -136,6 +140,8 @@ export class MockGatewayOneWayRelayer {
 			sourceGateway.filters.MessageSent(),			// from ERC-7786
 			this.listeners.source
 		);
+
+		console.error(`❌ [9-REL] Relayer is listening.`);
 
 	}
 

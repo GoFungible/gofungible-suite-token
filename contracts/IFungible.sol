@@ -53,6 +53,7 @@ abstract contract IFungible {
   error OnlyUnbindFromOtherChain();															//
   error OnlyUnbindFromMasterChain();														//
   error OnlyUnbindFromSlaveChain();															//
+  error OnlyUnbindFromEmptyToken();															//
   error OnlyTransferXBoundTokens(uint256 chainId);							//
   error OnlyTransferXThroughtMasterChain(uint256 chainId);			//
   error OnlyTransferXWithFunds(uint256 amount);									//
@@ -97,6 +98,7 @@ abstract contract IFungible {
 
 	event FungibleBindOperationCompleted(uint256 toChainId, address toChainAddress);
 
+	event FungibleUnbindOperationCompleted(uint256 toChainId, address toChainAddress);
 
 	// ************************************************************************************************
 	// ******************************************* Extensions *****************************************
