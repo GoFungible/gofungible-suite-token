@@ -118,7 +118,7 @@ describe("ERC-20X Supply", function () {
 		// ***********************************************************************************************************************************************************
 		// bind fungibleMaster1 and fungibleSingleton2
 		expect(await fungibleMaster1.bind(2222, fungibleSingleton2)).to.not.be.reverted;
-		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleMessageCallbackProcessed" }).then(([sendId, selectorIfError]) => selectorIfError)).to.equal(NO_SELECTOR);
+		expect(await waitForContractEvent({ contract: fungibleMaster1, eventName: "FungibleBindOperationCompleted" }).then(([toChainId, toAddress]) => toChainId+toAddress)).to.equal(2222+fungibleSingletonAddress2);
 		expect(await fungibleMaster1.getChains()).to.include(2222n);
 		expect(await fungibleMaster1.getChainAddress(2222)).to.equals(fungibleSingleton2);
 		expect(await fungibleSingleton2.getMasterChain()).to.equal(1111);
@@ -141,9 +141,9 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************ Supplies **********************************************/
 	/********************************************************************************************************/
-	/*it.skip("Should be able to get cross supplies", async() => {
+	it.skip("Should be able to get cross supplies", async() => {
 
-	});*/
+	});
 
 	/********************************************************************************************************/
 	/************************************************* Bridge ***********************************************/

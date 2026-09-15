@@ -322,7 +322,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		console.logBytes32(header.op);
 
 		if (!(
-			(header.op == MSG_BND1)	||																																							// no slave yet
+			(header.op == MSG_BND1)	||																																							// still unbound
 			(_masterChain == CHAIN_ID && _masterAddress == address(this)) ||																				// is master chain
 			(srcChainId == _masterChain && srcAddress == _masterAddress || addresses[srcChainId] == srcAddress)			// receive from master chain
 		)) {
@@ -330,11 +330,10 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		}
 		print(id, "[6-FUN] Fungible received message6!!!");
 		
-		// do bind operations
+		// bind / unbind operations
 		// We cannot validate message comes from MasterChain for MSG_BND because token is unbound:
 		// - MasterChain cannot yet be validated because is the bind process who associates the MasterChain
 		// - The owner of the real MasterChain creates and only he knows the location of slave to be bound.
-		// - A fake MasterChain can bind a slave token. Not a problem for the real MasterChain.
 		if (header.op == MSG_BND1) {
 			_doBindReceiver(message.payload);
 			_sendResponse(id, MSG_BND2, srcChainId, srcAddress);
@@ -349,6 +348,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		} else if (header.op == MSG_UBN2) {
 			_doUnbindSender(message.payload);
 
+		// supply operations
 		} else if (header.op == MSG_SUP) {
 			_doSupplyReceiver(message.payload);
 
