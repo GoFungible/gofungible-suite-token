@@ -141,24 +141,24 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************ Supplies **********************************************/
 	/********************************************************************************************************/
-	it.skip("Should be able to get cross supplies", async() => {
+	it("Should be able to get cross supplies", async() => {
 
 	});
 
 	/********************************************************************************************************/
 	/************************************************* Bridge ***********************************************/
 	/********************************************************************************************************/
-	/*it.skip("FROM. Only can bridge throught MasterChain", async() => {
+	it("FROM. Only can bridge throught MasterChain", async() => {
 		await expect(fungibleSingleton2.bridge(3333, fungibleMaster1, 500_000_000)).to.be.revertedWithCustomError(fungibleSingleton2, "OnlyTransferXThroughtMasterChain");
-	});*/
+	});
 
-	/*it.skip("FROM. Only accounts with enought funds can bridge", async() => {
+	it("FROM. Only accounts with enought funds can bridge", async() => {
 		await expect(fungibleMaster1.connect(addr11).bridge(2222, fungibleSingleton2, 500_000_000)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyTransferXWithFunds");
-	});*/
+	});
 
-	/*it.skip("TO. Only can bridge to bound token", async() => {
+	it("TO. Only can bridge to bound token", async() => {
 		await expect(fungibleMaster1.bridge(3333, fungibleSingleton2, 500_000_000)).to.be.revertedWithCustomError(fungibleMaster1, "OnlyTransferXBoundTokens");
-	});*/
+	});
 
 	/*it.skip("OK. Should be able to bridge if all conditiosn met", async() => {
 		// owner1 has 1000_000_000 on chain 1111 on fungibleMaster1
@@ -199,12 +199,12 @@ describe("ERC-20X Supply", function () {
 	/********************************************************************************************************/
 	/************************************************** Pay *************************************************/
 	/********************************************************************************************************/
-	/*it.skip("Any holder should be able to pay within same network", async() => {
+	it("Any holder should be able to pay within same network", async() => {
 
-	});*/
+	});
 
-	/*it.skip("Any holder should be able to pay cross-network", async() => {
+	it("Any holder should be able to pay cross-network", async() => {
 
-	});*/
+	});
 
 });
