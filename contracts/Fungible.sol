@@ -350,13 +350,14 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 
 		// supply operations
 		} else if (header.op == MSG_SUP) {
+			console.log("sending to receiver");
 			_doSupplyReceiver(message.payload);
 
-		} else if (header.op == MSG_SUL1) {
+		/*} else if (header.op == MSG_SUL1) {
 			_undoSupplyReceiver(id);
 
 		} else if (header.op == MSG_SUL2) {
-			_undoSupplySender(id);
+			_undoSupplySender(id);*/
 
 		// do custom messages
 		} else {
@@ -522,6 +523,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		_masterAddress = payloadData.masterAddress;
 	}
 
+	// callback required only for rollback
 	function _doBindSender(bytes memory idPayload) internal {
 		// extract id
     bytes32 id = abi.decode(idPayload, (bytes32));
@@ -730,15 +732,6 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		 _transferX(inChain, inAddress, amount);
 	}
 
-	// SenderSupplies
-	struct SenderSupplies {
-		bytes32 op;
-		uint256 toChain;
-		address toAddress;
-		bytes payload;
-	}
-	mapping(bytes32 => SenderSupplies) public senderSupplies;
-
 	// Performs supply transfer to an account of another chain
 	// To prevents inconsistent state, whereas maintaining the same number of messages (gas), all transferX must go throught MasterChain.
 	function _transferX(uint256 inChain, address inAddress, uint256 amount) internal {
@@ -770,12 +763,33 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		print(id, "[0-BUS] _transferX id returned", toChain, toAddress);
 
 		// if message sending was not reverted we can record info for callback processing
-		senderSupplies[id] = SenderSupplies({
+		pendingCallbacks[id] = PendingCallbacks({
 			op: MSG_SUP,
 			toChain: toChain,
 			toAddress: toAddress,
 			payload: packedPayload
     });
+
+		// pattern X
+		_doSupplySender(inChain, amount);
+	}
+
+	function _doSupplySender(uint256 inChain, uint256 amount) internal {
+		print(0, "[12-BUS] _doSupplySender");
+
+		// if source, update ERC-20
+		print(0, "[12-BUS] remove money ", amount);
+		_balances[msg.sender] -= amount;
+		_totalSupply -= amount;
+
+		// if MasterChain, update supplies
+		if (CHAIN_ID == _masterChain) {
+			print(0, "[12-BUS] move money ", amount);
+			supplies[CHAIN_ID] -= amount;
+			supplies[inChain] += amount;
+		}
+		
+		print(0, "[12-BUS] end _doSupplySender");
 	}
 
 	// Receives supply transfer
@@ -793,9 +807,7 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 		if (CHAIN_ID == inChain) {
 			print(0, "[6-FUN] add money ", amount);
 			_balances[inAddress] += amount;
-			console.log(_totalSupply);
 			_totalSupply += amount;
-			console.log(_totalSupply);
 		}
 
 		// if MasterChain, update supplies
@@ -805,45 +817,21 @@ contract Fungible is IFungible, ERC173, IERC20, IERC20x /*IERC7786Recipient,*/ {
 			supplies[inChain] += amount;
 		}
 
+		// notify operation completion
+		emit FungibleSupplyOperationCompleted(outChain, inChain);
+
 		print(0, "[6-FUN] end _doSupplyReceiver");
 	}
 
-	function _undoSupplyReceiver(bytes32 id) internal {
-
-	}
-
-	function _doSupplySender(bytes memory payload) internal {
-		print(0, "[12-BUS] _doSupplySender");
-
-		// Unpack the byte envelope straight back into the struct format
-		FungibleSupplyPayload memory payloadData = abi.decode(payload, (FungibleSupplyPayload));
-		uint256 outChain = payloadData.outChain;
-		address outAddress = payloadData.outAddress;
-		uint256 inChain = payloadData.inChain;
-		//address inAddress = payloadData.inAddress;
-		uint256 amount = payloadData.amount;
-
-		// if source, update ERC-20
-		if (CHAIN_ID == outChain) {
-			print(0, "[12-BUS] remove money ", amount);
-			_balances[outAddress] -= amount;
-			_totalSupply -= amount;
-		}
-
-		// if MasterChain, update supplies
-		if (CHAIN_ID == _masterChain) {
-			print(0, "[12-BUS] move money ", amount);
-			supplies[outChain] -= amount;
-			supplies[inChain] += amount;
-		}
-		
-		print(0, "[12-BUS] end _doSupplySender");
+	// this is for rollback if needed
+	// rollback must be done with two way messaging.
+	/*function _undoSupplyReceiver(bytes32 id) internal {
 
 	}
 
 	function _undoSupplySender(bytes32 id) internal {
 
-	}
+	}*/
 
 	// *************************************************************************************************
 	// ************************************ Extension: 1. Injection ************************************

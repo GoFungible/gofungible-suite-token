@@ -100,6 +100,8 @@ abstract contract IFungible {
 
 	event FungibleUnbindOperationCompleted(uint256 toChainId, address toChainAddress);
 
+	event FungibleSupplyOperationCompleted(uint256 fromChainId, uint256 toChainId);
+
 	// ************************************************************************************************
 	// ******************************************* Extensions *****************************************
 	// ************************************************************************************************  

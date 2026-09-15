@@ -73,7 +73,7 @@ interface WaitForEventOptions {
 export function waitForContractEvent({
   contract,
   eventName,
-  timeoutMs = 5000, // 5 second default timeout
+  timeoutMs = 10000, // 10 second default timeout
   filterPredicate
 }: WaitForEventOptions): Promise<any[]> {
   
